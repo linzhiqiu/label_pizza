@@ -11,7 +11,8 @@ load_dotenv(".env")  # loads DBURL
 Base = declarative_base()
 
 # Import models to ensure they are registered with Base
-from label_pizza.models import *  # This ensures all models are registered with Base
+# from label_pizza.models import *  # This ensures all models are registered with Base
+from label_pizza.models import *
 
 # Production database configuration with STRICT connection limits for Supabase
 engine = create_engine(

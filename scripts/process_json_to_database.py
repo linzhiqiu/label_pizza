@@ -6,9 +6,11 @@ from label_pizza.services import (
     ProjectService, 
     SchemaService, 
     QuestionGroupService, 
-    QuestionService
+    QuestionService,
+    AuthService
 )
 from label_pizza.db import SessionLocal, engine
+import hashlib
 
 def update_or_add_videos(json_file_path: str = '../new_video_metadata.json'):
     """
@@ -184,45 +186,98 @@ def import_schemas(json_file_path: str = '../lighting_schema_questions.json'):
             except Exception as e:
                 print(f"\nError processing Schema: {str(e)}")
 
-def create_project_with_videos(json_file_path: str, project_base_name: str, schema_name: str, batch_size: int = 50):
+
+
+def upload_users_from_json(json_path):
     """
-    Create project from JSON file, all videos must exist in database
-    
+    Batch upload users from a JSON file.
+
     Args:
-        json_file_path: Path to JSON file
-        project_name: Name of the project
-        schema_name: Name of the schema
-        batch_size: Number of videos per project
+        json_path (str): Path to the user JSON file.
+
+    JSON format:
+        [
+            {
+                "user_id": "alice",
+                "email": "alice@example.com",
+                "password": "alicepassword",
+                "user_type": "human"
+            },
+            ...
+        ]
     """
-    with open(json_file_path, 'r') as f:
-        videos_data = json.load(f)
-    
+    import json
+
+    with open(json_path, 'r') as f:
+        users = json.load(f)
+
+    with SessionLocal() as session:
+        existing_users = AuthService.get_all_users(session)
+        existing_emails = set(existing_users['Email'].tolist())
+        existing_user_ids = set(existing_users['User ID'].tolist())
+
+        for user in users:
+            user_id = user['user_id']
+            email = user['email']
+            password = user['password']
+            user_type = user.get('user_type', 'human')
+
+            if email in existing_emails or user_id in existing_user_ids:
+                print(f"User {email} or user_id {user_id} already exists, skipping.")
+                continue
+
+            # Hash the password (sha256)
+            password_hash = hashlib.sha256(password.encode()).hexdigest()
+
+            try:
+                AuthService.create_user(
+                    user_id=user_id,
+                    email=email,
+                    password_hash=password_hash,
+                    user_type=user_type,
+                    session=session
+                )
+                print(f"Successfully created user {email}")
+            except Exception as e:
+                print(f"Failed to create user {email}: {e}")
+
+
+def extract_video_names_from_annotation_json(json_path):
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    video_names = []
+    for item in data:
+        video_names.extend(item.keys())
+    return video_names
+
+def create_project_from_annotation_json(json_path, project_name, schema_name, batch_size=15):
+    # 1. 提取视频名
+    video_names = extract_video_names_from_annotation_json(json_path)
+    print(f"共提取到 {len(video_names)} 个视频名。")
+    # 2. 连接数据库
     session = SessionLocal()
     try:
-        try:
-            schema_id = SchemaService.get_schema_id_by_name(schema_name, session)
-            print(f"Found schema '{schema_name}', ID: {schema_id}")
-        except ValueError as e:
-            print(f"Error: {str(e)}")
-            return
-        
-        video_uids = [video['video_uid'] for video in videos_data]
+        # 3. 获取schema id
+        schema_id = SchemaService.get_schema_id_by_name(schema_name, session)
+        print(f"找到schema '{schema_name}', ID: {schema_id}")
+        # 4. 获取所有视频
         all_videos_df = VideoService.get_all_videos(session)
         existing_video_uids = set(all_videos_df['Video UID'])
-        missing_videos = [uid for uid in video_uids if uid not in existing_video_uids]
-
+        # 5. 检查缺失
+        missing_videos = [name for name in video_names if name not in existing_video_uids]
         if missing_videos:
-            error_msg = f"Found {len(missing_videos)} videos not in database:\n"
-            raise ValueError(error_msg)
-        
-        video_ids = ProjectService.get_video_ids_by_uids(video_uids, session)
-        
+            print(f"有 {len(missing_videos)} 个视频不在数据库中，无法创建项目：")
+            for mv in missing_videos:
+                print(mv)
+            return
+        # 6. 获取视频ID
+        video_ids = ProjectService.get_video_ids_by_uids(video_names, session)
+        # 7. 分批创建项目
         total_videos = len(video_ids)
         for i in range(0, total_videos, batch_size):
             batch_video_ids = video_ids[i:i + batch_size]
-            project_name_with_batch = f"{project_base_name}-{i//batch_size + 1}"
-            
-            print(f"Creating project {project_name_with_batch}...")
+            project_name_with_batch = f"{project_name}-{i//batch_size + 1}"
+            print(f"正在创建项目 {project_name_with_batch}...")
             try:
                 ProjectService.create_project(
                     name=project_name_with_batch,
@@ -230,13 +285,12 @@ def create_project_with_videos(json_file_path: str, project_base_name: str, sche
                     video_ids=batch_video_ids,
                     session=session
                 )
-                print(f"Successfully created project {project_name_with_batch}!")
+                print(f"项目 {project_name_with_batch} 创建成功!")
             except ValueError as e:
                 if "already exists" in str(e):
-                    print(f"Project {project_name_with_batch} already exists, skipping...")
+                    print(f"项目 {project_name_with_batch} 已存在,跳过...")
                 else:
                     raise e
-                
     finally:
         session.close()
 

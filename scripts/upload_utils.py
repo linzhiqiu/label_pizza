@@ -12,7 +12,7 @@ from label_pizza.services import (
 from label_pizza.db import SessionLocal, engine
 import hashlib
 
-def update_or_add_videos(json_file_path: str = '../new_video_metadata.json'):
+def update_or_add_videos(json_file_path: str = None):
     """
     Update existing videos or add new videos from JSON file
     
@@ -55,7 +55,7 @@ def update_or_add_videos(json_file_path: str = '../new_video_metadata.json'):
             print(f"Error committing changes: {str(e)}")
             session.rollback()
 
-def import_schemas(json_file_path: str = '../lighting_schema_questions.json'):
+def import_schemas(json_file_path: str = None):
     """
     Import schemas and their questions from JSON file
     
@@ -188,7 +188,7 @@ def import_schemas(json_file_path: str = '../lighting_schema_questions.json'):
 
 
 
-def upload_users_from_json(json_path):
+def upload_users_from_json(json_path: str = None):
     """
     Batch upload users from a JSON file.
 
@@ -242,7 +242,7 @@ def upload_users_from_json(json_path):
                 print(f"Failed to create user {email}: {e}")
 
 
-def extract_video_names_from_annotation_json(json_path):
+def extract_video_names_from_annotation_json(json_path: str = None):
     with open(json_path, 'r') as f:
         data = json.load(f)
     video_names = []
@@ -250,34 +250,34 @@ def extract_video_names_from_annotation_json(json_path):
         video_names.extend(item.keys())
     return video_names
 
-def create_project_from_annotation_json(json_path, project_name, schema_name, batch_size=15):
-    # 1. 提取视频名
+def create_project_from_annotation_json(json_path: str = None, project_name: str = None, schema_name: str = None, batch_size: int = 15):
+    # 1. Extract video names
     video_names = extract_video_names_from_annotation_json(json_path)
-    print(f"共提取到 {len(video_names)} 个视频名。")
-    # 2. 连接数据库
+    print(f"Found {len(video_names)} video names in the JSON file.")
+    # 2. Connect to the database
     session = SessionLocal()
     try:
-        # 3. 获取schema id
+        # 3. Get schema id
         schema_id = SchemaService.get_schema_id_by_name(schema_name, session)
-        print(f"找到schema '{schema_name}', ID: {schema_id}")
-        # 4. 获取所有视频
+        print(f"Found schema '{schema_name}', ID: {schema_id}")
+        # 4. Get all videos
         all_videos_df = VideoService.get_all_videos(session)
         existing_video_uids = set(all_videos_df['Video UID'])
-        # 5. 检查缺失
+        # 5. Check for missing videos
         missing_videos = [name for name in video_names if name not in existing_video_uids]
         if missing_videos:
-            print(f"有 {len(missing_videos)} 个视频不在数据库中，无法创建项目：")
+            print(f"{len(missing_videos)} videos are missing in the database. Project creation aborted.")
             for mv in missing_videos:
                 print(mv)
             return
-        # 6. 获取视频ID
+        # 6. Get video IDs
         video_ids = ProjectService.get_video_ids_by_uids(video_names, session)
-        # 7. 分批创建项目
+        # 7. Create projects in batches
         total_videos = len(video_ids)
         for i in range(0, total_videos, batch_size):
             batch_video_ids = video_ids[i:i + batch_size]
             project_name_with_batch = f"{project_name}-{i//batch_size + 1}"
-            print(f"正在创建项目 {project_name_with_batch}...")
+            print(f"Creating project {project_name_with_batch}...")
             try:
                 ProjectService.create_project(
                     name=project_name_with_batch,
@@ -285,10 +285,10 @@ def create_project_from_annotation_json(json_path, project_name, schema_name, ba
                     video_ids=batch_video_ids,
                     session=session
                 )
-                print(f"项目 {project_name_with_batch} 创建成功!")
+                print(f"Project {project_name_with_batch} created successfully!")
             except ValueError as e:
                 if "already exists" in str(e):
-                    print(f"项目 {project_name_with_batch} 已存在,跳过...")
+                    print(f"Project {project_name_with_batch} already exists, skipping...")
                 else:
                     raise e
     finally:

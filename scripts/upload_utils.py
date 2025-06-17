@@ -12,41 +12,46 @@ from label_pizza.services import (
 from label_pizza.db import SessionLocal, engine
 import hashlib
 
-def update_or_add_videos(json_file_path: str = None):
+
+def add_videos(json_file_path: str = None):
     """
-    Update existing videos or add new videos from JSON file
+    Add new videos from JSON file, raise error if any video already exists
     
     Args:
         json_file_path: Path to the JSON file containing video data
     """
+    # Load and parse JSON file
     with open(json_file_path, 'r') as f:
         videos_data = json.load(f)
     
+    # Check all videos existence and validate data
     with Session(engine) as session:
-        for video_data in tqdm(videos_data, desc="Processing videos", unit="video"):
+        existing_videos = []
+        for video_data in videos_data:
             try:
-                existing_video = VideoService.get_video_by_uid(video_data['video_uid'], session)
-
-                if existing_video:
-                    VideoService.update_video(
-                        video_uid=video_data['video_uid'],
-                        new_url=video_data['url'],
-                        new_metadata=video_data['metadata'],
-                        session=session
-                    )
-                    print(f"Successfully updated video: {video_data['video_uid']}")
+                # Use VideoService's verification function directly
+                VideoService.verify_add_video(
+                    url=video_data['url'],
+                    session=session,
+                    metadata=video_data['metadata']
+                )
+            except ValueError as e:
+                if "already exists" in str(e):
+                    existing_videos.append(video_data['url'])
                 else:
-                    VideoService.add_video(
-                        url=video_data['url'],
-                        session=session,
-                        metadata=video_data['metadata']
-                    )
-                    print(f"Successfully added new video: {video_data['video_uid']}")
-                    
-            except Exception as e:
-                print(f"Error processing video {video_data['video_uid']}: {str(e)}")
-                session.rollback()
-                continue
+                    raise ValueError(f"Video data validation failed: {str(e)}")
+        
+        if existing_videos:
+            raise ValueError(f"Videos already exist: {', '.join(existing_videos)}")
+        
+        # If no existing videos, proceed with adding all videos
+        for video_data in tqdm(videos_data, desc="Adding videos", unit="video"):
+            VideoService.add_video(
+                url=video_data['url'],
+                session=session,
+                metadata=video_data['metadata']
+            )
+            print(f"Successfully added new video: {video_data['url']}")
         
         try:
             session.commit()
@@ -55,136 +60,308 @@ def update_or_add_videos(json_file_path: str = None):
             print(f"Error committing changes: {str(e)}")
             session.rollback()
 
-def import_schemas(json_file_path: str = None):
+def update_videos(json_file_path: str = None):
     """
-    Import schemas and their questions from JSON file
+    Update existing videos from JSON file, raise error if any video doesn't exist
     
     Args:
-        json_file_path: Path to the JSON file containing schema data
+        json_file_path: Path to the JSON file containing video data
     """
+    # Load and parse JSON file
     with open(json_file_path, 'r') as f:
-        data = json.load(f)
+        videos_data = json.load(f)
     
-    with SessionLocal() as session:
-        for schema_name, question_groups in tqdm(data.items(), desc="Processing Schemas"):
-            print(f"\nProcessing Schema: {schema_name}")
-            
+    # Check all videos existence and validate data
+    with Session(engine) as session:
+        missing_videos = []
+        for video_data in videos_data:
             try:
-                existing_schema = SchemaService.get_schema_by_name(schema_name, session)
-                print(f"Found existing Schema: {schema_name}")
-            except:
-                existing_schema = None
-                print(f"Creating new Schema: {schema_name}")
-            
-            schema_question_group_ids = []
-            
-            for group_data in tqdm(question_groups, desc="Processing Question Groups"):
-                print(f"\nProcessing Question Group: {group_data['title']}")
-                
-                try:
-                    existing_group = QuestionGroupService.get_group_by_name(group_data['title'], session)
-                    print(f"Found existing Question Group: {group_data['title']}")
-                except:
-                    existing_group = None
-                    print(f"Creating new Question Group: {group_data['title']}")
-                
-                question_ids = []
-                for question_data in tqdm(group_data['questions'], desc="Processing questions"):
-                    try:
-                        try:
-                            existing_question = QuestionService.get_question_by_text(question_data['text'], session)
-                            question_exists = True
-                        except:
-                            existing_question = None
-                            question_exists = False
-                        
-                        if question_exists:
-                            print(f"Updating existing question: {question_data['text']}")
-                            if existing_question['type'] == 'description':
-                                QuestionService.edit_question(
-                                    question_id=existing_question['id'],
-                                    new_display_text=question_data['display_text'],
-                                    new_opts=None,
-                                    new_default=None,
-                                    new_display_values=None,
-                                    session=session
-                                )
-                            else:
-                                QuestionService.edit_question(
-                                    question_id=existing_question['id'],
-                                    new_display_text=question_data['display_text'],
-                                    new_opts=question_data['options'],
-                                    new_default=question_data.get('default_option'),
-                                    new_display_values=question_data['display_values'],
-                                    session=session
-                                )
-                            question_ids.append(existing_question['id'])
-                        else:
-                            print(f"Creating new question: {question_data['text']}")
-                            if question_data['qtype'] == 'single':
-                                question = QuestionService.add_question(
-                                    text=question_data['text'],
-                                    qtype=question_data['qtype'],
-                                    options=question_data['options'],
-                                    display_values=question_data['display_values'],
-                                    display_text=question_data['display_text'],
-                                    default=question_data.get('default_option'),
-                                    session=session
-                                )
-                            elif question_data['qtype'] == 'description':
-                                question = QuestionService.add_question(
-                                    text=question_data['text'],
-                                    qtype=question_data['qtype'],
-                                    options=[],
-                                    default=None,
-                                    display_values=[],
-                                    display_text=question_data['display_text'],
-                                    session=session
-                                )
-                            question_ids.append(question.id)
-                    except Exception as e:
-                        print(f"Error processing question {question_data['text']}: {str(e)}")
-                
-                try:
-                    if existing_group:
-                        QuestionGroupService.edit_group(
-                            group_id=existing_group.id,
-                            new_title=group_data['title'],
-                            new_description=group_data['description'],
-                            is_reusable=group_data['is_reusable'],
-                            verification_function="",
-                            session=session
-                        )
-                        schema_question_group_ids.append(existing_group.id)
-                        print(f"Successfully updated question group: {group_data['title']}")
-                    else:
-                        question_group = QuestionGroupService.create_group(
-                            title=group_data['title'],
-                            description=group_data['description'],
-                            is_reusable=group_data['is_reusable'],
-                            verification_function="",
-                            question_ids=question_ids,
-                            is_auto_submit=group_data['is_auto_submit'],
-                            session=session
-                        )
-                        schema_question_group_ids.append(question_group.id)
-                        print(f"Successfully created question group: {group_data['title']}")
-                except Exception as e:
-                    print(f"Error processing question group: {str(e)}")
-            
-            try:
-                if existing_schema:
-                    print(f"\nArchiving old Schema: {schema_name}")
-                    SchemaService.archive_schema(existing_schema.id, session)
-                
-                schema = SchemaService.create_schema(
-                    name=schema_name,
-                    question_group_ids=schema_question_group_ids,
+                # Use VideoService's verification function directly
+                VideoService.verify_update_video(
+                    video_uid=video_data['video_uid'],
+                    new_url=video_data['url'],
+                    new_metadata=video_data['metadata'],
                     session=session
                 )
-                print(f"\nSuccessfully created Schema: {schema.name}")
-            except Exception as e:
-                print(f"\nError processing Schema: {str(e)}")
+            except ValueError as e:
+                if "not found" in str(e):
+                    missing_videos.append(video_data['video_uid'])
+                else:
+                    raise ValueError(f"Video data validation failed: {str(e)}")
+        
+        if missing_videos:
+            raise ValueError(f"Videos do not exist: {', '.join(missing_videos)}")
+        
+        # If all videos exist, proceed with updating all videos
+        for video_data in tqdm(videos_data, desc="Updating videos", unit="video"):
+            VideoService.update_video(
+                video_uid=video_data['video_uid'],
+                new_url=video_data['url'],
+                new_metadata=video_data['metadata'],
+                session=session
+            )
+            print(f"Successfully updated video: {video_data['video_uid']}")
+        
+        try:
+            session.commit()
+            print("All videos have been successfully processed!")
+        except Exception as e:
+            print(f"Error committing changes: {str(e)}")
+            session.rollback()
+
+def import_question_group(json_file_path: str = None):
+    """
+    Import a single question group from a JSON file. If the question group or any question already exists, raises an error.
+
+    Args:
+        json_file_path: Path to the JSON file containing question group data
+
+    Returns:
+        int: The ID of the created question group
+
+    Raises:
+        ValueError: If question group with the same title already exists
+        ValueError: If any question with the same text already exists
+        ValueError: If required fields are missing in the JSON
+        ValueError: If question data is invalid
+        Exception: If database operations fail
+    """
+    import json
+    from tqdm import tqdm
+
+    # Load and parse JSON file
+    with open(json_file_path, 'r') as f:
+        group_data = json.load(f)
+
+    with SessionLocal() as session:
+        try:
+            # 1. Verify all questions first
+            validated_params_list = []
+            for question_data in tqdm(group_data['questions'], desc="Verifying questions"):
+                validated_params = QuestionService.verify_add_question(
+                    text=question_data['text'],
+                    qtype=question_data['qtype'],
+                    options=question_data.get('options'),
+                    default=question_data.get('default_option'),
+                    session=session,
+                    display_values=question_data.get('display_values'),
+                    display_text=question_data.get('display_text'),
+                    option_weights=question_data.get('option_weights')
+                )
+                validated_params_list.append((question_data, validated_params))
+
+            # 2. If all verifications pass, create all questions
+            question_ids = []
+            for question_data, validated_params in tqdm(validated_params_list, desc="Creating questions"):
+                question = QuestionService.add_question(
+                    text=question_data['text'],
+                    qtype=question_data['qtype'],
+                    options=question_data.get('options'),
+                    default=question_data.get('default_option'),
+                    session=session,
+                    display_values=validated_params[1],  # validated display_values
+                    display_text=validated_params[0],    # validated display_text
+                    option_weights=validated_params[2]   # validated option_weights
+                )
+                question_ids.append(question.id)
+                print(f"Created new question: {question_data['text']}")
+
+            # 3. Verify the group
+            validated_group, _ = QuestionGroupService.verify_create_group(
+                title=group_data['title'],
+                description=group_data['description'],
+                is_reusable=group_data['is_reusable'],
+                question_ids=question_ids,
+                verification_function="",  # Pass as needed
+                is_auto_submit=group_data['is_auto_submit'],
+                session=session
+            )
+
+            # 4. Create the group
+            question_group = QuestionGroupService.create_group(
+                title=group_data['title'],
+                description=group_data['description'],
+                is_reusable=group_data['is_reusable'],
+                question_ids=question_ids,
+                verification_function="",
+                is_auto_submit=group_data['is_auto_submit'],
+                session=session
+            )
+            print(f"Successfully created question group: {group_data['title']}")
+            return question_group.id
+
+        except ValueError as e:
+            session.rollback()
+            raise ValueError(f"Error processing question group: {str(e)}")
+        except Exception as e:
+            session.rollback()
+            raise Exception(f"Error processing question group: {str(e)}")
+        
+def update_questions(json_file_path: str = None) -> None:
+    """
+    Update existing questions from a JSON file. All questions must exist in the database.
+    
+    Args:
+        json_file_path: Path to the JSON file containing question data
+        
+    Raises:
+        ValueError: If any question not found or validation fails
+        Exception: If database operations fail
+    """
+    with open(json_file_path, 'r') as f:
+        questions_data = json.load(f)
+    
+    with SessionLocal() as session:
+        try:
+            # First verify all questions
+            missing_questions = []
+            for question_data in questions_data:
+                try:
+                    question_info = QuestionService.get_question_by_text(question_data['text'], session)
+                    question_id = question_info['id']
+                except ValueError:
+                    missing_questions.append(question_data['text'])
+                    continue
+
+                # Now you can use question_id for verify_edit_question
+                QuestionService.verify_edit_question(
+                    question_id=question_id,
+                    new_display_text=question_data['display_text'],
+                    new_opts=question_data.get('options'),
+                    new_default=question_data.get('default_option'),
+                    session=session,
+                    new_display_values=question_data.get('display_values'),
+                    new_option_weights=question_data.get('option_weights')
+                )
+            if missing_questions:
+                raise ValueError(f"Questions not found: {missing_questions}")
+            
+            # If all verifications pass, proceed with database operations
+            for question_data in tqdm(questions_data, desc="Updating questions"):
+                question_info = QuestionService.get_question_by_text(question_data['text'], session)
+                question_id = question_info['id']
+                QuestionService.edit_question(
+                    question_id=question_id,
+                    new_display_text=question_data['display_text'],
+                    new_opts=question_data.get('options'),
+                    new_default=question_data.get('default_option'),
+                    session=session,
+                    new_display_values=question_data.get('display_values'),
+                    new_option_weights=question_data.get('option_weights')
+                )
+                print(f"Updated question: {question_data['text']}")
+                
+        except ValueError as e:
+            session.rollback()
+            raise ValueError(f"Error updating questions: {str(e)}")
+        except Exception as e:
+            session.rollback()
+            raise Exception(f"Error updating questions: {str(e)}")
+
+def update_question_groups(json_file_path: str = None) -> None:
+    """
+    Update existing question groups from a JSON file. All groups must exist in the database.
+    
+    Args:
+        json_file_path: Path to the JSON file containing question group data
+        
+    Raises:
+        ValueError: If any group not found or validation fails
+        Exception: If database operations fail
+    """
+    # Load and parse JSON file
+    with open(json_file_path, 'r') as f:
+        groups_data = json.load(f)
+    
+    with SessionLocal() as session:
+        try:
+            # First verify all groups
+            missing_groups = []
+            validation_errors = []
+            for group_data in groups_data:
+                try:
+                    # First get group by title to get its ID
+                    group = QuestionGroupService.get_group_by_name(group_data['title'], session)
+                    
+                    # Then verify group parameters
+                    QuestionGroupService.verify_edit_group(
+                        group_id=group.id,
+                        new_title=group_data['title'],
+                        new_description=group_data['description'],
+                        is_reusable=group_data['is_reusable'],
+                        verification_function=group_data.get('verification_function'),
+                        is_auto_submit=group_data.get('is_auto_submit', False),
+                        session=session
+                    )
+                except ValueError as e:
+                    if "not found" in str(e):
+                        missing_groups.append(group_data['title'])
+                    else:
+                        validation_errors.append(f"Group '{group_data['title']}': {str(e)}")
+            
+            # Report all validation errors
+            if missing_groups:
+                raise ValueError(f"Question groups do not exist: {', '.join(missing_groups)}")
+            if validation_errors:
+                raise ValueError("Validation errors:\n" + "\n".join(validation_errors))
+            
+            # If all verifications pass, proceed with database operations
+            for group_data in tqdm(groups_data, desc="Updating question groups"):
+                group = QuestionGroupService.get_group_by_name(group_data['title'], session)
+                QuestionGroupService.edit_group(
+                    group_id=group.id,
+                    new_title=group_data['title'],
+                    new_description=group_data['description'],
+                    is_reusable=group_data['is_reusable'],
+                    verification_function=group_data.get('verification_function'),
+                    is_auto_submit=group_data.get('is_auto_submit', False),
+                    session=session
+                )
+                print(f"Updated question group: {group_data['title']}")
+                
+        except ValueError as e:
+            session.rollback()
+            raise ValueError(f"Error updating question groups: {str(e)}")
+        except Exception as e:
+            session.rollback()
+            raise Exception(f"Error updating question groups: {str(e)}")
+
+def create_schema(schema_name: str, question_group_names: list):
+    """
+    Create a new schema with existing question groups
+    
+    Args:
+        schema_name: Name of the schema to create
+        question_group_names: List of question group names to include in the schema
+        
+    Returns:
+        int: ID of the newly created schema
+        
+    Raises:
+        ValueError: If any validation fails
+        Exception: If database operations fail
+    """
+    with SessionLocal() as session:
+        try:
+            # 获取问题组ID列表
+            question_group_ids = []
+            for group_name in question_group_names:
+                group = QuestionGroupService.get_group_by_name(group_name, session)
+                if not group:
+                    raise ValueError(f"Question group '{group_name}' not found")
+                question_group_ids.append(group.id)
+            
+            # 创建schema (内部会调用verify_create_schema进行验证)
+            schema = SchemaService.create_schema(
+                name=schema_name,
+                question_group_ids=question_group_ids,
+                session=session
+            )
+            print(f"Successfully created Schema: {schema.name}")
+            return schema.id
+            
+        except Exception as e:
+            raise Exception(f"Error creating schema: {str(e)}")
 
 
 

@@ -1,0 +1,36 @@
+{
+    "title": "Pedestrian Safety Analysis",
+    "description": "Analyze pedestrian safety and behavior in urban environments",
+    "is_reusable": true,
+    "is_auto_submit": false,
+    "questions": [
+        {
+            "text": "What is the pedestrian crossing behavior?",
+            "qtype": "single",
+            "options": ["Safe", "Risky", "Very Risky", "No Crossing"],
+            "display_values": ["Safe", "Risky", "Very Risky", "No Crossing"],
+            "display_text": "Please assess the pedestrian crossing behavior",
+            "default_option": "Safe",
+            "option_weights": [1, 2, 3, 1]
+        },
+        {
+            "text": "What is the time of day?",
+            "qtype": "single",
+            "options": ["Morning", "Afternoon", "Evening", "Night"],
+            "display_values": ["Morning", "Afternoon", "Evening", "Night"],
+            "display_text": "Please indicate the time of day",
+            "default_option": "Afternoon",
+            "option_weights": [1, 1, 1, 1]
+        },
+        {
+            "text": "Describe any infrastructure issues",
+            "qtype": "description",
+            "display_text": "Please describe any infrastructure issues affecting pedestrian safety"
+        },
+        {
+            "text": "Describe the overall pedestrian flow",
+            "qtype": "description",
+            "display_text": "Please describe the overall pedestrian flow and movement patterns"
+        }
+    ]
+}

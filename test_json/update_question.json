@@ -1,0 +1,26 @@
+[
+    {
+        "text": "What is the traffic density in this scene1?",
+        "display_text": "Updated: Please assess the current traffic density",
+        "options": ["Low", "Medium", "High", "Very High"],
+        "display_values": ["Low", "Medium", "High", "Very High"],
+        "default_option": "Medium",
+        "option_weights": [1, 2, 3, 1]
+    },
+    {
+        "text": "What is the weather condition1?",
+        "display_text": "Updated: Please describe the current weather condition",
+        "options": ["Sunny", "Cloudy", "Rainy", "Snowy", "Foggy"],
+        "display_values": ["Sunny", "Cloudy", "Rainy", "Snowy", "Foggy"],
+        "default_option": "Sunny",
+        "option_weights": [1, 1, 2, 2, 1]
+    },
+    {
+        "text": "Describe any safety concerns in this scene1",
+        "display_text": "Updated: Please describe any safety concerns in this scene"
+    },
+    {
+        "text": "Describe the overall traffic flow efficiency1",
+        "display_text": "Updated: Please describe the overall traffic flow efficiency"
+    }
+]

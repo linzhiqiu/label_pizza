@@ -252,6 +252,30 @@ class VideoService:
         existing = VideoService.get_video_by_uid(filename, session)
         if existing:
             raise ValueError(f"Video with UID '{filename}' already exists")
+        
+    @staticmethod
+    def add_video(url: str, session: Session, metadata: dict = None) -> None:
+        """Add a new video to the database.
+        
+        Args:
+            url: The URL of the video
+            session: Database session
+            metadata: Optional dictionary containing video metadata
+            
+        Raises:
+            ValueError: If URL is invalid, video already exists, or metadata is invalid
+        """
+        # Verify input parameters and get the filename
+        filename = VideoService.verify_add_video(url, session, metadata)
+        
+        # Create video
+        video = Video(
+            video_uid=filename,
+            url=url,
+            video_metadata=metadata or {}
+        )
+        session.add(video)
+        session.commit()
     
     @staticmethod
     def get_project_videos(project_id: int, session: Session) -> List[Dict[str, Any]]:
@@ -1079,9 +1103,13 @@ class SchemaService:
                 
             # Check if non-reusable group is already used in another schema
             if not group.is_reusable:
-                schemas = SchemaService.get_schemas_by_question_group(group_id, session)
-                if schemas:
-                    raise ValueError(f"Question group '{group.title}' is not reusable and is already used in schema '{schemas[0].name}'")
+                existing_schema = session.scalar(
+                    select(Schema)
+                    .join(SchemaQuestionGroup, Schema.id == SchemaQuestionGroup.schema_id)
+                    .where(SchemaQuestionGroup.question_group_id == group_id)
+                )
+                if existing_schema:
+                    raise ValueError(f"Question group {group.title} is not reusable and is already used in schema {existing_schema.name}")
 
     @staticmethod
     def create_schema(name: str, question_group_ids: List[int], session: Session) -> Schema:

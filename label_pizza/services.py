@@ -1535,114 +1535,121 @@ class QuestionService:
         return q
 
     @staticmethod
-    def verify_add_question(
-        text: str, 
-        qtype: str, 
-        options: Optional[List[str]], 
-        default: Optional[str],
+    def verify_edit_question(
+        question_id: int,
+        new_display_text: str,
+        new_opts: Optional[List[str]],
+        new_default: Optional[str],
         session: Session,
-        display_values: Optional[List[str]] = None,
-        display_text: Optional[str] = None,
-        option_weights: Optional[List[float]] = None
+        new_display_values: Optional[List[str]] = None,
+        new_option_weights: Optional[List[float]] = None
     ) -> None:
-        """Verify parameters for adding a new question.
+        """Verify parameters for editing an existing question.
         
         Args:
-            text: Question text (immutable, unique)
-            qtype: Question type ('single' or 'description')
-            options: List of options for single-choice questions
-            default: Default option for single-choice questions
+            question_id: Current question ID
+            new_display_text: New display text for UI
+            new_opts: New options for single-choice questions. Must include all existing options.
+            new_default: New default option for single-choice questions
             session: Database session
-            display_values: Optional list of display text for options
-            display_text: Optional display text for UI
-            option_weights: Optional list of weights for each option
+            new_display_values: Optional new display values for options
+            new_option_weights: Optional new weights for options
             
         Raises:
-            ValueError: If question text already exists or validation fails
+            ValueError: If question not found or validation fails
         """
-        # Check if question text already exists
-        existing = session.scalar(select(Question).where(Question.text == text))
-        if existing:
-            raise ValueError(f"Question with text '{text}' already exists (text: '{text}')")
+        # Get question
+        q = QuestionService.get_question_object_by_id(question_id=question_id, session=session)
+
+        # Check if question is archived
+        if q.is_archived:
+            raise ValueError(f"Question with ID {question_id} is archived")
         
-        # Validate question type
-        if qtype not in ["single", "description"]:
-            raise ValueError(f"Question '{text}': type must be either 'single' or 'description'")
-        
-        # Validate single-choice question parameters
-        if qtype == "single":
-            if not options:
-                raise ValueError(f"Question '{text}': single-choice questions must have options")
-            if default and default not in options:
-                raise ValueError(f"Question '{text}': default option '{default}' must be one of the available options: {', '.join(options)}")
+        # For single-choice questions, validate options and display values
+        if q.type == "single":
+            if not new_opts:
+                raise ValueError("Cannot change question type")
+            if new_default and new_default not in new_opts:
+                raise ValueError(f"Default option '{new_default}' must be one of the available options: {', '.join(new_opts)}")
+            
+            # Validate that all existing options are included in new options
+            missing_opts = set(q.options) - set(new_opts)
+            if missing_opts:
+                raise ValueError(f"Cannot remove existing options: {', '.join(missing_opts)}")
             
             # Validate display values
-            if display_values:
-                if len(display_values) != len(options):
-                    raise ValueError(f"Question '{text}': number of display values must match number of options")
-                
+            if new_display_values:
+                if len(new_display_values) != len(new_opts):
+                    raise ValueError("Number of display values must match number of options")
+                        
             # Validate option weights
-            if option_weights:
-                if len(option_weights) != len(options):
-                    raise ValueError(f"Question '{text}': number of option weights must match number of options")
+            if new_option_weights:
+                if len(new_option_weights) != len(new_opts):
+                    raise ValueError("Number of option weights must match number of options")
+        else:  # description type
+            if new_opts is not None or new_default is not None or new_display_values is not None or new_option_weights is not None:
+                raise ValueError("Cannot change question type")
 
     @staticmethod
-    def add_question(text: str, qtype: str, options: Optional[List[str]], default: Optional[str], 
-                    session: Session, display_values: Optional[List[str]] = None, display_text: Optional[str] = None,
-                    option_weights: Optional[List[float]] = None) -> Question:
-        """Add a new question.
+    def edit_question(question_id: int, new_display_text: str, new_opts: Optional[List[str]], new_default: Optional[str],
+                     session: Session, new_display_values: Optional[List[str]] = None,
+                     new_option_weights: Optional[List[float]] = None) -> None:
+        """Edit an existing question (only display_text and options, not text).
         
         Args:
-            text: Question text (immutable, unique)
-            qtype: Question type ('single' or 'description')
-            options: List of options for single-choice questions
-            default: Default option for single-choice questions
+            question_id: Current question ID
+            new_display_text: New display text for UI.
+            new_opts: New options for single-choice questions. Must include all existing options.
+            new_default: New default option for single-choice questions
             session: Database session
-            display_values: Optional list of display text for options. For single-type questions, if not provided, uses options as display values.
-            display_text: Optional display text for UI. If not provided, uses text.
-            option_weights: Optional list of weights for each option. If not provided, defaults to 1.0 for each option.
-        
-        Returns:
-            Created question
+            new_display_values: Optional new display values for options. For single-type questions, if not provided, maintains existing display values or uses options.
+            new_option_weights: Optional new weights for options. For single-type questions, if not provided, maintains existing weights or defaults to 1.0.
         
         Raises:
-            ValueError: If question text already exists or validation fails
+            ValueError: If question not found or validation fails
         """
         # Verify parameters (raises ValueError if invalid)
-        QuestionService.verify_add_question(
-            text, qtype, options, default, session, display_values, display_text, option_weights
+        QuestionService.verify_edit_question(
+            question_id, new_display_text, new_opts, new_default, session, new_display_values, new_option_weights
         )
+        
+        # Get question again after validation
+        q = QuestionService.get_question_object_by_id(question_id=question_id, session=session)
         
         # Process defaults after validation passes
-        if qtype == "single":
-            # Use options as display values if not provided
-            if not display_values:
-                display_values = options
-            # Default to 1.0 for each option if weights not provided
-            if not option_weights:
-                option_weights = [1.0] * len(options)
+        if q.type == "single":
+            # For single-type questions, ensure we have display values
+            if new_display_values is None:
+                # If no new display values provided, maintain existing mapping for unchanged options
+                new_display_values = []
+                for opt in new_opts:
+                    if opt in q.options:
+                        idx = q.options.index(opt)
+                        new_display_values.append(q.display_values[idx])
+                    else:
+                        new_display_values.append(opt)
+                        
+            # Handle option weights
+            if new_option_weights is None:
+                # If no new weights provided, maintain existing weights for unchanged options
+                new_option_weights = []
+                for opt in new_opts:
+                    if opt in q.options:
+                        idx = q.options.index(opt)
+                        new_option_weights.append(q.option_weights[idx])
+                    else:
+                        new_option_weights.append(1.0)  # Default to 1.0 for new options
         else:
-            # For description-type questions, display_values and option_weights should be None
-            display_values = None
-            option_weights = None
+            q.display_values = None
+            q.option_weights = None
         
-        # Set display text if not provided
-        if not display_text:
-            display_text = text
-        
-        # Create question
-        q = Question(
-            text=text, 
-            display_text=display_text,
-            type=qtype, 
-            options=options, 
-            display_values=display_values,
-            option_weights=option_weights,
-            default_option=default
-        )
-        session.add(q)
+        # Update only display_text, options, display_values, option_weights, default_option
+        q.display_text = new_display_text
+        q.options = new_opts
+        q.display_values = new_display_values
+        q.option_weights = new_option_weights
+        q.default_option = new_default
         session.commit()
-        return q
 
     @staticmethod
     def archive_question(question_id: int, session: Session) -> None:

@@ -1,0 +1,234 @@
+{
+    "title": "SpecialLightEffects",
+    "description": "Detect and describe all special lighting-related effects, reflections, volumetric lights, shadow patterns, dynamic colour/light changes, and motion dynamics in the shot.",
+    "is_reusable": false,
+    "is_auto_submit": true,
+    "verification_function": "",
+    "questions": [
+        {
+        "text": "are_there_any_volumetric_beam_light",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any volumetric beam light?"
+        },
+        {
+        "text": "are_there_any_volumetric_spot_light",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any volumetric spot light?"
+        },
+        {
+        "text": "are_ther_any_god_rays",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any god rays?"
+        },
+        {
+        "text": "are_there_any_volumetric_light_through_medium",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any volumetric light through medium?"
+        },
+        {
+        "text": "are_there_any_volumetric_light_others",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any volumetric light (others)?"
+        },
+        {
+        "text": "are_there_any_venetian_blinds_lighting",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any venetian blinds lighting?"
+        },
+        {
+        "text": "are_there_any_subject_shape_lighting",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any subject shape lighting?"
+        },
+        {
+        "text": "are_there_any_window_frame_lighting",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any window frame lighting?"
+        },
+        {
+        "text": "are_there_any_foliage_lighting",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any foliage lighting?"
+        },
+        {
+        "text": "are_there_any_gobo_lighting_others",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any gobo lighting (others)?"
+        },
+        {
+        "text": "are_there_any_color_shifting_smooth_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any color shifting (smooth) effect?"
+        },
+        {
+        "text": "are_there_any_color_shifting_sudden_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any color shifting (sudden) effect?"
+        },
+        {
+        "text": "are_there_any_flashing_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any flashing effect?"
+        },
+        {
+        "text": "are_there_any_moving_light_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any moving light effect?"
+        },
+        {
+        "text": "are_there_any_pulsing_or_flickering_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any pulsing or flickering effect?"
+        },
+        {
+        "text": "are_there_any_professional_portrait_lighting",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any professional or portrait lighting effect?"
+        },
+        {
+        "text": "are_there_any_colored_neon_lighting",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any colored or neon lighting effect?"
+        },
+        {
+        "text": "are_there_any_headlight_flashlight",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any headlight or flashlight effect?"
+        },
+        {
+        "text": "are_there_any_vignette_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any vignette effect?"
+        },
+        {
+        "text": "are_there_any_city_light",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any city light effect?"
+        },
+        {
+        "text": "are_there_any_street_light",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any street light effect?"
+        },
+        {
+        "text": "describe_special_lighting_effects",
+        "qtype": "description",
+        "required": false,
+        "options": null,
+        "display_values": null,
+        "default_option": null,
+        "display_text": "Special Lighting Effects (Description)"
+        },
+        {
+        "text": "describe_volumetric_lighting_effects",
+        "qtype": "description",
+        "required": false,
+        "options": null,
+        "display_values": null,
+        "default_option": null,
+        "display_text": "Volumetric Lighting (Description)"
+        },
+        {
+        "text": "describe_shadow_pattern_lighting",
+        "qtype": "description",
+        "required": false,
+        "options": null,
+        "display_values": null,
+        "default_option": null,
+        "display_text": "Shadow Patterns/Gobo Lighting (Description)"
+        },
+        {
+        "text": "describe_dynamic_lighting_effects",
+        "qtype": "description",
+        "required": false,
+        "options": null,
+        "display_values": null,
+        "default_option": null,
+        "display_text": "Dynamic Lighting Effects (Description)"
+        }
+    ]
+}  

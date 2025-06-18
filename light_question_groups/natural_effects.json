@@ -1,0 +1,189 @@
+{
+    "title": "NaturalLightEffects",
+    "description": "Detect and describe all natural lighting-related effects, reflections, volumetric lights, shadow patterns, dynamic colour/light changes, and motion dynamics in the shot.",
+    "is_reusable": false,
+    "is_auto_submit": true,
+    "verification_function": "",
+    "questions": [
+        {
+        "text": "are_there_any_regular_lens_flares",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any regular lens flares?"
+        },
+        {
+        "text": "are_there_any_anamorphic_lens_flares",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any anamorphic lens flares?"
+        },
+        {
+        "text": "are_there_any_mist_diffusion_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any mist diffusion effect?"
+        },
+        {
+        "text": "are_there_any_bokeh_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any bokeh effect?"
+        },
+        {
+        "text": "are_there_any_water_reflection_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any water reflection effect?"
+        },
+        {
+        "text": "are_there_any_glassy_surface_reflection_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any glassy surface reflection effect?"
+        },
+        {
+        "text": "are_there_any_mirror_reflection_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any mirror reflection effect?"
+        },
+        {
+        "text": "are_there_any_aeiral_perspective_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any aerial perspective effect?"
+        },
+        {
+        "text": "are_there_any_rainbow_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any rainbow effect?"
+        },
+        {
+        "text": "are_there_any_aurora_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any aurora effect?"
+        },
+        {
+        "text": "are_there_any_heat_waves_or_heat_haze_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any heat waves or heat haze effect?"
+        },
+        {
+        "text": "are_there_any_lightning_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any lightning effect?"
+        },
+        {
+        "text": "are_there_any_wave_light_water_caustics",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any wave light or water caustics effect?"
+        },
+        {
+        "text": "are_there_any_revealing_shot_dynamic",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any revealing Shot dynamic?"
+        },
+        {
+        "text": "are_there_any_transformation_or_morphing_dynamic",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any transformation or morphing dynamic?"
+        },
+        {
+        "text": "are_there_any_levitation_or_floating_dynamic",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any levitation or floating dynamic?"
+        },
+        {
+        "text": "are_there_any_explosion_dynamic",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any explosion dynamic?"
+        },
+        {
+        "text": "are_there_any_shattering_or_breaking_effect",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any shattering or breaking dynamic?"
+        },
+        {
+        "text": "are_there_any_diffusion_dynamic",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any diffusion dynamic?"
+        },
+        {
+        "text": "are_there_any_splashing_or_waves_dynamic",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes", "unsure"],
+        "display_values": ["No", "Yes", "Unsure"],
+        "default_option": "no",
+        "display_text": "Are there any splashing or waves dynamic?"
+        }
+    ]
+}

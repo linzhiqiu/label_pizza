@@ -1,0 +1,19 @@
+{
+    "title": "ShotTransition",
+    "description": "Detect whether there is a shot transition in the video.",
+    "is_reusable": true,
+    "is_auto_submit": true,
+    "verification_function": "",
+    "questions": [
+        {
+        "text": "are_there_any_shot_transition",
+        "qtype": "single",
+        "required": true,
+        "options": ["no", "yes"],
+        "display_values": ["No", "Yes"],
+        "default_option": "no",
+        "display_text": "Are there any shot transition?",
+        "option_weights": [99, 1]
+        }
+    ]
+}

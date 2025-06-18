@@ -20,13 +20,13 @@ def parse_annotation_json(json_path):
 
 def upload_annotations(json_path, project_name):
     with SessionLocal() as session:
-        # 1. 获取项目ID
+        # 1. Get project ID
         project = ProjectService.get_project_by_name(project_name, session)
         project_id = project.id
-        # 2. 获取视频名到ID映射
+        # 2. Get video name to ID mapping
         video_map = {v['uid']: v['id'] for v in VideoService.get_project_videos(project_id, session)}
-        # 3. 获取所有问题组及其问题
-        # 获取schema下所有问题组
+        # 3. Get all question groups and their questions
+        # Get all question groups in the schema
         schema_id = project.schema_id
         group_df = SchemaService.get_schema_question_groups(schema_id, session)
         group_id_to_questions = {}
@@ -39,12 +39,12 @@ def upload_annotations(json_path, project_name):
             for q in questions:
                 question_text_to_group_id[q['text']] = group_id
                 question_text_to_id[q['text']] = q['id']
-        # 4. 解析json
+        # 4. Parse json
         annotation_data = parse_annotation_json(json_path)
-        # 5. 上传
+        # 5. Upload
         for video_name, annotators in annotation_data.items():
             if video_name not in video_map:
-                print(f"视频 {video_name} 不在项目中，跳过")
+                print(f"Video {video_name} is not in the project, skipping")
                 continue
             video_id = video_map[video_name]
             for email, answers in annotators.items():
@@ -52,13 +52,13 @@ def upload_annotations(json_path, project_name):
                     annotator = AuthService.get_user_by_email(email, session)
                     annotator_id = annotator.id
                 except Exception as e:
-                    print(f"标注者 {email} 不存在，跳过")
+                    print(f"Annotator {email} does not exist, skipping")
                     continue
-                # 按问题组分组上传
+                # Group answers by question group
                 group_answers = {}
                 for q_text, ans in answers.items():
                     if q_text not in question_text_to_group_id:
-                        print(f"问题 {q_text} 不在项目中，跳过")
+                        print(f"Question {q_text} is not in the project, skipping")
                         continue
                     group_id = question_text_to_group_id[q_text]
                     if group_id not in group_answers:
@@ -74,14 +74,14 @@ def upload_annotations(json_path, project_name):
                             answers=answer_dict,
                             session=session
                         )
-                        print(f"上传成功: {video_name} - {email} - group {group_id}")
+                        print(f"Upload succeeded: {video_name} - {email} - group {group_id}")
                     except Exception as e:
-                        print(f"上传失败: {video_name} - {email} - group {group_id}，原因：{e}")
+                        print(f"Upload failed: {video_name} - {email} - group {group_id}, reason: {e}")
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--json_path", type=str, required=True, help="标注json路径")
-    parser.add_argument("--project_name", type=str, required=True, help="项目名称")
+    parser.add_argument("--json_path", type=str, required=True, help="Path to annotation json")
+    parser.add_argument("--project_name", type=str, required=True, help="Project name")
     args = parser.parse_args()
     upload_annotations(args.json_path, args.project_name)

@@ -126,19 +126,15 @@ def import_question_group(json_file_path: str = None):
         ValueError: If question data is invalid
         Exception: If database operations fail
     """
-    import json
-    from tqdm import tqdm
-
     # Load and parse JSON file
     with open(json_file_path, 'r') as f:
         group_data = json.load(f)
 
     with SessionLocal() as session:
         try:
-            # 1. Verify all questions first
-            validated_params_list = []
+            # 1. Verify all questions first (verify functions now return None)
             for question_data in tqdm(group_data['questions'], desc="Verifying questions"):
-                validated_params = QuestionService.verify_add_question(
+                QuestionService.verify_add_question(
                     text=question_data['text'],
                     qtype=question_data['qtype'],
                     options=question_data.get('options'),
@@ -148,32 +144,31 @@ def import_question_group(json_file_path: str = None):
                     display_text=question_data.get('display_text'),
                     option_weights=question_data.get('option_weights')
                 )
-                validated_params_list.append((question_data, validated_params))
 
             # 2. If all verifications pass, create all questions
             question_ids = []
-            for question_data, validated_params in tqdm(validated_params_list, desc="Creating questions"):
+            for question_data in tqdm(group_data['questions'], desc="Creating questions"):
                 question = QuestionService.add_question(
                     text=question_data['text'],
                     qtype=question_data['qtype'],
                     options=question_data.get('options'),
                     default=question_data.get('default_option'),
                     session=session,
-                    display_values=validated_params[1],  # validated display_values
-                    display_text=validated_params[0],    # validated display_text
-                    option_weights=validated_params[2]   # validated option_weights
+                    display_values=question_data.get('display_values'),
+                    display_text=question_data.get('display_text'),
+                    option_weights=question_data.get('option_weights')
                 )
                 question_ids.append(question.id)
                 print(f"Created new question: {question_data['text']}")
 
-            # 3. Verify the group
-            validated_group, _ = QuestionGroupService.verify_create_group(
+            # 3. Verify the group (verify function now returns None)
+            QuestionGroupService.verify_create_group(
                 title=group_data['title'],
                 description=group_data['description'],
                 is_reusable=group_data['is_reusable'],
                 question_ids=question_ids,
-                verification_function="",  # Pass as needed
-                is_auto_submit=group_data['is_auto_submit'],
+                verification_function=group_data.get('verification_function', ''),
+                is_auto_submit=group_data.get('is_auto_submit', False),
                 session=session
             )
 
@@ -183,8 +178,8 @@ def import_question_group(json_file_path: str = None):
                 description=group_data['description'],
                 is_reusable=group_data['is_reusable'],
                 question_ids=question_ids,
-                verification_function="",
-                is_auto_submit=group_data['is_auto_submit'],
+                verification_function=group_data.get('verification_function', ''),
+                is_auto_submit=group_data.get('is_auto_submit', False),
                 session=session
             )
             print(f"Successfully created question group: {group_data['title']}")
@@ -196,6 +191,7 @@ def import_question_group(json_file_path: str = None):
         except Exception as e:
             session.rollback()
             raise Exception(f"Error processing question group: {str(e)}")
+
         
 def update_questions(json_file_path: str = None) -> None:
     """
@@ -219,20 +215,23 @@ def update_questions(json_file_path: str = None) -> None:
                 try:
                     question_info = QuestionService.get_question_by_text(question_data['text'], session)
                     question_id = question_info['id']
-                except ValueError:
-                    missing_questions.append(question_data['text'])
-                    continue
-
-                # Now you can use question_id for verify_edit_question
-                QuestionService.verify_edit_question(
-                    question_id=question_id,
-                    new_display_text=question_data['display_text'],
-                    new_opts=question_data.get('options'),
-                    new_default=question_data.get('default_option'),
-                    session=session,
-                    new_display_values=question_data.get('display_values'),
-                    new_option_weights=question_data.get('option_weights')
-                )
+                    
+                    # Verify the question update (verify function now returns None)
+                    QuestionService.verify_edit_question(
+                        question_id=question_id,
+                        new_display_text=question_data.get('display_text'),
+                        new_opts=question_data.get('options'),
+                        new_default=question_data.get('default_option'),
+                        session=session,
+                        new_display_values=question_data.get('display_values'),
+                        new_option_weights=question_data.get('option_weights')
+                    )
+                except ValueError as e:
+                    if "not found" in str(e):
+                        missing_questions.append(question_data['text'])
+                    else:
+                        raise ValueError(f"Question validation failed for '{question_data['text']}': {str(e)}")
+            
             if missing_questions:
                 raise ValueError(f"Questions not found: {missing_questions}")
             
@@ -242,7 +241,7 @@ def update_questions(json_file_path: str = None) -> None:
                 question_id = question_info['id']
                 QuestionService.edit_question(
                     question_id=question_id,
-                    new_display_text=question_data['display_text'],
+                    new_display_text=question_data.get('display_text'),
                     new_opts=question_data.get('options'),
                     new_default=question_data.get('default_option'),
                     session=session,
@@ -257,6 +256,7 @@ def update_questions(json_file_path: str = None) -> None:
         except Exception as e:
             session.rollback()
             raise Exception(f"Error updating questions: {str(e)}")
+
 
 def update_question_groups(json_file_path: str = None) -> None:
     """
@@ -283,7 +283,7 @@ def update_question_groups(json_file_path: str = None) -> None:
                     # First get group by title to get its ID
                     group = QuestionGroupService.get_group_by_name(group_data['title'], session)
                     
-                    # Then verify group parameters
+                    # Then verify group parameters (verify function now returns None)
                     QuestionGroupService.verify_edit_group(
                         group_id=group.id,
                         new_title=group_data['title'],
@@ -326,6 +326,7 @@ def update_question_groups(json_file_path: str = None) -> None:
             session.rollback()
             raise Exception(f"Error updating question groups: {str(e)}")
 
+
 def create_schema(schema_name: str, question_group_names: list):
     """
     Create a new schema with existing question groups
@@ -343,7 +344,7 @@ def create_schema(schema_name: str, question_group_names: list):
     """
     with SessionLocal() as session:
         try:
-            # 获取问题组ID列表
+            # Get question group IDs
             question_group_ids = []
             for group_name in question_group_names:
                 group = QuestionGroupService.get_group_by_name(group_name, session)
@@ -351,7 +352,10 @@ def create_schema(schema_name: str, question_group_names: list):
                     raise ValueError(f"Question group '{group_name}' not found")
                 question_group_ids.append(group.id)
             
-            # 创建schema (内部会调用verify_create_schema进行验证)
+            # Verify schema creation parameters
+            SchemaService.verify_create_schema(schema_name, question_group_ids, session)
+            
+            # Create schema
             schema = SchemaService.create_schema(
                 name=schema_name,
                 question_group_ids=question_group_ids,

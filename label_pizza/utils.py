@@ -20,7 +20,7 @@ from services import (
 
 # Common color schemes for consistency
 COLORS = {
-    'primary': '#1f77b4',
+    'primary': '#9553FE',
     'success': '#28a745',
     'warning': '#ffc107', 
     'danger': '#dc3545',
@@ -38,6 +38,16 @@ def get_card_style(color, opacity=0.15):
     margin: 12px 0;
     box-shadow: 0 2px 8px {color}20;
     """
+
+def custom_info(text: str):
+    """Custom info box with purple styling"""
+    st.markdown(f"""
+    <div style="background: #EAE1F9; border-radius: 8px; padding: 12px 16px; margin: 8px 0;">
+        <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+            {text}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 ###############################################################################
 # CACHING UTILITIES
@@ -289,9 +299,9 @@ def handle_database_errors(func):
         except Exception as e:
             st.error(f"Database connection error: {str(e)}")
             st.error("This might be a temporary issue. Please try:")
-            st.info("1. Refresh the page")
-            st.info("2. Check your internet connection") 
-            st.info("3. Contact support if the problem persists")
+            custom_info("1. Refresh the page")
+            custom_info("2. Check your internet connection") 
+            custom_info("3. Contact support if the problem persists")
             
             with st.expander("🔧 Technical Details"):
                 try:
@@ -486,9 +496,9 @@ def _display_clean_sticky_single_choice_question(
     if role == "reviewer" and is_modified_by_admin:
         st.error(f"🔒 {question_text}")
     elif role == "meta_reviewer" and is_modified_by_admin:
-        st.warning(f"🎯 {question_text}")
+        st.warning(f"❓ (Overridden by Admin) {question_text}")
     else:
-        st.success(f"❓ {question_text}")
+        custom_info(f"❓ {question_text}")
     
     # Training mode feedback
     if mode == "Training" and form_disabled and gt_value and role == "annotator":
@@ -660,9 +670,9 @@ def _display_clean_sticky_description_question(
     if role == "reviewer" and is_modified_by_admin:
         st.error(f"🔒 {question_text}")
     elif role == "meta_reviewer" and is_modified_by_admin:
-        st.warning(f"🎯 {question_text}")
+        st.warning(f"❓ (Overridden by Admin) {question_text}")
     else:
-        st.info(f"❓ {question_text}")
+        custom_info(f"❓ {question_text}")
     
     # Training mode feedback
     if mode == "Training" and form_disabled and gt_value and role == "annotator":
@@ -1103,7 +1113,7 @@ def _display_single_answer_elegant(answer, text_key, question_text, answer_revie
                 label_visibility="collapsed"
             )
         else:
-            st.info(f"{answer['name']}: No answer provided")
+            custom_info(f"{answer['name']}: No answer provided")
     
     with controls_col:
         st.markdown(f"**{answer['name']}**")

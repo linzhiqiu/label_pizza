@@ -26,7 +26,7 @@ from services import (
 from custom_video_player import custom_video_player
 from search_portal import search_portal
 from utils import (
-    get_card_style, COLORS, handle_database_errors, get_db_session,
+    get_card_style, custom_info, COLORS, handle_database_errors, get_db_session,
     _display_unified_status, _display_clean_sticky_single_choice_question,
     _display_clean_sticky_description_question, _get_enhanced_options_for_reviewer,
     _submit_answer_reviews, _load_existing_answer_reviews, calculate_overall_accuracy, calculate_per_question_accuracy,
@@ -62,6 +62,7 @@ def format_accuracy_badge(accuracy: Optional[float], total_questions: int = 0) -
     questions_text = f" ({total_questions} answers)" if total_questions > 0 else ""
     
     return f'<span style="background: {color}; color: white; padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">📊 {accuracy:.1f}%{questions_text}</span>'
+
 
 @st.dialog("📊 Your Personal Accuracy Report", width="large")
 def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Session):
@@ -142,7 +143,7 @@ def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Ses
                 mime="text/csv"
             )
         else:
-            st.info("No detailed question data available.")
+            custom_info("No detailed question data available.")
     
     except Exception as e:
         st.error(f"Error loading your accuracy data: {str(e)}")
@@ -227,7 +228,7 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
                 mime="text/csv"
             )
         else:
-            st.info("No detailed review data available.")
+            custom_info("No detailed review data available.")
     
     except Exception as e:
         st.error(f"Error loading your reviewer accuracy data: {str(e)}")
@@ -362,7 +363,7 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
                     st.metric("Lowest Accuracy", f"{min(accuracies):.1f}%")
                     st.metric("Total Annotators", len(overview_data))
             else:
-                st.info("No accuracy data available to display.")
+                custom_info("No accuracy data available to display.")
         
         with detailed_tab:
             st.markdown("### 🔍 Per-Question Accuracy Analysis")
@@ -401,7 +402,7 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
                             mime="text/csv"
                         )
             else:
-                st.info("No annotators found with accuracy data.")
+                custom_info("No annotators found with accuracy data.")
         
         with comparison_tab:
             st.markdown("### ⚖️ Compare Selected Annotators")
@@ -442,9 +443,9 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
                                 </div>
                                 """, unsafe_allow_html=True)
                 else:
-                    st.info("Select at least 2 annotators to compare.")
+                    custom_info("Select at least 2 annotators to compare.")
             else:
-                st.info("No annotators available for comparison.")
+                custom_info("No annotators available for comparison.")
     
     except Exception as e:
         st.error(f"Error loading accuracy data: {str(e)}")
@@ -521,7 +522,7 @@ def show_reviewer_accuracy_detailed(project_id: int, session: Session):
                     st.metric("Lowest Accuracy", f"{min(accuracies):.1f}%")
                     st.metric("Total Reviewers", len(overview_data))
             else:
-                st.info("No reviewer accuracy data available to display.")
+                custom_info("No reviewer accuracy data available to display.")
         
         with detailed_tab:
             st.markdown("### 🔍 Per-Question Reviewer Analysis")
@@ -558,7 +559,7 @@ def show_reviewer_accuracy_detailed(project_id: int, session: Session):
                             mime="text/csv"
                         )
             else:
-                st.info("No reviewers found with accuracy data.")
+                custom_info("No reviewers found with accuracy data.")
     
     except Exception as e:
         st.error(f"Error loading reviewer accuracy data: {str(e)}")
@@ -607,7 +608,7 @@ def login_page():
     with col2:
         st.markdown("""
             <div style="text-align: center; margin-bottom: 2rem;">
-                <h1 style="color: #1f77b4; margin-bottom: 0.5rem;">🍕 Label Pizza</h1>
+                <h1 style="color: #9553FE; margin-bottom: 0.5rem;">🍕 Label Pizza</h1>
                 <p style="color: #6c757d; font-size: 1.1rem; margin: 0;">Welcome back! Please sign in to your account</p>
             </div>
         """, unsafe_allow_html=True)
@@ -707,16 +708,16 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         # Original annotator logic with auto-submit groups
         if is_training_mode:
             st.markdown(f"""
-            <div style="{get_card_style('#ffc107')}text-align: center;">
-                <div style="color: #856404; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     🎓 Training Mode - Auto-submit is disabled during training
                 </div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div style="{get_card_style('#17a2b8')}text-align: center;">
-                <div style="color: #0c5460; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     ⚡ Auto-submit using weighted majority voting with configurable thresholds
                 </div>
             </div>
@@ -781,10 +782,10 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         if selected_scope == "Current page of videos":
             target_videos = current_page_videos
             page_info = f" (page {current_page + 1})" if len(videos) > videos_per_page else ""
-            st.info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
+            custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
         else:
             target_videos = all_project_videos
-            st.info(f"📊 Target: {len(target_videos)} videos in entire project")
+            custom_info(f"📊 Target: {len(target_videos)} videos in entire project")
         
         # Show auto-submit groups status
         if auto_submit_groups:
@@ -792,10 +793,10 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
             
             auto_group_names = [group["Title"] for group in auto_submit_groups]
             if len(auto_group_names) == 1:
-                st.info(f"Found **{auto_group_names[0]}** with auto-submit enabled")
+                custom_info(f"Found **{auto_group_names[0]}** with auto-submit enabled")
             else:
                 group_list = ", ".join(auto_group_names[:-1]) + f" and {auto_group_names[-1]}"
-                st.info(f"Found **{group_list}** with auto-submit enabled")
+                custom_info(f"Found **{group_list}** with auto-submit enabled")
             
             st.success("✅ These groups automatically submit default answers when you enter the project")
         
@@ -817,8 +818,8 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
     
     else:  # reviewer role - NO AUTO-SUBMIT GROUPS
         st.markdown(f"""
-        <div style="{get_card_style('#17a2b8')}text-align: center;">
-            <div style="color: #0c5460; font-weight: 500; font-size: 0.95rem;">
+        <div style="{get_card_style('#B180FF')}text-align: center;">
+            <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                 🔍 Reviewer Auto-Submit - Create ground truth using weighted majority voting
             </div>
         </div>
@@ -863,10 +864,10 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         if selected_scope == "Current page of videos":
             target_videos = current_page_videos
             page_info = f" (page {current_page + 1})" if len(videos) > videos_per_page else ""
-            st.info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
+            custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
         else:
             target_videos = all_project_videos
-            st.info(f"📊 Target: {len(target_videos)} videos in entire project")
+            custom_info(f"📊 Target: {len(target_videos)} videos in entire project")
         
         # Manual controls for ALL groups (no auto-submit groups for reviewers)
         st.markdown("### 🎛️ Ground Truth Auto-Submit Controls")
@@ -1472,7 +1473,7 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
             with col3:
                 st.metric("📊 Success Rate", f"{success_rate:.1f}%")
             
-            st.info(f"📊 **Calculation:** {len(videos)} videos × {len(selected_groups)} question groups = {total_group_operations} group operations. Success rate = {groups_would_submit}/{total_group_operations} = {success_rate:.1f}%")
+            custom_info(f"📊 **Calculation:** {len(videos)} videos × {len(selected_groups)} question groups = {total_group_operations} group operations. Success rate = {groups_would_submit}/{total_group_operations} = {success_rate:.1f}%")
             
             st.markdown("#### 📋 Detailed Preview Results (First 5 Videos)")
             
@@ -1560,7 +1561,7 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                     st.markdown("---")
             
             if len(videos) > 5:
-                st.info(f"📊 Detailed view shows first 5 videos. All {len(videos)} videos were processed for the summary statistics above.")
+                custom_info(f"📊 Detailed view shows first 5 videos. All {len(videos)} videos were processed for the summary statistics above.")
         else:
             st.warning("No preview results available")
 
@@ -1796,7 +1797,7 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
     # SUCCESS MESSAGE
     if total_preloaded > 0:
         st.success(f"✅ Preloaded {total_preloaded} default answers for forms!")
-        st.info("💡 The calculated answers will now appear as defaults in the question forms below.")
+        custom_info("💡 The calculated answers will now appear as defaults in the question forms below.")
         
         # FORCE RERUN OF ENTIRE PAGE TO PROPAGATE TO ALL FRAGMENTS
         import time
@@ -1942,7 +1943,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
         # Weight controls for selected annotators
         if selected_annotators:
             st.markdown("#### ⚖️ Annotator Weights")
-            st.info("💡 Adjust weights to influence voting. Higher weights = more influence. 0 weights = no influence.")
+            custom_info("💡 Adjust weights to influence voting. Higher weights = more influence. 0 weights = no influence.")
             
             weight_cols = st.columns(min(3, len(selected_annotators)))
             
@@ -1986,7 +1987,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
         
         with config_tabs[0]:
             st.markdown("##### Configure All Available Options")
-            st.info("💡 **Info:** All possible answer options for each question with adjustable weights")
+            custom_info("💡 Info: All possible answer options for each question with adjustable weights")
             
             # KEEP ORIGINAL LAYOUT but fix the logic
             for group in selected_groups:
@@ -2122,14 +2123,14 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                                     if question_id in st.session_state[virtual_responses_key]:
                                         del st.session_state[virtual_responses_key][question_id]
                                 else:
-                                    st.info("Select annotators first to see their answers")
+                                    custom_info("Select annotators first to see their answers")
                             except Exception as e:
                                 st.warning(f"Could not load annotator answers: {str(e)}")
         
         with config_tabs[1]:
             # Consensus thresholds tab - COMPLETELY UNCHANGED
             st.markdown("##### Consensus Thresholds")
-            st.info("🎯 **Tip:** 100% = requires full consensus, 50% = requires majority vote")
+            custom_info("🎯 Tip: 100% = requires full consensus, 50% = requires majority vote")
             
             for group in selected_groups:
                 group_id = group["ID"]
@@ -2172,7 +2173,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
         
         with config_tabs[0]:
             st.markdown("##### Set Default Answers")
-            st.info("💡 **Info:** Add default answers that will be used as 'votes' in the auto-submission process")
+            custom_info("💡 Info: Add default answers that will be used as 'votes' in the auto-submission process")
             
             for group in selected_groups:
                 group_id = group["ID"]
@@ -2251,7 +2252,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
         
         with config_tabs[1]:
             st.markdown("##### Consensus Thresholds")
-            st.info("🎯 **Tip:** 100% = requires full consensus, 50% = requires majority vote")
+            custom_info("🎯 Tip: 100% = requires full consensus, 50% = requires majority vote")
             
             for group in selected_groups:
                 group_id = group["ID"]
@@ -2354,10 +2355,10 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
         questions = get_questions_by_group_cached(group_id=group_id, session=session)
         
         if not questions:
-            st.info("No questions in this group.")
+            custom_info("No questions in this group.")
             # Create empty form to prevent missing submit button error
             with st.form(f"empty_form_{video['id']}_{group_id}_{role}"):
-                st.info("No questions available in this group.")
+                custom_info("No questions available in this group.")
                 st.form_submit_button("No Actions Available", disabled=True)
             return
         
@@ -2387,7 +2388,7 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
         )
         
         if display_data["error"]:
-            st.info(display_data["error"])
+            custom_info(display_data["error"])
             # Create empty form to prevent missing submit button error
             with st.form(f"error_form_{video['id']}_{group_id}_{role}"):
                 st.error(display_data["error"])
@@ -2681,12 +2682,18 @@ def get_optimized_all_project_annotators(project_id: int, session: Session) -> D
 
 
 def display_user_simple(user_name: str, user_email: str, is_ground_truth: bool = False):
-    """Simple user display using native Streamlit components"""
+    """Simple user display using custom styling"""
     display_name, initials = AuthService.get_user_display_name_with_initials(user_name)
-    if is_ground_truth:
-        st.success(f"🏆 **{user_name}** ({initials}) - {user_email}")
-    else:
-        st.info(f"👤 **{user_name}** ({initials}) - {user_email}")
+    
+    icon = "🏆" if is_ground_truth else "👤"
+    
+    st.markdown(f"""
+    <div style="background: #EAE1F9; border-radius: 12px; padding: 12px 16px; margin: 8px 0; text-align: center;">
+        <div style="color: #333333; font-weight: 600; font-size: 0.95rem;">
+            {icon} <strong>{user_name}</strong> ({initials}) - {user_email}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def check_project_has_full_ground_truth(project_id: int, session: Session) -> bool:
     """Check if project has complete ground truth for ALL questions and videos"""
@@ -2825,7 +2832,8 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
             if not search_term:  # Only update session state if not searching
                 st.session_state[page_key] = 0
         
-        group_color = ["#3498db", "#e74c3c", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c"][group_index % 6]
+        # group_color = ["#3498db", "#e74c3c", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c"][group_index % 6]
+        group_color = "#9553FE"
         display_group_name = group_name
         truncated_group_name = group_name[:67] + "..." if len(group_name) > 70 else group_name
         
@@ -2883,7 +2891,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
         
         elif search_term and total_pages > 1:
             # Show search pagination info but no controls
-            st.info(f"🔍 Search results span {total_pages} pages. Showing page 1 of search results.")
+            custom_info(f"🔍 Search results span {total_pages} pages. Showing page 1 of search results.")
         
         # Display projects
         start_idx = current_page * projects_per_page
@@ -2920,7 +2928,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                             <div style="position: absolute; top: -6px; right: 10px; background: {group_color}; color: white; padding: 2px 6px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;" title="{display_group_name}">
                                 {truncated_tag_group_name}
                             </div>
-                            <h4 style="margin: 10px 0 8px 0; color: #1f77b4; font-size: 1.1rem; line-height: 1.3; word-wrap: break-word;" title="{project_name}">{highlighted_name}</h4>
+                            <h4 style="margin: 10px 0 8px 0; color: black; font-size: 1.1rem; line-height: 1.3; word-wrap: break-word;" title="{project_name}">{highlighted_name}</h4>
                             <p style="margin: 8px 0; color: #666; font-size: 0.9rem; min-height: 50px;">
                                 {project["description"] or 'No description'}
                             </p>
@@ -2945,9 +2953,9 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
         else:
             # This should now be much less likely to happen
             if search_term:
-                st.info(f"🔍 No projects matching '{search_term}' found in {group_name}")
+                custom_info(f"🔍 No projects matching '{search_term}' found in {group_name}")
             else:
-                st.info(f"No projects found in {group_name}")
+                custom_info(f"No projects found in {group_name}")
         
         if group_index < len(grouped_projects) - 1:
             st.markdown("""<div style="height: 2px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 30px 0;"></div>""", unsafe_allow_html=True)
@@ -3305,6 +3313,117 @@ def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str,
         st.error(f"Error applying sorting and filtering: {str(e)}")
         return videos
 
+
+def apply_annotator_video_sorting(videos: List[Dict], sort_by: str, sort_order: str, 
+                                project_id: int, user_id: int, session: Session) -> List[Dict]:
+    """Apply sorting for annotators - only completion rate and accuracy rate vs ground truth"""
+    try:
+        if sort_by == "Default":
+            reverse = (sort_order == "Descending")
+            videos.sort(key=lambda x: x.get("id", 0), reverse=reverse)
+            return videos
+        
+        # Get selected questions for sorting
+        if sort_by == "Completion Rate":
+            question_key = f"annotator_completion_rate_questions_{project_id}"
+        else:  # Accuracy Rate
+            question_key = f"annotator_accuracy_rate_questions_{project_id}"
+        
+        selected_questions = st.session_state.get(question_key, [])
+        if not selected_questions:
+            return videos
+        
+        # Extract question IDs
+        question_ids = []
+        for q_display in selected_questions:
+            try:
+                q_id = int(q_display.split("(ID: ")[1].split(")")[0])
+                question_ids.append(q_id)
+            except:
+                continue
+        
+        if not question_ids:
+            return videos
+        
+        # Calculate scores for each video
+        video_scores = {}
+        
+        for video in videos:
+            video_id = video["id"]
+            
+            if sort_by == "Completion Rate":
+                # Calculate completion rate for this user
+                completed_questions = 0
+                for question_id in question_ids:
+                    try:
+                        answers_df = AnnotatorService.get_question_answers(
+                            question_id=question_id, project_id=project_id, session=session
+                        )
+                        if not answers_df.empty:
+                            user_answers = answers_df[
+                                (answers_df["User ID"] == user_id) & 
+                                (answers_df["Video ID"] == video_id)
+                            ]
+                            if not user_answers.empty:
+                                completed_questions += 1
+                    except:
+                        continue
+                
+                video_scores[video_id] = (completed_questions / len(question_ids)) * 100 if question_ids else 0
+                
+            else:  # Accuracy Rate
+                # Calculate accuracy rate vs ground truth for this user
+                correct_count = 0
+                total_count = 0
+                
+                try:
+                    gt_df = GroundTruthService.get_ground_truth(
+                        video_id=video_id, project_id=project_id, session=session
+                    )
+                    
+                    if not gt_df.empty:
+                        for question_id in question_ids:
+                            # Get ground truth for this question
+                            question_gt = gt_df[gt_df["Question ID"] == question_id]
+                            if question_gt.empty:
+                                continue
+                            
+                            gt_answer = question_gt.iloc[0]["Answer Value"]
+                            
+                            # Get user's answer
+                            answers_df = AnnotatorService.get_question_answers(
+                                question_id=question_id, project_id=project_id, session=session
+                            )
+                            
+                            if not answers_df.empty:
+                                user_answers = answers_df[
+                                    (answers_df["User ID"] == user_id) & 
+                                    (answers_df["Video ID"] == video_id)
+                                ]
+                                
+                                if not user_answers.empty:
+                                    user_answer = user_answers.iloc[0]["Answer Value"]
+                                    total_count += 1
+                                    if user_answer == gt_answer:
+                                        correct_count += 1
+                    
+                    video_scores[video_id] = (correct_count / total_count) * 100 if total_count > 0 else 0
+                except:
+                    video_scores[video_id] = 0
+        
+        # Add scores to videos and sort
+        for video in videos:
+            video["sort_score"] = video_scores.get(video["id"], 0)
+        
+        reverse = (sort_order == "Descending")
+        videos.sort(key=lambda x: x.get("sort_score", 0), reverse=reverse)
+        
+        return videos
+        
+    except Exception as e:
+        st.error(f"Error applying annotator sorting: {str(e)}")
+        return videos
+
 def display_project_progress(user_id: int, project_id: int, role: str, session: Session):
     """Display project progress in a refreshable fragment"""
     if role == "annotator":
@@ -3336,8 +3455,8 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
     
     # Revert to original style to match other tabs
     st.markdown(f"""
-    <div style="{get_card_style(COLORS['primary'])}text-align: center;">
-        <div style="color: #1f77b4; font-weight: 500; font-size: 0.95rem;">
+    <div style="{get_card_style('#B180FF')}text-align: center;">
+        <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
             📊 Sort videos by different criteria to optimize your review workflow
         </div>
     </div>
@@ -3530,10 +3649,10 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
             elif msg_type == "warning":
                 st.warning(msg)
             else:
-                st.info(msg)
+                custom_info(msg)
     
     # Action buttons in a compact row
-    action_col1, action_col2, action_col3 = st.columns([1, 1, 1])
+    action_col1, action_col2 = st.columns([1, 1])
     
     with action_col1:
         if st.button("🔄 Apply", 
@@ -3556,31 +3675,153 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
             st.success("✅ Reset!")
             st.rerun()
     
-    with action_col3:
-        # Status indicator
-        current_sort = st.session_state.get(f"video_sort_by_{project_id}", "Default")
-        sort_applied = st.session_state.get(f"sort_applied_{project_id}", False)
-        
-        if current_sort != "Default" and sort_applied:
-            st.success("✅ Active")
-        elif current_sort != "Default":
-            st.warning("⏳ Ready")
-        else:
-            st.info("📋 Default")
+    # with action_col3:
+    # Status indicator
+    current_sort = st.session_state.get(f"video_sort_by_{project_id}", "Default")
+    sort_applied = st.session_state.get(f"sort_applied_{project_id}", False)
     
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-        💡 <strong>Tip:</strong> Configure your sorting options above, then click "Apply Sorting" to sort the videos accordingly.
-    </div>
-    """, unsafe_allow_html=True)
+    if current_sort != "Default" and sort_applied:
+        custom_info("Status: ✅ Active")
+    elif current_sort != "Default":
+        custom_info("Status: ⏳ Ready")
+    else:
+        custom_info("Status: Default")
+    
+    # st.markdown(f"""
+    # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
+    #     💡 <strong>Tip:</strong> Configure your sorting options above, then click "Apply Sorting" to sort the videos accordingly.
+    # </div>
+    # """, unsafe_allow_html=True)
+    custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
+
+def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
+    """Enhanced sort tab for annotators - only relevant options"""
+    st.markdown("#### 🔄 Video Sorting Options")
+    
+    # Check if this is training mode
+    is_training_mode = check_project_has_full_ground_truth(project_id=project_id, session=session)
+    
+    if not is_training_mode:
+        st.markdown(f"""
+        <div style="{get_card_style('#B180FF')}text-align: center;">
+            <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                📝 Annotation Mode - Only default sorting available.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Only show default sorting in annotation mode
+        sort_options = ["Default"]
+    else:
+        st.markdown(f"""
+        <div style="{get_card_style('#B180FF')}text-align: center;">
+            <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                🎓 Training Mode - Sort videos by your completion status or accuracy
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        sort_options = ["Default", "Completion Rate", "Accuracy Rate"]
+    
+    # Main configuration
+    config_col1, config_col2 = st.columns([2, 1])
+    
+    with config_col1:
+        sort_by = st.selectbox(
+            "Sort method",
+            sort_options,
+            key=f"annotator_video_sort_by_{project_id}",
+            help="Choose sorting criteria"
+        )
+    
+    with config_col2:
+        sort_order = st.selectbox(
+            "Order",
+            ["Ascending", "Descending"],
+            key=f"annotator_video_sort_order_{project_id}",
+            help="Sort direction"
+        )
+    
+    config_valid = True
+    config_messages = []
+    
+    # Only show configuration for training mode sorts
+    if sort_by != "Default" and is_training_mode:
+        st.markdown("**Configuration:**")
+        
+        if sort_by in ["Completion Rate", "Accuracy Rate"]:
+            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            single_choice_questions = [q for q in questions if q["type"] == "single"]
+            
+            if not single_choice_questions:
+                config_messages.append(("error", "No single-choice questions available."))
+                config_valid = False
+            else:
+                selected_questions = st.multiselect(
+                    "Questions:",
+                    [f"{q['text']} (ID: {q['id']})" for q in single_choice_questions],
+                    default=[f"{q['text']} (ID: {q['id']})" for q in single_choice_questions],
+                    key=f"annotator_{sort_by.lower().replace(' ', '_')}_questions_{project_id}",
+                    help=f"Select questions for {sort_by.lower()} calculation"
+                )
+                
+                if not selected_questions:
+                    config_messages.append(("warning", "Select at least one question."))
+                    config_valid = False
+    
+    # Show configuration messages
+    if config_messages:
+        for msg_type, msg in config_messages:
+            if msg_type == "error":
+                st.error(msg)
+            elif msg_type == "warning":
+                st.warning(msg)
+            else:
+                custom_info(msg)
+    
+    # Action buttons
+    action_col1, action_col2 = st.columns([1, 1])
+    
+    with action_col1:
+        if st.button("🔄 Apply", 
+                    key=f"apply_annotator_sort_{project_id}", 
+                    disabled=not config_valid,
+                    use_container_width=True,
+                    type="primary"):
+            # Store sort configuration for annotators
+            st.session_state[f"annotator_sort_applied_{project_id}"] = True
+            st.success("✅ Applied!")
+            st.rerun()
+    
+    with action_col2:
+        if st.button("🔄 Reset", 
+                    key=f"reset_annotator_sort_{project_id}",
+                    use_container_width=True):
+            st.session_state[f"annotator_video_sort_by_{project_id}"] = "Default"
+            st.session_state[f"annotator_sort_applied_{project_id}"] = False
+            st.success("✅ Reset!")
+            st.rerun()
+    
+    # Status indicator
+    current_sort = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default")
+    sort_applied = st.session_state.get(f"annotator_sort_applied_{project_id}", False)
+    
+    if current_sort != "Default" and sort_applied:
+        custom_info("Status: ✅ Active")
+    elif current_sort != "Default":
+        custom_info("Status: ⏳ Ready")
+    else:
+        custom_info("Status: Default")
+    
+    custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
 
 def display_enhanced_filter_tab(project_id: int, session: Session):
     """Enhanced filter tab with proper ground truth detection and full question text"""
     st.markdown("#### 🔍 Video Filtering Options")
     
     st.markdown(f"""
-    <div style="{get_card_style(COLORS['warning'])}text-align: center;">
-        <div style="color: #856404; font-weight: 500; font-size: 0.95rem;">
+    <div style="{get_card_style('#B180FF')}text-align: center;">
+        <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
             🎯 Filter videos by specific ground truth answers to focus your review
         </div>
     </div>
@@ -3624,19 +3865,20 @@ def display_enhanced_filter_tab(project_id: int, session: Session):
             
             st.success(f"🔍 **Active Filters:** {' | '.join(filter_summary)}")
         else:
-            st.info("ℹ️ **No filters active** - showing all videos")
+            custom_info("ℹ️ No filters active - showing all videos")
         
         # Store filters in session state
         st.session_state[f"video_filters_{project_id}"] = selected_filters
     else:
-        st.info("No ground truth data available for filtering yet. Complete ground truth annotation to enable filtering.")
+        custom_info("No ground truth data available for filtering yet. Complete ground truth annotation to enable filtering.")
         st.session_state[f"video_filters_{project_id}"] = {}
     
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border-left: 4px solid {COLORS['warning']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-        💡 <strong>Tip:</strong> Filters only work on questions that have ground truth answers. Complete annotation first to see more filter options.
-    </div>
-    """, unsafe_allow_html=True)
+    # st.markdown(f"""
+    # <div style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border-left: 4px solid {COLORS['warning']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
+    #     💡 <strong>Tip:</strong> Filters only work on questions that have ground truth answers. Complete annotation first to see more filter options.
+    # </div>
+    # """, unsafe_allow_html=True)
+    custom_info("💡 Filters only work on questions that have ground truth answers. Complete annotation first to see more filter options.")
 
 def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session: Session):
     """Run auto-submit for all auto-submit groups across entire project when user first enters - OPTIMIZED"""
@@ -3760,7 +4002,7 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
 def display_smart_annotator_selection(annotators: Dict[str, Dict], project_id: int):
     """Modern, compact annotator selection with completion checks and confidence scores for model users"""
     if not annotators:
-        st.warning("No annotators have submitted answers for this project yet.")
+        custom_info("No annotators have submitted answers for this project yet.")
         return []
     
     # Check completion status for each annotator
@@ -3816,11 +4058,12 @@ def display_smart_annotator_selection(annotators: Dict[str, Dict], project_id: i
         status_color = COLORS['success'] if selected_count > 0 else COLORS['secondary']
         status_text = f"📊 {selected_count} selected • {completed_count} completed • {total_count} total"
         
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, {status_color}15, {status_color}08); border: 1px solid {status_color}40; border-radius: 8px; padding: 8px 16px; margin: 12px 0; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-            <div style="color: {status_color}; font-weight: 600; font-size: 0.9rem;">{status_text}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        # st.markdown(f"""
+        # <div style="background: linear-gradient(135deg, {status_color}15, {status_color}08); border: 1px solid {status_color}40; border-radius: 8px; padding: 8px 16px; margin: 12px 0; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+        #     <div style="color: {status_color}; font-weight: 600; font-size: 0.9rem;">{status_text}</div>
+        # </div>
+        # """, unsafe_allow_html=True)
+        custom_info(status_text)
     
     with st.container():
         st.markdown("#### 👥 Choose Annotators")
@@ -3869,28 +4112,29 @@ def display_smart_annotator_selection(annotators: Dict[str, Dict], project_id: i
             remaining = len(initials_list) - 6
             initials_text = f"{' • '.join(shown)} + {remaining} more"
         
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #e8f5e8, #d4f1d4); border: 2px solid #28a745; border-radius: 12px; padding: 12px 16px; margin: 16px 0; text-align: center; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);">
-            <div style="color: #155724; font-weight: 600; font-size: 0.95rem;">
-                ✅ Currently Selected: {initials_text}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # st.markdown(f"""
+        # <div style="background: linear-gradient(135deg, #e8f5e8, #d4f1d4); border: 2px solid #28a745; border-radius: 12px; padding: 12px 16px; margin: 16px 0; text-align: center; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);">
+        #     <div style="color: #155724; font-weight: 600; font-size: 0.95rem;">
+        #         ✅ Currently Selected: {initials_text}
+        #     </div>
+        # </div>
+        # """, unsafe_allow_html=True)
+        custom_info(f"Currently Selected: {initials_text}")
     else:
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border: 2px solid #ffc107; border-radius: 12px; padding: 12px 16px; margin: 16px 0; text-align: center; box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);">
-            <div style="color: #856404; font-weight: 600; font-size: 0.95rem;">
-                ⚠️ No annotators selected - results will only show ground truth
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
+        # st.markdown(f"""
+        # <div style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border: 2px solid #ffc107; border-radius: 12px; padding: 12px 16px; margin: 16px 0; text-align: center; box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);">
+        #     <div style="color: #856404; font-weight: 600; font-size: 0.95rem;">
+        #         ⚠️ No annotators selected - results will only show ground truth
+        #     </div>
+        # </div>
+        # """, unsafe_allow_html=True)
+        custom_info("⚠️ No annotators selected - results will only show ground truth")
     return st.session_state.selected_annotators
 
 def display_smart_annotator_selection_for_auto_submit(annotators: Dict[str, Dict], project_id: int):
     """Annotator selection for auto-submit - only completed annotators"""
     if not annotators:
-        st.warning("No annotators have submitted answers for this project yet.")
+        custom_info("No annotators have submitted answers for this project yet.")
         return []
     
     # Check completion status for each annotator
@@ -3919,7 +4163,7 @@ def display_smart_annotator_selection_for_auto_submit(annotators: Dict[str, Dict
         st.caption("Only annotators who completed the entire project can be used for auto-submit")
         
         if not completed_annotators:
-            st.warning("No completed annotators available for auto-submit.")
+            custom_info("No completed annotators available for auto-submit.")
             return []
         
         btn_col1, btn_col2 = st.columns(2)
@@ -3955,6 +4199,73 @@ def display_smart_annotator_selection_for_auto_submit(annotators: Dict[str, Dict
         """, unsafe_allow_html=True)
     
     return st.session_state[auto_submit_key]
+
+def display_order_tab(project_id: int, role: str, project: Any, session: Session):
+    """Display question group order tab - shared between reviewer and meta-reviewer"""
+    st.markdown("#### 📋 Question Group Display Order")
+    
+    st.markdown(f"""
+    <div style="{get_card_style('#B180FF')}text-align: center;">
+        <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+            🔄 Customize the order of question groups for this session
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Get question groups for this project
+    question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+    
+    if question_groups:
+        order_key = f"question_order_{project_id}_{role}"
+        if order_key not in st.session_state:
+            st.session_state[order_key] = [group["ID"] for group in question_groups]
+        
+        working_order = st.session_state[order_key]
+        group_lookup = {group["ID"]: group for group in question_groups}
+        
+        custom_info("💡 Use the ⬆️ and ⬇️ buttons to reorder question groups. This only affects your current session.")
+        
+        for i, group_id in enumerate(working_order):
+            if group_id in group_lookup:
+                group = group_lookup[group_id]
+                group_title = group["Title"]
+                
+                order_col1, order_col2, order_col3 = st.columns([0.1, 0.8, 0.1])
+                
+                with order_col1:
+                    if st.button("⬆️", key=f"group_up_{project_id}_{group_id}_{i}", 
+                                disabled=(i == 0), help="Move up"):
+                        st.session_state[order_key][i], st.session_state[order_key][i-1] = \
+                            st.session_state[order_key][i-1], st.session_state[order_key][i]
+                        st.rerun()
+                
+                with order_col2:
+                    st.write(f"**{i+1}.** {group_title}")
+                    st.caption(f"Group ID: {group_id}")
+                
+                with order_col3:
+                    if st.button("⬇️", key=f"group_down_{project_id}_{group_id}_{i}", 
+                                disabled=(i == len(working_order) - 1), help="Move down"):
+                        st.session_state[order_key][i], st.session_state[order_key][i+1] = \
+                            st.session_state[order_key][i+1], st.session_state[order_key][i]
+                        st.rerun()
+        
+        # order_action_col1, order_action_col2 = st.columns(2)
+        # with order_action_col1:
+        if st.button("🔄 Reset to Default", key=f"reset_group_order_{project_id}"):
+            st.session_state[order_key] = [group["ID"] for group in question_groups]
+            st.rerun()
+    
+        # with order_action_col2:
+        original_order = [group["ID"] for group in question_groups]
+        if working_order != original_order:
+            custom_info("⚠️ Order changed from default")
+        else:
+            custom_info("✅ Default order")
+    else:
+        custom_info("No question groups found for this project.")
+    
+    custom_info("💡 Reorder groups to match your preferred workflow. Changes only apply to your current session.")
 
 
 def display_project_view(user_id: int, role: str, session: Session):
@@ -3993,13 +4304,13 @@ def display_project_view(user_id: int, role: str, session: Session):
     # Mode display
     if role == "annotator":
         if mode == "Training":
-            st.success("🎓 **Training Mode** - Try your best! You'll get immediate feedback after each submission.")
+            custom_info("🎓 Training Mode - Try your best! You'll get immediate feedback after each submission.")
         else:
-            st.info("📝 **Annotation Mode** - Try your best to answer the questions accurately.")
+            custom_info("📝 Annotation Mode - Try your best to answer the questions accurately.")
     elif role == "meta_reviewer":
-        st.warning("🎯 **Meta-Reviewer Mode** - Override ground truth answers as needed. No completion tracking.")
+        custom_info("🎯 Meta-Reviewer Mode - Override ground truth answers as needed. No completion tracking.")
     else:
-        st.info("🔍 **Review Mode** - Help create the ground truth dataset!")
+        custom_info("🔍 Review Mode - Help create the ground truth dataset!")
     
     # RUN AUTO-SUBMIT ONCE AT PROJECT ENTRY FOR ANNOTATORS
     if role == "annotator" and mode == "Annotation":
@@ -4019,7 +4330,7 @@ def display_project_view(user_id: int, role: str, session: Session):
         
     # Role-specific control panels - NO AUTO-SUBMIT FOR META-REVIEWER
     if role == "reviewer":
-        st.markdown("---")
+        # st.markdown("---")
         
         if mode == "Training":
             analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab = st.tabs([
@@ -4030,8 +4341,8 @@ def display_project_view(user_id: int, role: str, session: Session):
                 st.markdown("#### 🎯 Performance Insights")
                 
                 st.markdown(f"""
-                <div style="{get_card_style(COLORS['info'])}text-align: center;">
-                    <div style="color: #2980b9; font-weight: 500; font-size: 0.95rem;">
+                <div style="{get_card_style('#B180FF')}text-align: center;">
+                    <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                         📈 Access detailed accuracy analytics for all participants in this training project
                     </div>
                 </div>
@@ -4039,11 +4350,12 @@ def display_project_view(user_id: int, role: str, session: Session):
                 
                 display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
                 
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['info']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                    💡 <strong>Tip:</strong> Use analytics to identify patterns in annotator performance and areas for improvement.
-                </div>
-                """, unsafe_allow_html=True)
+                # st.markdown(f"""
+                # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['info']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
+                #     💡 <strong>Tip:</strong> Use analytics to identify patterns in annotator performance and areas for improvement.
+                # </div>
+                # """, unsafe_allow_html=True)
+                custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
         else:
             annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab = st.tabs([
                 "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit"
@@ -4053,8 +4365,8 @@ def display_project_view(user_id: int, role: str, session: Session):
             st.markdown("#### 👥 Annotator Management")
             
             st.markdown(f"""
-            <div style="{get_card_style('#9c27b0')}text-align: center;">
-                <div style="color: #7b1fa2; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     🎯 Select which annotators' responses to display during your review process
                 </div>
             </div>
@@ -4067,11 +4379,12 @@ def display_project_view(user_id: int, role: str, session: Session):
                 st.error(f"Error loading annotators: {str(e)}")
                 st.session_state.selected_annotators = []
             
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid #9c27b0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                💡 <strong>Tip:</strong> Select annotators whose responses you want to see alongside your review interface.
-            </div>
-            """, unsafe_allow_html=True)
+            # st.markdown(f"""
+            # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid #9c27b0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
+            #     💡 <strong>Tip:</strong> Select annotators whose responses you want to see alongside your review interface.
+            # </div>
+            # """, unsafe_allow_html=True)
+            custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
         
         with sort_tab:
             display_enhanced_sort_tab(project_id=project_id, session=session)
@@ -4080,94 +4393,27 @@ def display_project_view(user_id: int, role: str, session: Session):
             display_enhanced_filter_tab(project_id=project_id, session=session)
         
         with order_tab:
-            st.markdown("#### 📋 Question Group Display Order")
-            
-            st.markdown(f"""
-            <div style="{get_card_style('#e74c3c')}text-align: center;">
-                <div style="color: #c0392b; font-weight: 500; font-size: 0.95rem;">
-                    🔄 Customize the order of question groups for this session
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Get question groups for this project
-            question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
-            
-            if question_groups:
-                order_key = f"question_order_{project_id}_{role}"
-                if order_key not in st.session_state:
-                    st.session_state[order_key] = [group["ID"] for group in question_groups]
-                
-                working_order = st.session_state[order_key]
-                group_lookup = {group["ID"]: group for group in question_groups}
-                
-                st.info("💡 Use the ⬆️ and ⬇️ buttons to reorder question groups. This only affects your current session.")
-                
-                for i, group_id in enumerate(working_order):
-                    if group_id in group_lookup:
-                        group = group_lookup[group_id]
-                        group_title = group["Title"]
-                        
-                        order_col1, order_col2, order_col3 = st.columns([0.1, 0.8, 0.1])
-                        
-                        with order_col1:
-                            if st.button("⬆️", key=f"group_up_{project_id}_{group_id}_{i}", 
-                                        disabled=(i == 0), help="Move up"):
-                                st.session_state[order_key][i], st.session_state[order_key][i-1] = \
-                                    st.session_state[order_key][i-1], st.session_state[order_key][i]
-                                st.rerun()
-                        
-                        with order_col2:
-                            st.write(f"**{i+1}.** {group_title}")
-                            st.caption(f"Group ID: {group_id}")
-                        
-                        with order_col3:
-                            if st.button("⬇️", key=f"group_down_{project_id}_{group_id}_{i}", 
-                                        disabled=(i == len(working_order) - 1), help="Move down"):
-                                st.session_state[order_key][i], st.session_state[order_key][i+1] = \
-                                    st.session_state[order_key][i+1], st.session_state[order_key][i]
-                                st.rerun()
-                
-                order_action_col1, order_action_col2 = st.columns(2)
-                with order_action_col1:
-                    if st.button("🔄 Reset to Default", key=f"reset_group_order_{project_id}"):
-                        st.session_state[order_key] = [group["ID"] for group in question_groups]
-                        st.rerun()
-                
-                with order_action_col2:
-                    original_order = [group["ID"] for group in question_groups]
-                    if working_order != original_order:
-                        st.warning("⚠️ Order changed from default")
-                    else:
-                        st.success("✅ Default order")
-            else:
-                st.info("No question groups found for this project.")
-            
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border-left: 4px solid #e74c3c; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                💡 <strong>Tip:</strong> Reorder groups to match your preferred workflow. Changes only apply to your current session.
-            </div>
-            """, unsafe_allow_html=True)
+            display_order_tab(project_id=project_id, role=role, project=project, session=session)
         
         with layout_tab:
             st.markdown("#### 🎛️ Video Layout Settings")
             
             st.markdown(f"""
-            <div style="{get_card_style(COLORS['warning'])}text-align: center;">
-                <div style="color: #856404; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     🎛️ Customize Your Video Display - Adjust how videos and questions are laid out
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
             _display_video_layout_controls(videos, role)
-            st.info("💡 **Tip:** Adjust layout to optimize your workflow.")
+            custom_info("💡 Tip: Adjust layout to optimize your workflow.")
         
         with auto_submit_tab:
             display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
     
     elif role == "meta_reviewer":
-        st.markdown("---")
+        # st.markdown("---")
         
         # NO AUTO-SUBMIT TAB FOR META-REVIEWER
         if mode == "Training":
@@ -4179,8 +4425,8 @@ def display_project_view(user_id: int, role: str, session: Session):
                 st.markdown("#### 🎯 Performance Insights")
                 
                 st.markdown(f"""
-                <div style="{get_card_style(COLORS['info'])}text-align: center;">
-                    <div style="color: #2980b9; font-weight: 500; font-size: 0.95rem;">
+                <div style="{get_card_style('#B180FF')}text-align: center;">
+                    <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                         📈 Access detailed accuracy analytics for all participants in this training project
                     </div>
                 </div>
@@ -4188,11 +4434,12 @@ def display_project_view(user_id: int, role: str, session: Session):
                 
                 display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
                 
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['info']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                    💡 <strong>Tip:</strong> Use analytics to identify patterns in annotator performance and areas for improvement.
-                </div>
-                """, unsafe_allow_html=True)
+                # st.markdown(f"""
+                # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['info']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
+                #     💡 <strong>Tip:</strong> Use analytics to identify patterns in annotator performance and areas for improvement.
+                # </div>
+                # """, unsafe_allow_html=True)
+                custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
         else:
             annotator_tab, sort_tab, filter_tab, order_tab, layout_tab = st.tabs([
                 "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout"
@@ -4202,8 +4449,8 @@ def display_project_view(user_id: int, role: str, session: Session):
             st.markdown("#### 👥 Annotator Management")
             
             st.markdown(f"""
-            <div style="{get_card_style('#9c27b0')}text-align: center;">
-                <div style="color: #7b1fa2; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     🎯 Select which annotators' responses to display during your review process
                 </div>
             </div>
@@ -4216,11 +4463,12 @@ def display_project_view(user_id: int, role: str, session: Session):
                 st.error(f"Error loading annotators: {str(e)}")
                 st.session_state.selected_annotators = []
             
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid #9c27b0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                💡 <strong>Tip:</strong> Select annotators whose responses you want to see alongside your review interface.
-            </div>
-            """, unsafe_allow_html=True)
+            # st.markdown(f"""
+            # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid #9c27b0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
+            #     💡 <strong>Tip:</strong> Select annotators whose responses you want to see alongside your review interface.
+            # </div>
+            # """, unsafe_allow_html=True)
+            custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
         
         with sort_tab:
             display_enhanced_sort_tab(project_id=project_id, session=session)
@@ -4229,42 +4477,49 @@ def display_project_view(user_id: int, role: str, session: Session):
             display_enhanced_filter_tab(project_id=project_id, session=session)
         
         with order_tab:
-            # Same order tab logic as reviewer...
-            pass  # (Same as reviewer order tab code above)
+            display_order_tab(project_id=project_id, role=role, project=project, session=session)
         
         with layout_tab:
             st.markdown("#### 🎛️ Video Layout Settings")
             
             st.markdown(f"""
-            <div style="{get_card_style(COLORS['warning'])}text-align: center;">
-                <div style="color: #856404; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     🎛️ Customize Your Video Display - Adjust how videos and questions are laid out
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
             _display_video_layout_controls(videos, role)
-            st.info("💡 **Tip:** Adjust layout to optimize your workflow.")
+            custom_info("💡 Tip: Adjust layout to optimize your workflow.")
     
     else:  # Annotator role
-        st.markdown("---")
+        # st.markdown("---")
         
-        layout_tab, auto_submit_tab = st.tabs(["🎛️ Layout Settings", "⚡ Auto-Submit"])
+        layout_tab, sort_tab, auto_submit_tab = st.tabs(["🎛️ Layout Settings", "🔄 Sort", "⚡ Auto-Submit"])
         
         with layout_tab:
             st.markdown("#### 🎛️ Video Layout Settings")
             
             st.markdown(f"""
-            <div style="{get_card_style(COLORS['warning'])}text-align: center;">
-                <div style="color: #856404; font-weight: 500; font-size: 0.95rem;">
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
                     🎛️ Customize Your Video Display - Adjust how videos and questions are laid out
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
             _display_video_layout_controls(videos, role)
-            st.info("💡 **Tip:** Adjust layout to optimize your annotation workflow.")
+            # st.markdown(f"""
+            # <div style="background: #EAE1F9; border-left: 4px solid #B180FF; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #5C00BF;">
+            #     💡 <strong>Tip:</strong> Adjust layout to optimize your annotation workflow.
+            # </div>
+            # """, unsafe_allow_html=True)
+            custom_info("💡 Adjust layout to optimize your annotation workflow.")
         
+        with sort_tab:
+            display_enhanced_sort_tab_annotator(project_id=project_id, session=session)
+    
         with auto_submit_tab:
             display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
     
@@ -4282,6 +4537,16 @@ def display_project_view(user_id: int, role: str, session: Session):
             selected_annotators=selected_annotators, session=session,
             sort_config=sort_config
         )
+    elif role == "annotator":
+        sort_by = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default")
+        sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
+        sort_applied = st.session_state.get(f"annotator_sort_applied_{project_id}", False)
+        
+        if sort_by != "Default" and sort_applied:
+            videos = apply_annotator_video_sorting(
+                videos=videos, sort_by=sort_by, sort_order=sort_order,
+                project_id=project_id, user_id=user_id, session=session
+            )
     
     # Get layout settings
     video_pairs_per_row = st.session_state.get(f"{role}_pairs_per_row", 1)
@@ -4309,8 +4574,19 @@ def display_project_view(user_id: int, role: str, session: Session):
             summary_parts.append(f"🔍 {len(filter_by_gt)} filter(s)")
         
         if summary_parts:
-            st.info(" • ".join(summary_parts))
-    
+            custom_info(" • ".join(summary_parts))
+    elif role == "annotator":
+        sort_by = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default")
+        sort_applied = st.session_state.get(f"annotator_sort_applied_{project_id}", False)
+        
+        if sort_by != "Default" and sort_applied:
+            sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
+            custom_info(f"🔄 {sort_by} ({sort_order})")
+        elif sort_by != "Default" and not sort_applied:
+            custom_info(f"⚙️ {sort_by} configured")
+        else:
+            sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
+            custom_info(f"📋 Default order ({sort_order})")
     # Calculate pagination
     total_pages = (len(videos) - 1) // videos_per_page + 1 if videos else 1
     
@@ -4497,7 +4773,7 @@ def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: 
             question_groups = [group_lookup[group_id] for group_id in custom_order if group_id in group_lookup]
         
         if not question_groups:
-            st.info("No question groups found for this project.")
+            custom_info("No question groups found for this project.")
             return
         
         # Check completion status
@@ -4518,9 +4794,9 @@ def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: 
         
         # Progress display format
         st.markdown(f"""
-        <div style="{get_card_style(COLORS['info'])}text-align: center;">
-            <div style="color: #2980b9; font-weight: 500; font-size: 0.95rem;">
-                📋 {video['uid']} - {' | '.join(completion_details)} - Progress: {completed_count}/{total_count} Complete
+        <div style="{get_card_style('#B180FF')}text-align: center;">
+            <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                {video['uid']} - {' | '.join(completion_details)} - Progress: {completed_count}/{total_count} Complete
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -4578,7 +4854,7 @@ def show_annotator_completion():
     """Simple completion popup for annotators"""
     st.markdown("### 🎉 **CONGRATULATIONS!** 🎉")
     st.success("You've completed all questions in this project!")
-    st.info("Great work! You can now move on to other projects or review your answers.")
+    custom_info("Great work! You can now move on to other projects or review your answers.")
     
     st.snow()
     st.balloons()
@@ -4591,7 +4867,7 @@ def show_reviewer_completion():
     """Simple completion popup for reviewers"""
     st.markdown("### 🎉 **OUTSTANDING WORK!** 🎉")
     st.success("This project's ground truth dataset is now complete!")
-    st.info("Please notify the admin that you have completed this project. Excellent job!")
+    custom_info("Please notify the admin that you have completed this project. Excellent job!")
     
     st.snow()
     st.balloons()
@@ -4820,7 +5096,7 @@ def admin_videos():
                 with col4:
                     st.metric("📭 Unassigned Videos", unassigned_count)
             else:
-                st.info("No videos in the database yet.")
+                custom_info("No videos in the database yet.")
                 total_videos = 0
                 all_videos_df = pd.DataFrame()
         except Exception as e:
@@ -4870,7 +5146,7 @@ def admin_videos():
                         filtered_videos = filtered_videos[mask]
                     
                     if not filtered_videos.empty:
-                        st.info(f"Showing {len(filtered_videos)} of {len(all_videos_df)} total videos")
+                        custom_info(f"Showing {len(filtered_videos)} of {len(all_videos_df)} total videos")
                         
                         # Enhanced table display with project assignment info
                         display_videos = filtered_videos.copy()
@@ -4937,7 +5213,7 @@ def admin_videos():
                     video_options = {f"{row['Video UID']} - {row['URL'][:50]}...": row['Video UID'] for _, row in filtered_edit_videos.iterrows()}
                     
                     if len(filtered_edit_videos) > 20:
-                        st.info(f"📊 Found {len(filtered_edit_videos)} videos. Use search to narrow results.")
+                        custom_info(f"📊 Found {len(filtered_edit_videos)} videos. Use search to narrow results.")
                     
                     selected_video_display = st.selectbox(
                         "Select Video to Edit",
@@ -5078,14 +5354,14 @@ def admin_videos():
                         except Exception as e:
                             st.error(f"Error loading video details: {str(e)}")
                     else:
-                        st.info("👆 Select a video from the dropdown above to edit")
+                        custom_info("👆 Select a video from the dropdown above to edit")
                 else:
                     if edit_search:
-                        st.warning(f"No videos found matching '{edit_search}'")
+                        custom_infoing(f"No videos found matching '{edit_search}'")
                     else:
-                        st.info("Use the search box to find videos to edit")
+                        custom_info("Use the search box to find videos to edit")
             else:
-                st.info("No videos available to edit")
+                custom_info("No videos available to edit")
                 
 @st.fragment
 def admin_questions():
@@ -5103,13 +5379,13 @@ def admin_questions():
             with group_management_tabs[0]:
                 st.markdown("### 🆕 Create New Question Group")
                 
-                basic_col1, basic_col2, basic_col3 = st.columns(3)
+                # with basic_col1:
+                title = st.text_input("Group Title", key="admin_group_title", placeholder="Enter group title...")
+                basic_col1, basic_col2 = st.columns(2)
                 with basic_col1:
-                    title = st.text_input("Group Title", key="admin_group_title", placeholder="Enter group title...")
-                with basic_col2:
                     is_reusable = st.checkbox("Reusable across schemas", key="admin_group_reusable", 
                                             help="Allow this group to be used in multiple schemas")
-                with basic_col3:
+                with basic_col2:
                     is_auto_submit = st.checkbox("Auto Submit", key="admin_group_auto_submit", 
                                             help="Automatically submit answers for this group")
                 description = st.text_area("Description", key="admin_group_description", 
@@ -5130,7 +5406,7 @@ def admin_questions():
                         if verification_function != "None":
                             try:
                                 func_info = QuestionGroupService.get_verification_function_info(verification_function)
-                                st.info(f"**Function:** `{func_info['name']}{func_info['signature']}`")
+                                custom_info(f"Function: `{func_info['name']}{func_info['signature']}`")
                                 if func_info['docstring']:
                                     st.markdown(f"**Documentation:** {func_info['docstring']}")
                             except Exception as e:
@@ -5138,7 +5414,7 @@ def admin_questions():
                         
                         verification_function = verification_function if verification_function != "None" else None
                     else:
-                        st.info("No verification functions found in verify.py")
+                        custom_info("No verification functions found in verify.py")
                         verification_function = None
                 except Exception as e:
                     st.error(f"Error loading verification functions: {str(e)}")
@@ -5157,7 +5433,7 @@ def admin_questions():
                     )
                 else:
                     selected_questions = []
-                    st.warning("No questions available.")
+                    custom_infoing("No questions available.")
                 
                 if st.button("🚀 Create Question Group", key="admin_create_group_btn", type="primary", use_container_width=True):
                     if title and selected_questions:
@@ -5268,7 +5544,7 @@ def admin_questions():
                                             except Exception as e:
                                                 st.error(f"Error loading current function: {str(e)}")
                                         else:
-                                            st.info("No verification function set")
+                                            custom_info("No verification function set")
                                     
                                     with func_col2:
                                         st.markdown("**New Function:**")
@@ -5281,7 +5557,7 @@ def admin_questions():
                                             except Exception as e:
                                                 st.error(f"Error loading function info: {str(e)}")
                                         else:
-                                            st.info("No verification function will be set")
+                                            custom_info("No verification function will be set")
                                     
                                     new_verification_function = new_verification_function if new_verification_function != "None" else None
                                     
@@ -5302,7 +5578,7 @@ def admin_questions():
                                     
                                     working_order = st.session_state[order_key]
                                     
-                                    st.info("💡 Use the ⬆️ and ⬇️ buttons to reorder questions. Changes will be applied when you click 'Update Group'.")
+                                    custom_info("💡 Use the ⬆️ and ⬇️ buttons to reorder questions. Changes will be applied when you click 'Update Group'.")
                                     
                                     if len(working_order) > 5:
                                         search_term = st.text_input(
@@ -5360,7 +5636,7 @@ def admin_questions():
                                     new_order = working_order
                                 else:
                                     new_order = current_order
-                                    st.info("No questions in this group.")
+                                    custom_info("No questions in this group.")
                                 
                                 if st.button("💾 Update Question Group", key="admin_update_group_btn", type="primary", use_container_width=True):
                                     try:
@@ -5387,9 +5663,9 @@ def admin_questions():
                             except Exception as e:
                                 st.error(f"Error loading group details: {str(e)}")
                     else:
-                        st.info("No non-archived question groups available to edit.")
+                        custom_info("No non-archived question groups available to edit.")
                 else:
-                    st.info("No question groups available to edit.")
+                    custom_info("No question groups available to edit.")
         
         with q_tab2:
             questions_df = QuestionService.get_all_questions(session=session)
@@ -5423,7 +5699,7 @@ def admin_questions():
                 
                 if q_type == "single":
                     st.markdown("**🎯 Options and Weights:**")
-                    st.info("💡 Default weight is 1.0 for each option. Customize weights to influence scoring.")
+                    custom_info("💡 Default weight is 1.0 for each option. Customize weights to influence scoring.")
                     
                     num_options = st.number_input("Number of options", 1, 10, 2, key="admin_question_num_options")
                     
@@ -5526,7 +5802,7 @@ def admin_questions():
                                     working_option_order = st.session_state[option_order_key]
                                     
                                     if len(current_options) > 1:
-                                        st.info("💡 Use the ⬆️ and ⬇️ buttons to reorder options. This will affect the display order for users.")
+                                        custom_info("💡 Use the ⬆️ and ⬇️ buttons to reorder options. This will affect the display order for users.")
                                         
                                         for i, option_idx in enumerate(working_option_order):
                                             if option_idx < len(current_options):
@@ -5570,7 +5846,7 @@ def admin_questions():
                                     
                                     # Edit options and add new ones
                                     st.markdown("**✏️ Edit Options and Weights:**")
-                                    st.info("📝 Note: You can only add new options, not remove existing ones (to preserve data integrity).")
+                                    custom_info("📝 Note: You can only add new options, not remove existing ones (to preserve data integrity).")
                                     
                                     num_options = st.number_input(
                                         "Total number of options", 
@@ -5689,9 +5965,9 @@ def admin_questions():
                             except Exception as e:
                                 st.error(f"Error loading question details: {str(e)}")
                     else:
-                        st.info("No non-archived questions available to edit.")
+                        custom_info("No non-archived questions available to edit.")
                 else:
-                    st.info("No questions available to edit.")
+                    custom_info("No questions available to edit.")
 
 @st.fragment 
 def display_assignment_management(session: Session):
@@ -5714,7 +5990,7 @@ def display_assignment_management(session: Session):
     try:
         projects_df = ProjectService.get_all_projects(session=session)
         if projects_df.empty:
-            st.warning("No projects available.")
+            custom_infoing("No projects available.")
             return
     except Exception as e:
         st.error(f"Error loading projects: {str(e)}")
@@ -5728,10 +6004,10 @@ def display_assignment_management(session: Session):
     ]
     
     if not filtered_projects:
-        st.warning("No projects match the search criteria.")
+        custom_infoing("No projects match the search criteria.")
         return
     
-    st.info(f"Found {len(filtered_projects)} projects")
+    custom_info(f"Found {len(filtered_projects)} projects")
     
     select_col1, select_col2 = st.columns(2)
     with select_col1:
@@ -5770,7 +6046,7 @@ def display_assignment_management(session: Session):
         st.rerun(scope="fragment")
     
     if not st.session_state.selected_project_ids:
-        st.info("Please select projects above to continue.")
+        custom_info("Please select projects above to continue.")
         return
     
     st.success(f"✅ Selected {len(st.session_state.selected_project_ids)} projects")
@@ -5781,7 +6057,7 @@ def display_assignment_management(session: Session):
     try:
         users_df = AuthService.get_all_users(session=session)
         if users_df.empty:
-            st.warning("No users available.")
+            custom_infoing("No users available.")
             return
     except Exception as e:
         st.error(f"Error loading users: {str(e)}")
@@ -5807,10 +6083,10 @@ def display_assignment_management(session: Session):
         filtered_users.append(user_row)
     
     if not filtered_users:
-        st.warning("No users match the search criteria.")
+        custom_infoing("No users match the search criteria.")
         return
     
-    st.info(f"Found {len(filtered_users)} users")
+    custom_info(f"Found {len(filtered_users)} users")
     
     # User pagination
     users_per_page = 12
@@ -5868,7 +6144,7 @@ def display_assignment_management(session: Session):
         st.rerun(scope="fragment")
     
     if not st.session_state.selected_user_ids:
-        st.info("Please select users above to continue.")
+        custom_info("Please select users above to continue.")
         return
     
     st.success(f"✅ Selected {len(st.session_state.selected_user_ids)} users")
@@ -5899,7 +6175,7 @@ def display_assignment_management(session: Session):
     if user_weight != st.session_state.assignment_user_weight:
         st.session_state.assignment_user_weight = user_weight
     
-    st.info(f"Ready to assign {len(st.session_state.selected_user_ids)} users as **{role}** with weight **{user_weight}** to {len(st.session_state.selected_project_ids)} projects")
+    custom_info(f"Ready to assign {len(st.session_state.selected_user_ids)} users as {role} with weight {user_weight} to {len(st.session_state.selected_project_ids)} projects")
     
     action_col1, action_col2 = st.columns(2)
     
@@ -6020,7 +6296,7 @@ def admin_projects():
             enhanced_df = pd.DataFrame(enhanced_projects)
             st.dataframe(enhanced_df, use_container_width=True)
         else:
-            st.info("No projects available.")
+            custom_info("No projects available.")
         
         with st.expander("➕ Create Project"):
             name = st.text_input("Project Name", key="admin_project_name")
@@ -6112,7 +6388,7 @@ def admin_users():
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
                 else:
-                    st.warning("Please fill in all required fields (User ID, Email, Password)")
+                    custom_infoing("Please fill in all required fields (User ID, Email, Password)")
         
         with edit_tab:
             if not users_df.empty:
@@ -6191,12 +6467,12 @@ def admin_users():
                                     if changes_made:
                                         st.success(f"✅ User '{new_user_id}' updated successfully! Changed: {', '.join(changes_made)}")
                                     else:
-                                        st.info("No changes were made")
+                                        custom_info("No changes were made")
                                     st.rerun(scope="fragment")
                                 except Exception as e:
                                     st.error(f"Error updating user: {str(e)}")
                             else:
-                                st.warning("User ID and Email are required")
+                                custom_infoing("User ID and Email are required")
                     
                     with archive_col:
                         archive_status = "Archived" if current_user['Archived'] else "Active"
@@ -6220,7 +6496,7 @@ def admin_users():
                         
                         st.caption(f"**Current Status:** {archive_status}")
             else:
-                st.info("No users available to edit")
+                custom_info("No users available to edit")
 
 @st.fragment 
 def admin_assignments():
@@ -6362,7 +6638,7 @@ def admin_assignments():
             
             total_users = len(user_assignments)
             filtered_count = len(filtered_assignments)
-            st.info(f"📊 Showing **{filtered_count}** of **{total_users}** total users")
+            custom_info(f"📊 Showing {filtered_count} of {total_users} total users")
             
             # Main assignments display
             if filtered_assignments:
@@ -6471,7 +6747,7 @@ def admin_assignments():
                 
                 # Display in card format
                 for i, user_data in enumerate(display_data):
-                    status_color = COLORS['danger'] if "Archived" in user_data["Status"] else COLORS['success']
+                    status_color = COLORS['danger'] if "Archived" in user_data["Status"] else COLORS['primary']
                     
                     sample_projects = user_data["Projects Data"][:3] if user_data["Projects Data"] else []
                     sample_text = ""
@@ -6487,7 +6763,7 @@ def admin_assignments():
                         <div style="border: 2px solid {status_color}; border-radius: 10px; padding: 15px; margin: 10px 0; background: linear-gradient(135deg, #ffffff, #f8f9fa); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="flex: 1;">
-                                    <h4 style="margin: 0; color: #1f77b4;">👤 {user_data['User Name']}</h4>
+                                    <h4 style="margin: 0; color: #9553FE;">👤 {user_data['User Name']}</h4>
                                     <p style="margin: 5px 0; color: #6c757d;">📧 {user_data['Email']}</p>
                                     <p style="margin: 5px 0; color: #6c757d; font-size: 0.9rem; font-style: italic;">{sample_text}</p>
                                 </div>
@@ -6532,7 +6808,7 @@ def admin_assignments():
                                     filtered_projects = [p for p in filtered_projects if user_role_filter in p["roles"]]
                                 
                                 if len(filtered_projects) != total_projects:
-                                    st.info(f"Showing {len(filtered_projects)} of {total_projects} projects")
+                                    custom_info(f"Showing {len(filtered_projects)} of {total_projects} projects")
                                 
                                 # Pagination
                                 projects_per_page = 10
@@ -6571,20 +6847,20 @@ def admin_assignments():
                                         if len(display_groups) > 1:
                                             st.markdown("---")
                                 else:
-                                    st.info("No projects match the current filters.")
+                                    custom_info("No projects match the current filters.")
                             else:
-                                st.info("No project assignments")
+                                custom_info("No project assignments")
             else:
-                st.warning("No users match the current filters.")
+                custom_infoing("No users match the current filters.")
         else:
-            st.info("No project assignments found in the database.")
+            custom_info("No project assignments found in the database.")
         
         with st.expander("🗄️ Raw Assignment Data (Database View)", expanded=False):
             if not assignments_df.empty:
                 st.markdown("**Direct database table view:**")
                 st.dataframe(assignments_df, use_container_width=True)
             else:
-                st.info("No raw assignment data available.")
+                custom_info("No raw assignment data available.")
 
 @st.fragment 
 def admin_project_groups():
@@ -6617,7 +6893,7 @@ def admin_project_groups():
                 
                 st.dataframe(pd.DataFrame(group_data), use_container_width=True)
             else:
-                st.info("No project groups exist yet.")
+                custom_info("No project groups exist yet.")
         except Exception as e:
             st.error(f"Error loading project groups: {str(e)}")
         
@@ -6635,7 +6911,7 @@ def admin_project_groups():
                 )
             else:
                 selected_projects = []
-                st.warning("No projects available to add to group.")
+                custom_infoing("No projects available to add to group.")
             
             if st.button("Create Project Group", key="admin_create_pgroup_btn"):
                 if group_name:
@@ -6657,7 +6933,7 @@ def admin_project_groups():
                     selected_group_name = st.selectbox(
                         "Select Group to Edit", 
                         list(group_options.keys()),
-                        key="admin_edit_group_select"
+                        key="admin_edit_project_group_select"
                     )
                     
                     if selected_group_name:
@@ -6688,7 +6964,7 @@ def admin_project_groups():
                             for project in current_projects:
                                 st.write(f"- {project.name} (ID: {project.id})")
                         else:
-                            st.info("No projects currently in this group")
+                            custom_info("No projects currently in this group")
                             current_project_ids = []
                         
                         all_projects_df = ProjectService.get_all_projects(session=session)
@@ -6704,7 +6980,7 @@ def admin_project_groups():
                                 )
                             else:
                                 add_projects = []
-                                st.info("All projects are already in this group")
+                                custom_info("All projects are already in this group")
                             
                             if current_project_ids:
                                 remove_projects = st.multiselect(
@@ -6718,7 +6994,7 @@ def admin_project_groups():
                         else:
                             add_projects = []
                             remove_projects = []
-                            st.warning("No projects available in the system")
+                            custom_infoing("No projects available in the system")
                         
                         if st.button("Update Project Group", key="admin_update_pgroup_btn"):
                             try:
@@ -6735,7 +7011,7 @@ def admin_project_groups():
                             except Exception as e:
                                 st.error(f"Error: {str(e)}")
                 else:
-                    st.info("No project groups available to edit")
+                    custom_info("No project groups available to edit")
             except Exception as e:
                 st.error(f"Error loading groups for editing: {str(e)}")
 
@@ -6810,44 +7086,164 @@ def main():
     # Enhanced Custom CSS - Modern design with elegant sidebar
     st.markdown("""
         <style>
+        /* Override Streamlit's primary color system */
+
+        # .st-dz,
+        # .st-dw {
+        #     background-color: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-3urlvs {
+        #     background-color: #9553FE !important;
+        #     border: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-3urlvs:hover {
+        #     background-color: #750FE1 !important;
+        #     border: #750FE1 !important;
+        # }
+
+        # .st-emotion-cache-3urlvs:active {
+        #     background-color: #9553FE !important;
+        #     border: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-3urlvs:focus:not(:active) {
+        #     background-color: #9553FE !important;
+        #     border: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-5d2d9l:hover {
+        #     color: black !important;
+        #     border-color: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-5d2d9l:focus:not(:active)  {
+        #     color: black !important;
+        #     border-color: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-5d2d9l:active  {
+        #     color: white !important;
+        #     border-color: #9553FE !important;
+        #     background-color: #9553FE !important;
+        # }
+
+        # .st-emotion-cache-1dj3ksd {
+        #     background-color: #9553FE !important;
+        # }
+
+        # .st-ig, .st-i4 {
+        #     background: #9553FE !important;
+        # }
+
+        # .st-jw {
+        #     background: #9553FE !important;
+        # }
+
+        # .st-hr {
+        #     background: #9553FE !important;
+        # }
+
+        # .st-hm {
+        #     background-color: #9553FE !important;
+        #     background: #9553FE !important;
+        # }
+
+        # .st-hn {
+        #     background-color: #9553FE !important;
+        #     background: #9553FE !important;
+        # }
+
+        # .st-hq {
+        #     background-color: #9553FE !important;
+        #     background: #9553FE !important;
+        # }
+
+        # .st-cv {
+        #     border-bottom-color: #9553FE !important;
+        # }
+
+        # .st-cu {
+        #     border-top-color: #9553FE !important;
+        # }
+
+        # .st-ct {
+        #     border-right-color: #9553FE !important;
+        # }
+
+        # .st-cs {
+        #     border-left-color: #9553FE !important;
+        # }
+
+        # .st-cc {
+        #     border-bottom-color: #9553FE !important;
+        # }
+
+        # .st-cb {
+        #     border-top-color: #9553FE !important;
+        # }
+
+        # .st-ca {
+        #     border-right-color: #9553FE !important;
+        # }
+
+        # .st-c9 {
+        #     border-left-color: #9553FE !important;
+        # }
+        
+
         /* Global improvements */
         .stProgress > div > div > div > div {
-            background-color: #4CAF50;
+            background-color: #9553FE;
         }
         
         /* Clean, modern tabs styling */
         .stTabs [data-baseweb="tab-list"] {
             gap: 2px;
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 12px;
+            background: transparent;
+            border-radius: 0;
             padding: 4px;
-            border: 1px solid #dee2e6;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: none;
+            border-bottom: 1px solid #dee2e6;
+            box-shadow: none;
         }
-        
+
         .stTabs [data-baseweb="tab"] {
             height: 40px;
             white-space: pre-wrap;
-            background-color: transparent;
-            border-radius: 8px;
+            background-color: transparent !important;
+            border-radius: 0;
             color: #495057;
             font-weight: 600;
-            border: none;
+            border: none !important;
             padding: 8px 16px;
             transition: all 0.2s ease;
             font-size: 0.9rem;
         }
-        
+
         .stTabs [data-baseweb="tab"]:hover {
-            background-color: rgba(31, 119, 180, 0.1);
+            background-color: transparent !important;
+            color: #750FE1 !important;
             transform: translateY(-1px);
         }
-        
+
         .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, #1f77b4, #4a90e2) !important;
-            color: white !important;
-            box-shadow: 0 2px 6px rgba(31, 119, 180, 0.3);
+            background: transparent !important;
+            color: #750FE1 !important;
+            border: none !important;
+            box-shadow: none !important;
             transform: translateY(-1px);
+        }
+
+        /* Change the original Streamlit tab indicator from red to purple */
+        .stTabs [data-baseweb="tab-list"] > div:last-child {
+            background-color: #A46CFE !important;
+        }
+
+        /* Alternative selectors for the indicator */
+        .stTabs div[style*="background-color"] {
+            background-color: #A46CFE !important;
         }
         
         /* Remove form borders */
@@ -6891,7 +7287,7 @@ def main():
         
         .stRadio > div > label:hover {
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-color: #1f77b4;
+            border-color: #B180FF;
             transform: translateY(-1px);
             box-shadow: 0 2px 6px rgba(31, 119, 180, 0.15);
         }
@@ -6905,45 +7301,27 @@ def main():
             box-shadow: 0 2px 6px rgba(31, 119, 180, 0.2);
         }
         
-        /* Enhanced text areas */
-        .stTextArea > div > div > textarea {
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            font-size: 0.9rem;
-            background: linear-gradient(135deg, #ffffff, #f8f9fa);
-            padding: 12px;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.4;
-        }
-        
-        .stTextArea > div > div > textarea:focus {
-            border-color: #1f77b4;
-            box-shadow: 0 0 0 2px rgba(31, 119, 180, 0.1), 0 2px 8px rgba(31, 119, 180, 0.15);
-            background: #ffffff;
-        }
-        
         /* Enhanced button styling */
         .stButton > button {
-            border-radius: 8px;
-            border: none;
+            # border-radius: 8px;
+            # border: none;
             transition: all 0.2s ease;
             font-weight: 600;
-            background: linear-gradient(135deg, #1f77b4, #4a90e2);
+            background: linear-gradient(135deg, #9553FE, #7C3AED);
             color: white;
-            padding: 10px 20px;
-            font-size: 0.9rem;
-            box-shadow: 0 2px 6px rgba(31, 119, 180, 0.2);
+            # padding: 10px 20px;
+            # font-size: 0.9rem;
+            box-shadow: 0 2px 6px rgba(149, 83, 254, 0.2);
             position: relative;
             z-index: 100;
             letter-spacing: 0.3px;
         }
-        
+
         .stButton > button:hover {
-            box-shadow: 0 4px 12px rgba(31, 119, 180, 0.3);
+            box-shadow: 0 4px 12px rgba(149, 83, 254, 0.3);
             transform: translateY(-2px);
-            background: linear-gradient(135deg, #1a6ca8, #4088d4);
+            background: linear-gradient(135deg, #7C3AED, #6D28D9);
+            color: white;
         }
         
         .stButton > button:disabled {
@@ -7011,13 +7389,13 @@ def main():
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #1f77b4, #4a90e2);
+            background-color: linear-gradient(180deg, #1a6ca8, #4088d4);
             border-radius: 4px;
             border: 1px solid #f1f1f1;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #1a6ca8, #4088d4);
+            background-color: #9553FE;
         }
         
         /* Enhanced success styling */
@@ -7079,8 +7457,8 @@ def main():
         }
         
         .stCheckbox > label:hover {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-color: #1f77b4;
+            background: #F2ECFC;
+            border-color: #B180FF;
             transform: translateY(-1px);
             box-shadow: 0 2px 6px rgba(31, 119, 180, 0.15);
         }
@@ -7130,108 +7508,9 @@ def main():
             box-shadow: 0 0 0 2px rgba(31, 119, 180, 0.1);
         }
         
-        /* Modern sidebar styling */
-        .css-1d391kg {
-            padding-top: 1rem;
-            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
-        }
-        
-        .css-1d391kg h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.8rem;
-            color: #2c3e50;
-            font-weight: 700;
-            text-align: center;
-            padding: 10px;
-            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
-            border-radius: 12px;
-            border: 1px solid #bdc3c7;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .css-1d391kg .element-container {
-            margin-bottom: 0.8rem;
-        }
-        
-        /* Enhanced sidebar radio buttons */
-        .css-1d391kg .stRadio > div > label {
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-            background: linear-gradient(135deg, #ffffff, #f8f9fa);
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .css-1d391kg .stRadio > div > label:hover {
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-            border-color: #2196f3;
-            transform: translateX(5px) translateY(-2px);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
-        }
-        
-        .css-1d391kg .stRadio > div > label[data-checked="true"] {
-            background: linear-gradient(135deg, #1976d2, #42a5f5);
-            color: white;
-            border-color: #1976d2;
-            transform: translateX(5px) translateY(-2px);
-            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
-        }
-        
-        /* Enhanced sidebar button styling */
-        .css-1d391kg .stButton > button {
-            padding: 12px 20px;
-            font-size: 0.9rem;
-            margin-top: 1rem;
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 700;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .css-1d391kg .stButton > button:hover {
-            background: linear-gradient(135deg, #c0392b, #a93226);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
-        }
-        
-        .css-1d391kg .stMarkdown {
-            margin-bottom: 0.8rem;
-        }
-        
-        /* Enhanced user info cards */
-        .css-1d391kg .stSuccess,
-        .css-1d391kg .stInfo {
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 10px 0;
-            border: none;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        
-        .css-1d391kg .stSuccess {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white;
-        }
-        
-        .css-1d391kg .stInfo {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-        }
-        
         /* Enhanced metrics styling */
         .stMetric {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            background: #F3F2F4;
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #dee2e6;
@@ -7456,7 +7735,6 @@ def main():
             background: linear-gradient(135deg, #ffffff, #f8f9fa);
             border-radius: 16px;
             margin: 10px 0 20px 0;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
             border: 2px solid #e9ecef;
             text-align: center;
             position: relative;
@@ -7468,7 +7746,7 @@ def main():
                 right: -20px;
                 width: 60px;
                 height: 60px;
-                background: linear-gradient(135deg, #ff6b6b, #ffa500);
+                background: #9553FE;
                 border-radius: 50%;
                 opacity: 0.1;
             "></div>
@@ -7478,7 +7756,7 @@ def main():
                 left: -15px;
                 width: 40px;
                 height: 40px;
-                background: linear-gradient(135deg, #ff4757, #ff6b6b);
+                background: #9553FE;
                 border-radius: 50%;
                 opacity: 0.1;
             "></div>
@@ -7512,7 +7790,8 @@ def main():
         
         display_user_simple(user['name'], user_email, is_ground_truth=(user['role'] == 'admin'))
         
-        role_color = COLORS['danger'] if user['role'] == 'admin' else COLORS['info']
+        # role_color = COLORS['danger'] if user['role'] == 'admin' else COLORS['info']
+        role_color = '#9553FE'
         st.markdown(f"""
         <div style="
             background: linear-gradient(135deg, {role_color}, {role_color}dd);
@@ -7523,7 +7802,6 @@ def main():
             font-weight: 600;
             font-size: 0.9rem;
             margin: 8px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         ">
             Role: {user['role'].title()}
         </div>
@@ -7571,7 +7849,7 @@ def main():
     
     # Route to selected portal
     if not available_portals:
-        st.warning("No portals available. You may not be assigned to any projects or your account may not have the necessary permissions. Please contact an administrator.")
+        custom_infoing("No portals available. You may not be assigned to any projects or your account may not have the necessary permissions. Please contact an administrator.")
         return
     
     selected_portal = st.session_state.get("selected_portal", available_portals[0])

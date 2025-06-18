@@ -111,7 +111,7 @@ def custom_video_player(video_url, aspect_ratio="16:9"):
             
             .progress-bar {{
                 height: 100%;
-                background: linear-gradient(90deg, #ff4444, #ff6666);
+                background: #9553FE;
                 border-radius: 3px;
                 width: 0%;
                 pointer-events: none;
@@ -123,7 +123,7 @@ def custom_video_player(video_url, aspect_ratio="16:9"):
                 top: -5px;
                 width: 16px;
                 height: 16px;
-                background: #ff4444;
+                background: #9553FE;
                 border: 2px solid white;
                 border-radius: 50%;
                 cursor: grab;
@@ -209,7 +209,7 @@ def custom_video_player(video_url, aspect_ratio="16:9"):
                 -webkit-appearance: none;
                 width: 12px;
                 height: 12px;
-                background: #ff4444;
+                background: #9553FE;
                 border-radius: 50%;
                 cursor: pointer;
             }}
@@ -217,7 +217,7 @@ def custom_video_player(video_url, aspect_ratio="16:9"):
             .volume-slider::-moz-range-thumb {{
                 width: 12px;
                 height: 12px;
-                background: #ff4444;
+                background: #9553FE;
                 border-radius: 50%;
                 cursor: pointer;
                 border: none;

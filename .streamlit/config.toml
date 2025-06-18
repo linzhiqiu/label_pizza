@@ -1,0 +1,8 @@
+[theme]
+primaryColor = "#9553FE"
+borderColor = "#E7E4EB"
+secondaryBackgroundColor="#F3F2F4"
+codeBackgroundColor = "#F3F2F4"
+
+[theme.sidebar]
+backgroundColor = "#F3F2F4"

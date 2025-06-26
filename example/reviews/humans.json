@@ -1,22 +1,24 @@
 [
-    {
-      "question_group_title": "Human",
-      "project_name": "Human Test 0",
-      "reviewer_email": "admin1@example.com",
-      "video_uid": "d0yGdNEWdn0.0.7.mp4",
-      "answers": {
-        "Number of people?": "0",
-        "If there are people, describe them.": ""
-      }
+  {
+    "question_group_title": "Human",
+    "project_name": "Human Test 0",
+    "user_name": "Admin 1",
+    "video_uid": "human.mp4",
+    "answers": {
+      "Number of people?": "1",
+      "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    {
-      "question_group_title": "Human",
-      "project_name": "Human Test 0",
-      "reviewer_email": "admin1@example.com",
-      "video_uid": "oVXs1Lo_4pk_2400_4200.0.0.mp4",
-      "answers": {
-        "Number of people?": "1",
-        "If there are people, describe them.": "The person is tall and slim."
-      }
-    }
-  ]
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Human",
+    "project_name": "Human Test 0",
+    "user_name": "Admin 1",
+    "video_uid": "pizza.mp4",
+    "answers": {
+      "Number of people?": "0",
+      "If there are people, describe them.": ""
+    },
+    "is_ground_truth": true
+  }
+]

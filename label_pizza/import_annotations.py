@@ -83,13 +83,16 @@ def _resolve_ids(
     *,
     session: Session,
     question_group_title: str,
-    user_email: str,
+    user_name: str,
     video_ref: str,
     project_name: str,
 ) -> Tuple[int, int, int, int]:
     """Return (video_id, project_id, user_id, group_id) or raise ValueError."""
     group_id = QuestionGroupService.get_group_by_name(question_group_title, session).id
-    user_id  = AuthService.get_user_by_email(user_email, session).id
+    if user_name:
+        user_id  = AuthService.get_user_by_name(user_name, session).id
+    else:
+        raise ValueError("user_name is required!")
 
     video_uid  = video_ref.split("/")[-1]
     video_id   = VideoService.get_video_by_uid(video_uid, session).id
@@ -164,7 +167,7 @@ def upload_annotations_from_json(
                 video_id, project_id, user_id, group_id = _resolve_ids(
                     session=session,
                     question_group_title=row["question_group_title"],
-                    user_email=row["user_email"],
+                    user_name=row["user_name"],
                     video_ref=row.get("video_uid") or row["video_uid"],
                     project_name=row["project_name"],
                 )
@@ -176,7 +179,7 @@ def upload_annotations_from_json(
                 # (optional) warn if something was dropped
                 dropped = set(row["answers"]) - legal_keys
                 if dropped:
-                    print(f"[WARN] {row['video_uid']} | {row['user_email']} "
+                    print(f"[WARN] {row['video_uid']} | {row['user_name']} "
                           f"dropped keys: {dropped}")
 
                 # ----- verify remaining answers -----------------------------------
@@ -199,12 +202,12 @@ def upload_annotations_from_json(
                     "confidence": row.get("confidence_scores") or {},
                     "notes":      row.get("notes") or {},
                     "video_uid":  row.get("video_uid", "<unknown>"),
-                    "email":      row["user_email"],
+                    "user_name":      row["user_name"],
                 })
 
             except Exception as exc:
                 errors.append(f"[{idx}] {row.get('video_uid')} | "
-                              f"{row.get('user_email')}: {exc}")
+                              f"{row.get('user_name')}: {exc}")
 
     if errors:
         print("\nVERIFICATION FAILED – nothing uploaded.")
@@ -233,7 +236,7 @@ def upload_annotations_from_json(
                 )
                 ok += 1
             except Exception as exc:
-                print(f"[FAIL] {rec['video_uid']} | {rec['email']}: {exc}")
+                print(f"[FAIL] {rec['video_uid']}: {exc}")
                 fail += 1
 
     print(f"\nUpload finished – {ok} succeeded, {fail} failed.")
@@ -242,15 +245,16 @@ def _resolve_ids_for_reviews(
     *,
     session: Session,
     question_group_title: str,
-    reviewer_email: str,  # 改为 reviewer_email
+    user_name: str,
     video_ref: str,
     project_name: str,
 ) -> Tuple[int, int, int, int]:
     """Return (video_id, project_id, reviewer_id, group_id) or raise ValueError."""
     group_id = QuestionGroupService.get_group_by_name(question_group_title, session).id
-    
-    # 通过邮箱获取 reviewer_id
-    reviewer_id = AuthService.get_user_by_email(reviewer_email, session).id
+    if user_name:
+        reviewer_id = AuthService.get_user_by_name(user_name=user_name, session=session).id
+    else:
+        raise ValueError("user_name is required!")
 
     video_uid  = video_ref.split("/")[-1]
     video_id   = VideoService.get_video_by_uid(video_uid, session).id
@@ -264,15 +268,16 @@ def upload_reviews_from_json(
     """Verify every review entry; upload only if all entries are valid."""
     errors: list[str] = []
     valid_cache: list[dict[str, Any]] = []
-
     with SessionLocal() as session:
         for idx, row in enumerate(tqdm(rows, desc="verifying reviews"), start=1):
+            if row.get("is_ground_truth") == False:
+                raise ValueError(f"is_ground_truth must be True! Video: {row['video_uid']} is not ground truth.")
             try:
                 # ----- resolve IDs -------------------------------------------------
                 video_id, project_id, reviewer_id, group_id = _resolve_ids_for_reviews(
                     session=session,
                     question_group_title=row["question_group_title"],
-                    reviewer_email=row["reviewer_email"],  # 使用 reviewer_email 字段
+                    user_name=row.get("user_name", None),
                     video_ref=row.get("video_uid") or row["video_uid"],
                     project_name=row["project_name"],
                 )
@@ -284,7 +289,7 @@ def upload_reviews_from_json(
                 # (optional) warn if something was dropped
                 dropped = set(row["answers"]) - legal_keys
                 if dropped:
-                    print(f"[WARN] {row['video_uid']} | reviewer:{row['reviewer_email']} "
+                    print(f"[WARN] {row['video_uid']} | reviewer:{row['user_name']} "
                           f"dropped keys: {dropped}")
 
                 # ----- verify remaining answers -----------------------------------
@@ -307,12 +312,12 @@ def upload_reviews_from_json(
                     "confidence": row.get("confidence_scores") or {},
                     "notes":      row.get("notes") or {},
                     "video_uid":  row.get("video_uid", "<unknown>"),
-                    "reviewer_email": row["reviewer_email"],  # 保存原始邮箱
+                    "user_name": row["user_name"],
                 })
 
             except Exception as exc:
                 errors.append(f"[{idx}] {row.get('video_uid')} | "
-                              f"reviewer:{row.get('reviewer_email')}: {exc}")
+                              f"reviewer:{row.get('user_name')}: {exc}")
 
     if errors:
         print("\nVERIFICATION FAILED – nothing uploaded.")
@@ -341,7 +346,7 @@ def upload_reviews_from_json(
                 )
                 ok += 1
             except Exception as exc:
-                print(f"[FAIL] {rec['video_uid']} | reviewer:{rec['reviewer_email']}: {exc}")
+                print(f"[FAIL] {rec['video_uid']} | reviewer:{rec['user_name']}: {exc}")
                 fail += 1
 
     print(f"\nUpload finished – {ok} succeeded, {fail} failed.")

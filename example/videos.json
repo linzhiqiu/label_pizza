@@ -1,15 +1,15 @@
 [
   {
-    "url": "https://huggingface.co/datasets/zhiqiulin/video_captioning/resolve/main/d0yGdNEWdn0.0.7.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",
     "metadata": {
-      "original_url": "https://www.youtube.com/watch?v=d0yGdNEWdn0",
+      "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
       "license": "Standard YouTube License"
     }
   },
   {
-    "url": "https://huggingface.co/datasets/zhiqiulin/video_captioning/resolve/main/oVXs1Lo_4pk_2400_4200.0.0.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
     "metadata": {
-      "original_url": "https://www.youtube.com/watch?v=oVXs1Lo_4pk",
+      "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
       "license": "Standard YouTube License"
     }
   }

@@ -1,0 +1,42 @@
+[
+    {
+        "question_group_title": "NSFW",
+        "project_name": "Human Test 0",
+        "user_name": "User 1",
+        "video_uid": "human.mp4",
+        "answers": {
+            "Is the video not safe for work?": "No"
+        },
+        "is_ground_truth": false
+    },
+    {
+        "question_group_title": "NSFW",
+        "project_name": "Human Test 0",
+        "user_name": "User 1",
+        "video_uid": "pizza.mp4",
+        "answers": {
+            "Is the video not safe for work?": "No"
+        },
+        "is_ground_truth": false
+    },
+    {
+        "question_group_title": "NSFW",
+        "project_name": "Pizza Test 0",
+        "user_name": "User 1",
+        "video_uid": "human.mp4",
+        "answers": {
+            "Is the video not safe for work?": "No"
+        },
+        "is_ground_truth": false
+    },
+    {
+        "question_group_title": "NSFW",
+        "project_name": "Pizza Test 0",
+        "user_name": "User 1",
+        "video_uid": "pizza.mp4",
+        "answers": {
+            "Is the video not safe for work?": "No"
+        },
+        "is_ground_truth": false
+    }
+]

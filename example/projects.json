@@ -3,16 +3,16 @@
     "project_name": "Human Test 0",
     "schema_name": "Questions about Humans",
     "videos": [
-      "d0yGdNEWdn0.0.7.mp4",
-      "oVXs1Lo_4pk_2400_4200.0.0.mp4"
+      "human.mp4",
+      "pizza.mp4"
     ]
   },
   {
     "project_name": "Pizza Test 0",
     "schema_name": "Questions about Pizzas",
     "videos": [
-      "d0yGdNEWdn0.0.7.mp4",
-      "oVXs1Lo_4pk_2400_4200.0.0.mp4"
+      "human.mp4",
+      "pizza.mp4"
     ]
   }
 ]

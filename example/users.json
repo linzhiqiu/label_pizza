@@ -10,5 +10,10 @@
         "email": "user1@example.com",
         "password": "user111",
         "user_type": "human"
+    },
+    {
+        "user_id": "Robot 1",
+        "password": "robot111",
+        "user_type": "model"
     }
 ]

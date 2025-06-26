@@ -592,7 +592,6 @@ def upload_users(users_path: str = None, users_data: list[dict] = None):
 
     with SessionLocal() as session:
         existing_users = AuthService.get_all_users(session)
-        existing_emails = set(existing_users['Email'].tolist())
         existing_user_ids = set(existing_users['User ID'].tolist())
 
         for user in users_data:
@@ -601,8 +600,8 @@ def upload_users(users_path: str = None, users_data: list[dict] = None):
             password = user['password']
             user_type = user.get('user_type', 'human')
 
-            if email in existing_emails or user_id in existing_user_ids:
-                print(f"User {email} or user_id {user_id} already exists, skipping.")
+            if user_id in existing_user_ids:
+                print(f"User {user_id} already exists, skipping.")
                 continue
 
             # Hash the password (sha256)
@@ -729,14 +728,23 @@ def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] 
         try:
             for assignment in assignments_data:
                 try:
-                    user = AuthService.get_user_by_email(assignment["user_email"], session)
+                    user = AuthService.get_user_by_name(assignment["user_name"], session)
                     project = ProjectService.get_project_by_name(assignment["project_name"], session)
                     
                     # Skip global admin users
                     if user.user_type == "admin":
-                        print(f"⚠️ Skipped: {assignment['user_email']} is a global admin, cannot assign non-admin role")
+                        print(f"⚠️ Skipped: {assignment['user_name']} is a global admin, cannot assign non-admin role")
                         continue
-                    
+                    if user.user_type == "model":
+                        new_role = assignment["role"]
+                        ProjectService.add_user_to_project(
+                            project_id=project.id,
+                            user_id=user.id, 
+                            role=new_role,
+                            session=session
+                        )
+                        print(f"✓ Assigned model user {assignment['user_name']} to {assignment['project_name']} as {new_role}")
+                        continue
                     # Get user's projects by role using service function
                     user_projects = AuthService.get_user_projects_by_role(user.id, session)
                     
@@ -764,7 +772,7 @@ def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] 
                             role=new_role,
                             session=session
                         )
-                        print(f"✓ Assigned {assignment['user_email']} to {assignment['project_name']} as {new_role}")
+                        print(f"✓ Assigned {assignment['user_name']} to {assignment['project_name']} as {new_role}")
                         
                     elif current_role == "annotator" and new_role == "reviewer":
                         # annotator -> reviewer: Update
@@ -774,11 +782,11 @@ def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] 
                             role=new_role,
                             session=session
                         )
-                        print(f"✓ Updated {assignment['user_email']} from annotator to reviewer in {assignment['project_name']}")
+                        print(f"✓ Updated {assignment['user_name']} from annotator to reviewer in {assignment['project_name']}")
                         
                     elif current_role == "reviewer" and new_role == "annotator":
                         # reviewer -> annotator: Ignore
-                        print(f"⚠️ Ignored: {assignment['user_email']} already reviewer, not downgrading to annotator in {assignment['project_name']}")
+                        print(f"⚠️ Ignored: {assignment['user_name']} already reviewer, not downgrading to annotator in {assignment['project_name']}")
                         
                     else:
                         # Other cases: Update role
@@ -788,7 +796,7 @@ def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] 
                             role=new_role,
                             session=session
                         )
-                        print(f"✓ Updated {assignment['user_email']} role to {new_role} in {assignment['project_name']}")
+                        print(f"✓ Updated {assignment['user_name']} role to {new_role} in {assignment['project_name']}")
                     
                 except Exception as e:
                     print(f"✗ Failed: {e}")

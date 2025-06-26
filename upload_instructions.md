@@ -34,16 +34,16 @@ Contains one entry per video that should be available to projects.
 ```
 [
   {
-    "url": "https://huggingface.co/datasets/zhiqiulin/video_captioning/resolve/main/d0yGdNEWdn0.0.7.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",
     "metadata": {
-      "original_url": "https://www.youtube.com/watch?v=d0yGdNEWdn0",
+      "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
       "license": "Standard YouTube License"
     }
   },
   {
-    "url": "https://huggingface.co/datasets/zhiqiulin/video_captioning/resolve/main/oVXs1Lo_4pk_2400_4200.0.0.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
     "metadata": {
-      "original_url": "https://www.youtube.com/watch?v=oVXs1Lo_4pk",
+      "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
       "license": "Standard YouTube License"
     }
   }
@@ -149,16 +149,16 @@ Binds a schema to a collection of videos.  Video filenames must match the `origi
     "project_name": "Human Test 0",
     "schema_name": "Questions about Humans",
     "videos": [
-      "d0yGdNEWdn0.0.7.mp4",
-      "oVXs1Lo_4pk_2400_4200.0.0.mp4"
+      "human.mp4",
+      "pizza.mp4"
     ]
   },
   {
     "project_name": "Pizza Test 0",
     "schema_name": "Questions about Pizzas",
     "videos": [
-      "d0yGdNEWdn0.0.7.mp4",
-      "oVXs1Lo_4pk_2400_4200.0.0.mp4"
+      "human.mp4",
+      "pizza.mp4"
     ]
   }
 ]
@@ -194,20 +194,20 @@ Both directories share the same JSON structure.  Use `annotations/` for initial 
     "question_group_title": "Human",
     "project_name": "Human Test 0",
     "user_email": "user1@example.com",
-    "video_uid": "d0yGdNEWdn0.0.7.mp4",
+    "video_uid": "human.mp4",
     "answers": {
-      "Number of people?": "0",
-      "If there are people, describe them.": ""
+      "Number of people?": "1",
+      "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     }
   },
   {
     "question_group_title": "Human",
     "project_name": "Human Test 0",
     "user_email": "user1@example.com",
-    "video_uid": "oVXs1Lo_4pk_2400_4200.0.0.mp4",
+    "video_uid": "pizza.mp4",
     "answers": {
-      "Number of people?": "1",
-      "If there are people, describe them.": "The person is tall and slim."
+      "Number of people?": "0",
+      "If there are people, describe them.": ""
     }
   }
 ]
@@ -220,20 +220,20 @@ Both directories share the same JSON structure.  Use `annotations/` for initial 
     "question_group_title": "Human",
     "project_name": "Human Test 0",
     "reviewer_email": "admin1@example.com",
-    "video_uid": "d0yGdNEWdn0.0.7.mp4",
+    "video_uid": "human.mp4",
     "answers": {
-      "Number of people?": "0",
-      "If there are people, describe them.": ""
+      "Number of people?": "1",
+      "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     }
   },
   {
     "question_group_title": "Human",
     "project_name": "Human Test 0",
     "reviewer_email": "admin1@example.com",
-    "video_uid": "oVXs1Lo_4pk_2400_4200.0.0.mp4",
+    "video_uid": "pizza.mp4",
     "answers": {
-      "Number of people?": "1",
-      "If there are people, describe them.": "The person is tall and slim."
+      "Number of people?": "0",
+      "If there are people, describe them.": ""
     }
   }
 ]
@@ -248,6 +248,8 @@ Follow the steps **in order** so that every dependency (users → question group
 > Upload all the videos from `./videos` folder. Videos should be stored in `.json` file.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from scripts.upload_utils import upload_videos
 import json
 
@@ -265,6 +267,8 @@ upload_videos(videos_data=videos)
 > Upload all the users from `./users` folder. Users should be stored in `.json` file.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from scripts.upload_utils import upload_users
 import json
 
@@ -281,6 +285,8 @@ upload_users(users_data=users)
 > Upload all the schemas / question groups / questions from `./schemas` and `./question_groups` folders. They should be stored in `.json` file.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from scripts.upload_utils import create_schemas
 
 create_schemas(
@@ -294,6 +300,8 @@ create_schemas(
 > Skip this step if `projects.json` is already prepared.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from import_annotations import get_project_from_annotations
 import itertools, json
 
@@ -317,6 +325,8 @@ with open("./example/projects.json", "w") as f:
 >Create Projects from existing annotations / reviews (This is somehow complex now). You could just look it for reference.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from scripts.upload_utils import create_projects
 import json
 
@@ -333,6 +343,8 @@ create_projects(projects_data=projects)
 > Assign Users to Projects from `./assignment` folder. Assignment should be stored in `.json` file.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from scripts.upload_utils import bulk_assign_users
 import json
 
@@ -349,6 +361,8 @@ bulk_assign_users(assignments_data=assignments)
 > Import all the annotations from `./annotations` folder.
 
 ```
+from label_pizza.db import init_database
+init_database()
 from import_annotations import import_annotations, import_reviews
 
 import_annotations(annotations_folder="./example/annotations")

@@ -1,22 +1,24 @@
 [
-    {
-      "question_group_title": "Pizza",
-      "project_name": "Pizza Test 0",
-      "user_email": "user1@example.com",
-      "video_uid": "d0yGdNEWdn0.0.7.mp4",
-      "answers": {
-        "Number of pizzas?": "0",
-        "If there are pizzas, describe them.": ""
-      }
+  {
+    "question_group_title": "Pizza",
+    "project_name": "Pizza Test 0",
+    "user_name": "User 1",
+    "video_uid": "human.mp4",
+    "answers": {
+      "Number of pizzas?": "0",
+      "If there are pizzas, describe them.": ""
     },
-    {
-      "question_group_title": "Pizza",
-      "project_name": "Pizza Test 0",
-      "user_email": "user1@example.com",
-      "video_uid": "oVXs1Lo_4pk_2400_4200.0.0.mp4",
-      "answers": {
-        "Number of pizzas?": "1",
-        "If there are pizzas, describe them.": "The huge pizza is on the table."
-      }
-    }
-  ]
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Pizza",
+    "project_name": "Pizza Test 0",
+    "user_name": "User 1",
+    "video_uid": "pizza.mp4",
+    "answers": {
+      "Number of pizzas?": "1",
+      "If there are pizzas, describe them.": "The huge pizza looks delicious."
+    },
+    "is_ground_truth": false
+  }
+]

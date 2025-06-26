@@ -243,6 +243,10 @@ Both directories share the same JSON structure.  Use `annotations/` for initial 
 
 Follow the steps **in order** so that every dependency (users → question groups → schemas → videos → projects → assignments → annotations) is satisfied.
 
+#### Create example in just 1 line
+
+`python create_example_project.py`
+
 #### Step 1 Upload Videos
 
 > Upload all the videos from `./videos` folder. Videos should be stored in `.json` file.

@@ -14,7 +14,7 @@ def run_label_pizza_setup(database_url_name, folder_path):
     from label_pizza.db import init_database
     init_database(database_url_name) # This will initialize the database; importantly to do this before importing utils which uses the database session
 
-    from label_pizza.upload_utils import upload_videos, upload_users, create_schemas, create_projects, bulk_assign_users, upload_annotations, upload_reviews
+    from label_pizza.upload_utils import upload_videos, upload_users, upload_question_groups, upload_schemas, create_projects, bulk_assign_users, batch_upload_annotations, batch_upload_reviews
 
     # 1. Upload videos
     videos_path = os.path.join(folder_path, "videos.json")
@@ -32,14 +32,20 @@ def run_label_pizza_setup(database_url_name, folder_path):
     else:
         print(f"Skipping users upload - {users_path} not found")
 
-    # 3. Upload schemas
-    schemas_path = os.path.join(folder_path, "schemas.json")
+    # 3. Upload Question Groups
     question_groups_folder = os.path.join(folder_path, "question_groups")
+    if os.path.exists(question_groups_folder):
+        print(f"Uploading question groups from {question_groups_folder}")
+        upload_question_groups(question_groups_folder=question_groups_folder)
+    else:
+        print(f"Skipping question groups upload - {question_groups_folder} not found")
+
+    # 4. Upload schemas
+    schemas_path = os.path.join(folder_path, "schemas.json")
     if os.path.exists(schemas_path) and os.path.exists(question_groups_folder):
         print(f"Creating schemas from {schemas_path} and {question_groups_folder}")
-        create_schemas(
-            schemas_path=schemas_path, 
-            question_groups_folder=question_groups_folder
+        upload_schemas(
+            schemas_path=schemas_path
         )
     else:
         print(f"Skipping schemas creation - missing {schemas_path} or {question_groups_folder}")
@@ -66,7 +72,7 @@ def run_label_pizza_setup(database_url_name, folder_path):
     annotations_folder = os.path.join(folder_path, "annotations")
     if os.path.exists(annotations_folder):
         print(f"Importing annotations from {annotations_folder}")
-        upload_annotations(annotations_folder=annotations_folder)
+        batch_upload_annotations(annotations_folder=annotations_folder)
     else:
         print(f"Skipping annotations import - {annotations_folder} not found")
 
@@ -74,7 +80,7 @@ def run_label_pizza_setup(database_url_name, folder_path):
     reviews_folder = os.path.join(folder_path, "reviews")
     if os.path.exists(reviews_folder):
         print(f"Importing reviews from {reviews_folder}")
-        upload_reviews(reviews_folder=reviews_folder)
+        batch_upload_reviews(reviews_folder=reviews_folder)
     else:
         print(f"Skipping reviews import - {reviews_folder} not found")
 

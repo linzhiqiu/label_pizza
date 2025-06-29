@@ -310,11 +310,14 @@ upload_videos(videos_path="./example/videos.json")
 Load the question groups and schemas from the `question_groups/` folder and `schemas.json`.
 
 ```python
-from label_pizza.upload_utils import create_schemas
+from label_pizza.upload_utils import upload_question_groups, upload_schemas
 
-create_schemas(
-    schemas_path="./example/schemas.json",
+upload_question_groups(
     question_groups_folder="./example/question_groups"
+)
+
+upload_schemas(
+    schemas_path="./example/schemas.json"
 )
 ```
 
@@ -355,6 +358,6 @@ Finally, upload any pre‑existing annotations and reviewer ground truth.
 ```python
 from label_pizza.upload_utils import upload_annotations, upload_reviews
 
-upload_annotations(annotations_folder="./example/annotations")
-upload_reviews(reviews_folder="./example/reviews")
+batch_upload_annotations(annotations_folder="./example/annotations")
+batch_upload_reviews(reviews_folder="./example/reviews")
 ```

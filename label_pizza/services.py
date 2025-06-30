@@ -3857,41 +3857,43 @@ class GroundTruthService(BaseAnswerService):
     @staticmethod
     def get_ground_truth_for_question_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> pd.DataFrame:
         """Get ground truth for all questions in a specific question group."""
-        # First get question IDs in the group
-        questions = session.scalars(
-            select(Question.id)
-            .join(question_group_association)
-            .where(question_group_association.c.question_group_id == question_group_id)
-        ).all()
         
-        if not questions:
+        # Use existing service method to get questions
+        try:
+            questions = QuestionService.get_questions_by_group_id(group_id=question_group_id, session=session)
+            if not questions:
+                return pd.DataFrame()
+            
+            question_ids = [q["id"] for q in questions]
+            
+            # Get ground truth for these specific questions
+            gts = session.scalars(
+                select(ReviewerGroundTruth)
+                .where(
+                    ReviewerGroundTruth.video_id == video_id,
+                    ReviewerGroundTruth.project_id == project_id,
+                    ReviewerGroundTruth.question_id.in_(question_ids)
+                )
+            ).all()
+            
+            return pd.DataFrame([
+                {
+                    "Question ID": gt.question_id,
+                    "Answer Value": gt.answer_value,
+                    "Original Value": gt.original_answer_value,
+                    "Reviewer ID": gt.reviewer_id,
+                    "Modified At": gt.modified_at,
+                    "Modified By Admin": gt.modified_by_admin_id,
+                    "Modified By Admin At": gt.modified_by_admin_at,
+                    "Confidence Score": gt.confidence_score,
+                    "Created At": gt.created_at,
+                    "Notes": gt.notes
+                }
+                for gt in gts
+            ])
+        except Exception as e:
+            print(f"Error in get_ground_truth_for_question_group: {e}")
             return pd.DataFrame()
-        
-        # Get ground truth for these specific questions
-        gts = session.scalars(
-            select(ReviewerGroundTruth)
-            .where(
-                ReviewerGroundTruth.video_id == video_id,
-                ReviewerGroundTruth.project_id == project_id,
-                ReviewerGroundTruth.question_id.in_(questions)
-            )
-        ).all()
-        
-        return pd.DataFrame([
-            {
-                "Question ID": gt.question_id,
-                "Answer Value": gt.answer_value,
-                "Original Value": gt.original_answer_value,
-                "Reviewer ID": gt.reviewer_id,
-                "Modified At": gt.modified_at,
-                "Modified By Admin": gt.modified_by_admin_id,
-                "Modified By Admin At": gt.modified_by_admin_at,
-                "Confidence Score": gt.confidence_score,
-                "Created At": gt.created_at,
-                "Notes": gt.notes
-            }
-            for gt in gts
-        ])
 
     @staticmethod
     def check_ground_truth_exists_for_question(video_id: int, project_id: int, question_id: int, session: Session) -> bool:
@@ -3918,31 +3920,6 @@ class GroundTruthService(BaseAnswerService):
     #             ReviewerGroundTruth.modified_by_admin_id.is_not(None)
     #         )
     #     ) > 0
-
-    @staticmethod
-    def check_all_questions_have_ground_truth_for_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> bool:
-        """Check if ALL questions in a group have ground truth."""
-        # Get count of questions in group
-        question_count = session.scalar(
-            select(func.count(question_group_association.c.question_id))
-            .where(question_group_association.c.question_group_id == question_group_id)
-        )
-        
-        if question_count == 0:
-            return False
-        
-        # Get count of ground truth records for questions in this group
-        gt_count = session.scalar(
-            select(func.count(ReviewerGroundTruth.question_id))
-            .join(question_group_association, ReviewerGroundTruth.question_id == question_group_association.c.question_id)
-            .where(
-                ReviewerGroundTruth.video_id == video_id,
-                ReviewerGroundTruth.project_id == project_id,
-                question_group_association.c.question_group_id == question_group_id
-            )
-        )
-        
-        return gt_count == question_count
 
     @staticmethod
     def get_ground_truth_for_question(video_id: int, project_id: int, question_id: int, session: Session) -> Optional[Dict]:
@@ -4507,7 +4484,7 @@ class GroundTruthService(BaseAnswerService):
         return text_answers
     
     @staticmethod
-    def get_ground_truth_for_question_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> Dict[str, str]:
+    def get_ground_truth_dict_for_question_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> Dict[str, str]:
         """Get existing ground truth for a video and question group.
         
         Args:
@@ -5117,7 +5094,7 @@ class ReviewerAutoSubmitService:
             # Check existing GROUND TRUTH answers
             existing_answers = {}
             try:
-                existing_answers = GroundTruthService.get_ground_truth_for_question_group(
+                existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
                     video_id=video_id, project_id=project_id, 
                     question_group_id=question_group_id, session=session
                 )
@@ -5140,7 +5117,7 @@ class ReviewerAutoSubmitService:
                 if custom_option_weights and question_id in custom_option_weights:
                     question_custom_weights = custom_option_weights[question_id]
                 
-                vote_weights = get_weighted_votes_for_question_with_custom_weights(
+                vote_weights = ReviewerAutoSubmitService.get_weighted_votes_for_question_with_custom_weights(
                     video_id=video_id, project_id=project_id, question_id=question_id,
                     include_user_ids=include_user_ids, virtual_responses=virtual_responses, 
                     session=session, user_weights=user_weights,
@@ -5176,94 +5153,52 @@ class ReviewerAutoSubmitService:
         except Exception as e:
             raise ValueError(f"Error calculating auto-submit ground truth: {str(e)}")
 
-
-def get_weighted_votes_for_question_with_custom_weights(
-    video_id: int, 
-    project_id: int, 
-    question_id: int,
-    include_user_ids: List[int],
-    virtual_responses: List[Dict],
-    session: Session,
-    user_weights: Dict[int, float] = None,
-    custom_option_weights: Dict[str, float] = None,
-    cache_data: Dict = None  # ADD THIS PARAMETER
-) -> Dict[str, float]:
-    """
-    OPTIMIZED: Uses cached data when available to avoid database queries
-    """
-    try:
-        # Get question details - still need this for option weights
-        question = QuestionService.get_question_by_id(question_id=question_id, session=session)
-        if not question:
-            return {}
-        
-        user_weights = user_weights or {}
-        vote_weights = {}
-        
-        # OPTIMIZED: Use cached data if available
-        if cache_data and question_id in cache_data.get("annotator_answers", {}):
-            # Use cached answers
-            for answer_record in cache_data["annotator_answers"][question_id]:
-                user_id = int(answer_record["User ID"])
-                answer_value = str(answer_record["Answer Value"])
-                
-                # Get user weight - prioritize passed weights, then cached, then default
-                user_weight = user_weights.get(user_id)
-                if user_weight is None:
-                    # Try to get from cache first
-                    if user_id in cache_data.get("user_weights", {}):
-                        user_weight = float(cache_data["user_weights"][user_id])
-                    else:
-                        # Fallback to service method
-                        try:
-                            project_user_weights = AuthService.get_user_weights_for_project(
-                                project_id=project_id, session=session
-                            )
-                            user_weight = float(project_user_weights.get(user_id, 1.0))
-                        except:
-                            user_weight = 1.0
-                
-                # Use custom option weights if provided (for reviewers)
-                option_weight = 1.0
-                if question["type"] == "single":
-                    if custom_option_weights and answer_value in custom_option_weights:
-                        option_weight = float(custom_option_weights[answer_value])
-                    elif question["option_weights"]:
-                        try:
-                            option_index = question["options"].index(answer_value)
-                            option_weight = float(question["option_weights"][option_index])
-                        except (ValueError, IndexError):
-                            option_weight = 1.0
-                
-                # Combined weight = user_weight * option_weight
-                combined_weight = user_weight * option_weight
-                vote_weights[answer_value] = vote_weights.get(answer_value, 0.0) + combined_weight
-        else:
-            # Fallback to original method if no cache
-            answers_df = AnnotatorService.get_question_answers(
-                question_id=question_id, project_id=project_id, session=session
-            )
+    @staticmethod
+    def get_weighted_votes_for_question_with_custom_weights(
+        video_id: int, 
+        project_id: int, 
+        question_id: int,
+        include_user_ids: List[int],
+        virtual_responses: List[Dict],
+        session: Session,
+        user_weights: Dict[int, float] = None,
+        custom_option_weights: Dict[str, float] = None,
+        cache_data: Dict = None  # ADD THIS PARAMETER
+    ) -> Dict[str, float]:
+        """
+        OPTIMIZED: Uses cached data when available to avoid database queries
+        """
+        try:
+            # Get question details - still need this for option weights
+            question = QuestionService.get_question_by_id(question_id=question_id, session=session)
+            if not question:
+                return {}
             
-            if not answers_df.empty:
-                video_answers = answers_df[
-                    (answers_df["Video ID"] == video_id) & 
-                    (answers_df["User ID"].isin(include_user_ids))
-                ]
-                
-                for _, answer_row in video_answers.iterrows():
-                    user_id = int(answer_row["User ID"])
-                    answer_value = str(answer_row["Answer Value"])
+            user_weights = user_weights or {}
+            vote_weights = {}
+            
+            # OPTIMIZED: Use cached data if available
+            if cache_data and question_id in cache_data.get("annotator_answers", {}):
+                # Use cached answers
+                for answer_record in cache_data["annotator_answers"][question_id]:
+                    user_id = int(answer_record["User ID"])
+                    answer_value = str(answer_record["Answer Value"])
                     
-                    # Get user weight - prioritize passed weights, then service, then default
+                    # Get user weight - prioritize passed weights, then cached, then default
                     user_weight = user_weights.get(user_id)
                     if user_weight is None:
-                        try:
-                            project_user_weights = AuthService.get_user_weights_for_project(
-                                project_id=project_id, session=session
-                            )
-                            user_weight = float(project_user_weights.get(user_id, 1.0))
-                        except:
-                            user_weight = 1.0
+                        # Try to get from cache first
+                        if user_id in cache_data.get("user_weights", {}):
+                            user_weight = float(cache_data["user_weights"][user_id])
+                        else:
+                            # Fallback to service method
+                            try:
+                                project_user_weights = AuthService.get_user_weights_for_project(
+                                    project_id=project_id, session=session
+                                )
+                                user_weight = float(project_user_weights.get(user_id, 1.0))
+                            except:
+                                user_weight = 1.0
                     
                     # Use custom option weights if provided (for reviewers)
                     option_weight = 1.0
@@ -5280,31 +5215,73 @@ def get_weighted_votes_for_question_with_custom_weights(
                     # Combined weight = user_weight * option_weight
                     combined_weight = user_weight * option_weight
                     vote_weights[answer_value] = vote_weights.get(answer_value, 0.0) + combined_weight
-        
-        # Add virtual responses (unchanged)
-        for virtual_response in virtual_responses:
-            answer_value = str(virtual_response["answer"])
-            user_weight = float(virtual_response["user_weight"])
-            
-            option_weight = 1.0
-            if question["type"] == "single":
-                if custom_option_weights and answer_value in custom_option_weights:
-                    option_weight = float(custom_option_weights[answer_value])
-                elif question["option_weights"]:
-                    try:
-                        option_index = question["options"].index(answer_value)
-                        option_weight = float(question["option_weights"][option_index])
-                    except (ValueError, IndexError):
+            else:
+                # Fallback to original method if no cache
+                answers_df = AnnotatorService.get_question_answers(
+                    question_id=question_id, project_id=project_id, session=session
+                )
+                
+                if not answers_df.empty:
+                    video_answers = answers_df[
+                        (answers_df["Video ID"] == video_id) & 
+                        (answers_df["User ID"].isin(include_user_ids))
+                    ]
+                    
+                    for _, answer_row in video_answers.iterrows():
+                        user_id = int(answer_row["User ID"])
+                        answer_value = str(answer_row["Answer Value"])
+                        
+                        # Get user weight - prioritize passed weights, then service, then default
+                        user_weight = user_weights.get(user_id)
+                        if user_weight is None:
+                            try:
+                                project_user_weights = AuthService.get_user_weights_for_project(
+                                    project_id=project_id, session=session
+                                )
+                                user_weight = float(project_user_weights.get(user_id, 1.0))
+                            except:
+                                user_weight = 1.0
+                        
+                        # Use custom option weights if provided (for reviewers)
                         option_weight = 1.0
+                        if question["type"] == "single":
+                            if custom_option_weights and answer_value in custom_option_weights:
+                                option_weight = float(custom_option_weights[answer_value])
+                            elif question["option_weights"]:
+                                try:
+                                    option_index = question["options"].index(answer_value)
+                                    option_weight = float(question["option_weights"][option_index])
+                                except (ValueError, IndexError):
+                                    option_weight = 1.0
+                        
+                        # Combined weight = user_weight * option_weight
+                        combined_weight = user_weight * option_weight
+                        vote_weights[answer_value] = vote_weights.get(answer_value, 0.0) + combined_weight
             
-            # Combined weight = user_weight * option_weight
-            combined_weight = user_weight * option_weight
-            vote_weights[answer_value] = vote_weights.get(answer_value, 0.0) + combined_weight
-        
-        return vote_weights
-        
-    except Exception as e:
-        raise ValueError(f"Error calculating weighted votes: {str(e)}")
+            # Add virtual responses (unchanged)
+            for virtual_response in virtual_responses:
+                answer_value = str(virtual_response["answer"])
+                user_weight = float(virtual_response["user_weight"])
+                
+                option_weight = 1.0
+                if question["type"] == "single":
+                    if custom_option_weights and answer_value in custom_option_weights:
+                        option_weight = float(custom_option_weights[answer_value])
+                    elif question["option_weights"]:
+                        try:
+                            option_index = question["options"].index(answer_value)
+                            option_weight = float(question["option_weights"][option_index])
+                        except (ValueError, IndexError):
+                            option_weight = 1.0
+                
+                # Combined weight = user_weight * option_weight
+                combined_weight = user_weight * option_weight
+                vote_weights[answer_value] = vote_weights.get(answer_value, 0.0) + combined_weight
+            
+            return vote_weights
+            
+        except Exception as e:
+            raise ValueError(f"Error calculating weighted votes: {str(e)}")
 
 class GroundTruthExportService:
     @staticmethod

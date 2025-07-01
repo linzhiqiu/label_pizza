@@ -5,7 +5,8 @@ from typing import List, Optional, Dict, Any, Tuple
 from label_pizza.models import (
     Video, Project, ProjectVideo, Schema, QuestionGroup,
     Question, ProjectUserRole, AnnotatorAnswer, ReviewerGroundTruth, User, AnswerReview,
-    QuestionGroupQuestion, SchemaQuestionGroup, ProjectGroup, ProjectGroupProject
+    QuestionGroupQuestion, SchemaQuestionGroup, ProjectGroup, ProjectGroupProject,
+    ProjectVideoQuestionDisplay
 )
 import pandas as pd
 from datetime import datetime, timezone
@@ -682,6 +683,50 @@ class ProjectService:
             'text': q.text,
             'type': q.type
         } for q in questions]
+    
+
+    @staticmethod
+    def get_project_questions_with_custom_display(project_id: int, video_id: int, session: Session) -> List[Dict[str, Any]]:
+        """Get all questions in a project's schema with custom display applied for a specific video.
+        
+        Args:
+            project_id: The ID of the project
+            video_id: The ID of the video (for custom display context)
+            session: Database session
+            
+        Returns:
+            List of question dictionaries with custom display applied
+            
+        Raises:
+            ValueError: If project not found
+        """
+        # Get original questions
+        original_questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+        
+        # Apply custom display to each question
+        result = []
+        for q in original_questions:
+            # Get full question data with custom display
+            question_with_custom = CustomDisplayService.get_custom_display(
+                question_id=q['id'],
+                project_id=project_id,
+                video_id=video_id,
+                session=session
+            )
+            
+            # Return same format as original but with custom display fields
+            result.append({
+                'id': question_with_custom['id'],
+                'text': question_with_custom['text'],
+                'display_text': question_with_custom['display_text'],  # Custom display applied
+                'type': question_with_custom['type'],
+                'options': question_with_custom['options'],
+                'display_values': question_with_custom['display_values'],  # Custom display applied
+                'option_weights': question_with_custom['option_weights'],
+                'default_option': question_with_custom['default_option']
+            })
+        
+        return result
 
 
     @staticmethod
@@ -1072,6 +1117,68 @@ class SchemaService:
             }
             for q in questions
         ])
+
+    @staticmethod
+    def get_schema_questions_with_custom_display(schema_id: int, project_id: int, video_id: int, session: Session) -> pd.DataFrame:
+        """Get all questions in a schema with custom display applied for a specific project-video combination.
+        
+        Args:
+            schema_id: The ID of the schema
+            project_id: The ID of the project (for custom display context)
+            video_id: The ID of the video (for custom display context)
+            session: Database session
+            
+        Returns:
+            DataFrame containing questions with custom display applied (same columns as original)
+            
+        Raises:
+            ValueError: If schema not found
+        """
+        # Check if schema exists
+        schema = session.get(Schema, schema_id)
+        if not schema:
+            raise ValueError(f"Schema with ID {schema_id} not found")
+
+        if not schema.has_custom_display:
+            raise ValueError(f"Schema with ID {schema_id} does not have custom display enabled")
+        
+        # Get questions through question groups with custom display
+        questions = session.scalars(
+            select(Question)
+            .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+            .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
+            .where(SchemaQuestionGroup.schema_id == schema_id)
+        ).all()
+        
+        rows = []
+        for q in questions:
+            # Get custom display data
+            question_with_custom = CustomDisplayService.get_custom_display(
+                question_id=q.id,
+                project_id=project_id,
+                video_id=video_id,
+                session=session
+            )
+            
+            # Get group name
+            group_name = session.scalar(
+                select(QuestionGroup.title)
+                .join(QuestionGroupQuestion, QuestionGroup.id == QuestionGroupQuestion.question_group_id)
+                .where(QuestionGroupQuestion.question_id == q.id)
+            )
+            
+            # Same format as original but with custom display
+            rows.append({
+                "ID": question_with_custom["id"],
+                "Text": question_with_custom["text"],
+                "Display Text": question_with_custom["display_text"],  # Custom display applied
+                "Group": group_name,
+                "Type": question_with_custom["type"],
+                "Options": ", ".join(question_with_custom["options"] or []) if question_with_custom["options"] else "",
+                "Display Values": ", ".join(question_with_custom["display_values"] or []) if question_with_custom["display_values"] else ""  # Custom display applied
+            })
+        
+        return pd.DataFrame(rows)
 
     @staticmethod
     def get_schema_id_by_name(name: str, session: Session) -> int:
@@ -1667,6 +1774,62 @@ class QuestionService:
         ])
     
     @staticmethod
+    def get_all_questions_with_custom_display(project_id: int, video_id: int, session: Session) -> pd.DataFrame:
+        """Get all questions in a project's schema with custom display applied for a specific video.
+        
+        Args:
+            project_id: Project ID 
+            video_id: Video ID (for custom display context)
+            session: Database session
+            
+        Returns:
+            DataFrame containing all questions with custom display applied
+            
+        Raises:
+            ValueError: If project not found
+        """
+        # Get project to find schema
+        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        
+        # Get all questions in project's schema
+        qs = session.scalars(
+            select(Question)
+            .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+            .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
+            .where(SchemaQuestionGroup.schema_id == project.schema_id)
+        ).all()
+        
+        rows = []
+        for q in qs:
+            # Get custom display data
+            question_with_custom = CustomDisplayService.get_custom_display(
+                question_id=q.id,
+                project_id=project_id,
+                video_id=video_id,
+                session=session
+            )
+            
+            # Get group name
+            group_name = session.scalar(
+                select(QuestionGroup.title)
+                .join(QuestionGroupQuestion, QuestionGroup.id == QuestionGroupQuestion.question_group_id)
+                .where(QuestionGroupQuestion.question_id == q.id)
+            )
+            
+            # Same format as original get_all_questions but with custom display
+            rows.append({
+                "ID": question_with_custom["id"], 
+                "Text": question_with_custom["text"], 
+                "Display Text": question_with_custom["display_text"],  # Custom display applied
+                "Type": question_with_custom["type"],
+                "Group": group_name,
+                "Options": ", ".join(question_with_custom["options"] or []) if question_with_custom["options"] else "",
+                "Display Values": ", ".join(question_with_custom["display_values"] or []) if question_with_custom["display_values"] else "",  # Custom display applied  
+                "Default": question_with_custom["default_option"] or "",
+                "Archived": question_with_custom["archived"]
+            })
+    
+    @staticmethod
     def get_question_object_by_id(question_id: int, session: Session) -> Question:
         """Get a question object by its ID.
         
@@ -1936,6 +2099,33 @@ class QuestionService:
         }
 
     @staticmethod
+    def get_question_by_text_with_custom_display(text: str, project_id: int, video_id: int, session: Session) -> Dict[str, Any]:
+        """Get a question by its text with custom display applied for a specific project-video combination.
+        
+        Args:
+            text: Question text (immutable text field)
+            project_id: Project ID (for custom display context)
+            video_id: Video ID (for custom display context)
+            session: Database session
+            
+        Returns:
+            Dictionary with question data including custom display (same format as original)
+            
+        Raises:
+            ValueError: If question not found
+        """
+        # First get the question by text to find its ID
+        original_question = QuestionService.get_question_by_text(text=text, session=session)
+        
+        # Then get it with custom display applied
+        return CustomDisplayService.get_custom_display(
+            question_id=original_question["id"],
+            project_id=project_id,
+            video_id=video_id,
+            session=session
+        )
+
+    @staticmethod
     def get_question_by_id(question_id: int, session: Session) -> Dict[str, Any]:
         """Get a question by its ID.
         
@@ -1965,6 +2155,30 @@ class QuestionService:
             "created_at": question.created_at,
             "archived": question.is_archived
         }
+    
+    @staticmethod 
+    def get_question_by_id_with_custom_display(question_id: int, project_id: int, video_id: int, session: Session) -> Dict[str, Any]:
+        """Get a question by its ID with custom display applied for a specific project-video combination.
+        
+        Args:
+            question_id: Question ID
+            project_id: Project ID (for custom display context)
+            video_id: Video ID (for custom display context)
+            session: Database session
+            
+        Returns:
+            Dictionary with question data including custom display (same format as original)
+            
+        Raises:
+            ValueError: If question not found
+        """
+        # This directly uses our custom display service which already returns the right format
+        return CustomDisplayService.get_custom_display(
+            question_id=question_id,
+            project_id=project_id,
+            video_id=video_id,
+            session=session
+        )
     
     @staticmethod
     def get_questions_by_group_id(group_id: int, session: Session) -> List[Dict[str, Any]]:
@@ -2002,6 +2216,415 @@ class QuestionService:
             "display_values": q.display_values,
             "default_option": q.default_option
         } for q in questions]
+    
+    @staticmethod
+    def get_questions_by_group_id_with_custom_display(group_id: int, project_id: int, video_id: int, session: Session) -> List[Dict[str, Any]]:
+        """Get all questions in a group with custom display applied for a specific project-video combination.
+        
+        Args:
+            group_id: The ID of the question group
+            project_id: The ID of the project (for custom display context)
+            video_id: The ID of the video (for custom display context)
+            session: Database session
+        
+        Returns:
+            List of question dictionaries with custom display applied (same format as original)
+        
+        Raises:
+            ValueError: If group not found
+        """
+        # Get original questions
+        original_questions = QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
+        
+        # Apply custom display to each question
+        result = []
+        for q in original_questions:
+            # Get question with custom display applied
+            question_with_custom = CustomDisplayService.get_custom_display(
+                question_id=q['id'],
+                project_id=project_id,
+                video_id=video_id,
+                session=session
+            )
+            
+            # Return same format as original but with custom display
+            result.append({
+                "id": question_with_custom["id"],
+                "text": question_with_custom["text"],
+                "display_text": question_with_custom["display_text"],  # Custom display applied
+                "type": question_with_custom["type"],
+                "options": question_with_custom["options"],
+                "option_weights": question_with_custom["option_weights"],
+                "display_values": question_with_custom["display_values"],  # Custom display applied
+                "default_option": question_with_custom["default_option"]
+            })
+        
+        return result
+
+class CustomDisplayService:
+    @staticmethod
+    def _validate_project_video_question_relationship(project_id: int, video_id: int, question_id: int, session: Session) -> None:
+        """Validate that video and question are both in the specified project.
+        
+        Args:
+            project_id: Project ID
+            video_id: Video ID  
+            question_id: Question ID
+            session: Database session
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        # Check if video is in project
+        project_video = session.scalar(
+            select(ProjectVideo).where(
+                ProjectVideo.project_id == project_id,
+                ProjectVideo.video_id == video_id
+            )
+        )
+        if not project_video:
+            raise ValueError(f"Video {video_id} is not assigned to project {project_id}")
+        
+        # Check if question is in project's schema
+        project = session.get(Project, project_id)
+        question_in_schema = session.scalar(
+            select(func.count())
+            .select_from(Question)
+            .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+            .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
+            .where(
+                SchemaQuestionGroup.schema_id == project.schema_id,
+                Question.id == question_id
+            )
+        )
+        if not question_in_schema:
+            raise ValueError(f"Question {question_id} is not in project {project_id}'s schema")
+
+    @staticmethod
+    def verify_set_custom_display(
+        project_id: int,
+        video_id: int, 
+        question_id: int,
+        custom_display_text: Optional[str] = None,
+        custom_option_display_map: Optional[Dict[str, str]] = None,
+        session: Session = None
+    ) -> None:
+        """Verify parameters for setting custom display.
+        
+        Args:
+            project_id: Project ID
+            video_id: Video ID
+            question_id: Question ID
+            custom_display_text: Custom display text for question
+            custom_option_display_map: Dict mapping option values to custom display text
+            session: Database session
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        # Validate project exists and is not archived
+        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        if project.is_archived:
+            raise ValueError(f"Project {project_id} is archived")
+        
+        # Validate video exists and is not archived
+        video = session.get(Video, video_id)
+        if not video:
+            raise ValueError(f"Video {video_id} not found")
+        if video.is_archived:
+            raise ValueError(f"Video {video_id} is archived")
+        
+        # Validate question exists and is not archived
+        question_dict = QuestionService.get_question_by_id(question_id=question_id, session=session)
+        if question_dict["archived"]:
+            raise ValueError(f"Question {question_id} is archived")
+        
+        reusable_group_count = session.scalar(
+            select(func.count())
+            .select_from(QuestionGroup)
+            .join(QuestionGroupQuestion, QuestionGroup.id == QuestionGroupQuestion.question_group_id)
+            .where(
+                QuestionGroupQuestion.question_id == question_id,
+                QuestionGroup.is_reusable == True,
+                QuestionGroup.is_archived == False
+            )
+        )
+
+        if reusable_group_count > 0:
+            # Get the reusable group names for a better error message
+            reusable_groups = session.scalars(
+                select(QuestionGroup.title)
+                .join(QuestionGroupQuestion, QuestionGroup.id == QuestionGroupQuestion.question_group_id)
+                .where(
+                    QuestionGroupQuestion.question_id == question_id,
+                    QuestionGroup.is_reusable == True,
+                    QuestionGroup.is_archived == False
+                )
+            ).all()
+            
+            group_names = ", ".join(reusable_groups)
+            raise ValueError(
+                f"Cannot set custom display for question {question_id}. "
+                f"Question belongs to reusable question group(s): {group_names}. "
+                f"Reusable groups must maintain consistent display across all schemas."
+            )
+        
+        # Validate project-video-question relationship
+        CustomDisplayService._validate_project_video_question_relationship(
+            project_id=project_id, video_id=video_id, question_id=question_id, session=session
+        )
+        
+        # Check that schema has custom display enabled
+        schema = session.get(Schema, project.schema_id)
+        if not schema.has_custom_display:
+            raise ValueError(f"Schema {schema.id} does not have custom display enabled")
+        
+        # For single-choice questions with custom option mapping
+        if custom_option_display_map is not None:
+            if question_dict["type"] != "single":
+                raise ValueError(f"Custom option display mapping can only be set for single-choice questions, not {question_dict['type']}")
+            
+            if not question_dict["options"]:
+                raise ValueError(f"Question {question_id} has no options defined")
+            
+            # Check that all keys in the mapping are valid option values
+            valid_options = set(question_dict["options"])
+            invalid_options = set(custom_option_display_map.keys()) - valid_options
+            if invalid_options:
+                raise ValueError(f"Invalid option values in custom mapping: {invalid_options}. Valid options: {valid_options}")
+
+    @staticmethod
+    def set_custom_display(
+        project_id: int,
+        video_id: int, 
+        question_id: int,
+        custom_display_text: Optional[str] = None,
+        custom_option_display_map: Optional[Dict[str, str]] = None,
+        session: Session = None
+    ) -> None:
+        """Set custom display for a specific project-video-question combination.
+        
+        Args:
+            project_id: Project ID
+            video_id: Video ID
+            question_id: Question ID
+            custom_display_text: Custom display text for question
+            custom_option_display_map: Dict mapping option values to custom display text
+            session: Database session
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        # Verify all parameters
+        CustomDisplayService.verify_set_custom_display(
+            project_id=project_id,
+            video_id=video_id,
+            question_id=question_id,
+            custom_display_text=custom_display_text,
+            custom_option_display_map=custom_option_display_map,
+            session=session
+        )
+        
+        # Get or create custom display entry
+        custom_display = session.get(
+            ProjectVideoQuestionDisplay,
+            (project_id, video_id, question_id)
+        )
+        
+        if custom_display:
+            # Update existing entry
+            if custom_display_text is not None:
+                custom_display.custom_display_text = custom_display_text
+            if custom_option_display_map is not None:
+                custom_display.custom_option_display_map = custom_option_display_map
+            custom_display.updated_at = datetime.now(timezone.utc)
+        else:
+            # Create new entry
+            custom_display = ProjectVideoQuestionDisplay(
+                project_id=project_id,
+                video_id=video_id,
+                question_id=question_id,
+                custom_display_text=custom_display_text,
+                custom_option_display_map=custom_option_display_map
+            )
+            session.add(custom_display)
+        
+        session.commit()
+
+    @staticmethod
+    def get_custom_display(
+        question_id: int, 
+        project_id: int, 
+        video_id: int, 
+        session: Session
+    ) -> Dict[str, Any]:
+        """Get question display data with custom display if applicable.
+        
+        Args:
+            question_id: Question ID
+            project_id: Project ID
+            video_id: Video ID
+            session: Database session
+            
+        Returns:
+            Dictionary with question data including custom display if applicable
+            
+        Raises:
+            ValueError: If question, project, or video not found
+        """
+        # Get the original question
+        question_dict = QuestionService.get_question_by_id(question_id=question_id, session=session)
+        
+        # Get the project to check if custom display is enabled
+        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        
+        # Get the schema to check custom display flag
+        schema = session.get(Schema, project.schema_id)
+        if not schema or not schema.has_custom_display:
+            # No custom display enabled - return original data
+            return question_dict
+        
+        # Try to get custom display entries
+        custom_display = session.get(
+            ProjectVideoQuestionDisplay, 
+            (project_id, video_id, question_id)
+        )
+        
+        # Start with original question data
+        result = question_dict.copy()
+        
+        if custom_display:
+            # Override display text if available
+            if custom_display.custom_display_text:
+                result["display_text"] = custom_display.custom_display_text
+            
+            # Override option display values if available
+            if (custom_display.custom_option_display_map and 
+                question_dict["type"] == "single" and 
+                question_dict["options"]):
+                
+                # Build new display_values array by mapping original options
+                new_display_values = []
+                for option_value in question_dict["options"]:
+                    custom_display_text = custom_display.custom_option_display_map.get(option_value)
+                    if custom_display_text:
+                        new_display_values.append(custom_display_text)
+                    else:
+                        # Fall back to original display value
+                        original_index = question_dict["options"].index(option_value)
+                        original_display = (question_dict["display_values"][original_index] 
+                                          if question_dict["display_values"] else option_value)
+                        new_display_values.append(original_display)
+                
+                result["display_values"] = new_display_values
+        
+        return result
+
+    @staticmethod
+    def remove_custom_display(
+        project_id: int,
+        video_id: int,
+        question_id: int,
+        session: Session
+    ) -> bool:
+        """Remove custom display for a specific project-video-question combination.
+        
+        Args:
+            project_id: Project ID
+            video_id: Video ID
+            question_id: Question ID
+            session: Database session
+            
+        Returns:
+            True if overrides were removed, False if none existed
+        """
+        custom_display = session.get(
+            ProjectVideoQuestionDisplay,
+            (project_id, video_id, question_id)
+        )
+        
+        if custom_display:
+            session.delete(custom_display)
+            session.commit()
+            return True
+        
+        return False
+
+    @staticmethod
+    def get_all_custom_displays_for_video(
+        project_id: int,
+        video_id: int,
+        session: Session
+    ) -> List[Dict[str, Any]]:
+        """Get all questions that have custom display for a specific project-video combination.
+        
+        Args:
+            project_id: Project ID
+            video_id: Video ID
+            session: Database session
+            
+        Returns:
+            List of dictionaries with custom display information
+        """
+        overrides = session.scalars(
+            select(ProjectVideoQuestionDisplay)
+            .where(
+                ProjectVideoQuestionDisplay.project_id == project_id,
+                ProjectVideoQuestionDisplay.video_id == video_id
+            )
+        ).all()
+        
+        result = []
+        for override in overrides:
+            question_dict = QuestionService.get_question_by_id(question_id=override.question_id, session=session)
+            result.append({
+                "question_id": override.question_id,
+                "question_text": question_dict["text"],
+                "has_custom_text": override.custom_display_text is not None,
+                "has_custom_options": override.custom_option_display_map is not None,
+                "custom_display_text": override.custom_display_text,
+                "custom_option_display_map": override.custom_option_display_map
+            })
+        
+        return result
+
+    @staticmethod
+    def get_all_custom_displays_for_project(
+        project_id: int,
+        session: Session
+    ) -> List[Dict[str, Any]]:
+        """Get all custom display entries for a project.
+        
+        Args:
+            project_id: Project ID
+            session: Database session
+            
+        Returns:
+            List of dictionaries with all custom display overrides
+        """
+        overrides = session.scalars(
+            select(ProjectVideoQuestionDisplay)
+            .where(ProjectVideoQuestionDisplay.project_id == project_id)
+        ).all()
+        
+        result = []
+        for override in overrides:
+            video = session.get(Video, override.video_id)
+            question_dict = QuestionService.get_question_by_id(question_id=override.question_id, session=session)
+            
+            result.append({
+                "project_id": override.project_id,
+                "video_id": override.video_id,
+                "video_uid": video.video_uid if video else None,
+                "question_id": override.question_id,
+                "question_text": question_dict["text"],
+                "custom_display_text": override.custom_display_text,
+                "custom_option_display_map": override.custom_option_display_map,
+                "created_at": override.created_at,
+                "updated_at": override.updated_at
+            })
+        
+        return result
 
 
 class AuthService:
@@ -2100,6 +2723,8 @@ class AuthService:
         Raises:
             ValueError: If user not found
         """
+        if not email:
+            raise ValueError("Email is required")
         user = session.scalar(select(User).where(User.email == email))
         if not user:
             raise ValueError(f"User with email '{email}' not found")
@@ -2406,7 +3031,7 @@ class AuthService:
         """Create a new user with validation."""
         if user_type not in ["human", "model", "admin"]:
             raise ValueError("Invalid user type. Must be one of: human, model, admin")
-        
+    
         # For model users, email should be None
         if user_type == "model":
             if email:
@@ -2414,16 +3039,27 @@ class AuthService:
         elif not email:
             raise ValueError("Email is required for human and admin users")
         
-        # Check if user already exists
-        existing_user = session.scalar(
-            select(User).where(
-                (User.user_id_str == user_id) | 
-                (User.email == email)
+        # Check if user already exists - handle model users differently
+        if user_type == "model":
+            # For model users, only check user_id_str since all model users have email=None
+            existing_user = session.scalar(
+                select(User).where(User.user_id_str == user_id)
             )
-        )
-        if existing_user:
-            raise ValueError(f"User with ID '{user_id}' or email '{email}' already exists")
+        else:
+            # For human and admin users, check both user_id_str and email
+            existing_user = session.scalar(
+                select(User).where(
+                    (User.user_id_str == user_id) | 
+                    (User.email == email)
+                )
+            )
         
+        if existing_user:
+            if user_type == "model":
+                raise ValueError(f"Model user with ID '{user_id}' already exists")
+            else:
+                raise ValueError(f"User with ID '{user_id}' or email '{email}' already exists")
+    
         user = User(
             user_id_str=user_id,
             email=email,
@@ -2820,6 +3456,56 @@ class QuestionGroupService:
             for q in questions
         ])
 
+    @staticmethod
+    def get_group_questions_with_custom_display(group_id: int, project_id: int, video_id: int, session: Session) -> pd.DataFrame:
+        """Get all questions in a group with custom display applied for a specific project-video combination.
+        
+        Args:
+            group_id: Group ID
+            project_id: Project ID (for custom display context)
+            video_id: Video ID (for custom display context)
+            session: Database session
+            
+        Returns:
+            DataFrame containing questions with custom display applied (same columns as original)
+            
+        Raises:
+            ValueError: If group not found
+        """
+        # Check if group exists
+        group = session.get(QuestionGroup, group_id)
+        if not group:
+            raise ValueError(f"Question group with ID {group_id} not found")
+        
+        questions = session.scalars(
+            select(Question)
+            .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+            .where(QuestionGroupQuestion.question_group_id == group_id)
+        ).all()
+        
+        rows = []
+        for q in questions:
+            # Get custom display data
+            question_with_custom = CustomDisplayService.get_custom_display(
+                question_id=q.id,
+                project_id=project_id,
+                video_id=video_id,
+                session=session
+            )
+            
+            # Same format as original but with custom display
+            rows.append({
+                "ID": question_with_custom["id"],
+                "Text": question_with_custom["text"],
+                "Display Text": question_with_custom["display_text"],  # Custom display applied
+                "Type": question_with_custom["type"],
+                "Options": ", ".join(question_with_custom["options"] or []) if question_with_custom["options"] else "",
+                "Display Values": ", ".join(question_with_custom["display_values"] or []) if question_with_custom["display_values"] else "",  # Custom display applied
+                "Default": question_with_custom["default_option"] or "",
+                "Archived": question_with_custom["archived"]
+            })
+            
+        return pd.DataFrame(rows)
     
     @staticmethod
     def get_group_details(group_id: int, session: Session) -> dict:
@@ -2916,6 +3602,19 @@ class QuestionGroupService:
         )
         if existing:
             raise ValueError(f"Question group with title '{title}' already exists")
+        
+        if is_reusable:
+            questions_with_custom_displays = session.scalar(
+                select(func.count())
+                .select_from(ProjectVideoQuestionDisplay)
+                .where(ProjectVideoQuestionDisplay.question_id.in_(question_ids))
+            )
+            
+            if questions_with_custom_displays > 0:
+                raise ValueError(
+                    f"Cannot create reusable question group. {questions_with_custom_displays} questions "
+                    f"already have custom displays. Reusable groups must maintain consistent display."
+                )
 
         # Validate verification function if provided
         if verification_function:
@@ -3109,6 +3808,21 @@ class QuestionGroupService:
                 raise ValueError(
                     f"Cannot make group non-reusable as it is used in multiple schemas: "
                     f"{', '.join(s.name for s in schemas)}"
+                )
+        
+        if is_reusable and not group.is_reusable:  # Making group reusable
+            # Check if any questions in this group have custom displays
+            custom_displays = session.scalar(
+                select(func.count())
+                .select_from(ProjectVideoQuestionDisplay)
+                .join(QuestionGroupQuestion, ProjectVideoQuestionDisplay.question_id == QuestionGroupQuestion.question_id)
+                .where(QuestionGroupQuestion.question_group_id == group_id)
+            )
+            
+            if custom_displays > 0:
+                raise ValueError(
+                    f"Cannot make group reusable. {custom_displays} questions in this group "
+                    f"have existing custom displays that would conflict with reusability."
                 )
 
         # Check if new title conflicts with existing group
@@ -5562,7 +6276,9 @@ class GroundTruthExportService:
             video_data = {
                 "video_uid": video.video_uid,
                 "url": video.url,
-                "answers": {}
+                "answers": {}, # question.text -> raw answer value
+                "question_display_text": {}, # question.text -> display text shown
+                "answer_display_values": {} # question.text -> display value shown
             }
             
             # Get all ground truth answers for this video across all projects
@@ -5584,9 +6300,38 @@ class GroundTruthExportService:
                         # For reusable groups, we've already validated consistency,
                         # so we can safely take the first answer we encounter
                         if question.text not in processed_questions:
+                            # video_data["answers"][question.text] = gt.answer_value
+                            # processed_questions.add(question.text)
+                            try:
+                                question_with_display = CustomDisplayService.get_custom_display(
+                                    question_id=gt.question_id,
+                                    project_id=project_id,
+                                    video_id=video_id,
+                                    session=session
+                                )
+                                display_text = question_with_display["display_text"]
+                                
+                                # Get display value for the selected answer
+                                if question_with_display["type"] == "single" and question_with_display["display_values"]:
+                                    try:
+                                        option_index = question_with_display["options"].index(gt.answer_value)
+                                        display_value = question_with_display["display_values"][option_index]
+                                    except (ValueError, IndexError):
+                                        display_value = gt.answer_value  # Fallback to raw value
+                                else:
+                                    display_value = gt.answer_value  # For description type or no display values
+                                    
+                            except Exception:
+                                # Fallback to original display text if custom display fails
+                                display_text = question.display_text
+                                display_value = gt.answer_value
+                            
+                            # Store all the information
                             video_data["answers"][question.text] = gt.answer_value
+                            video_data["question_display_text"][question.text] = display_text
+                            video_data["answer_display_values"][question.text] = display_value
                             processed_questions.add(question.text)
-            
+                            
             if video_data["answers"]:  # Only include videos with answers
                 export_data.append(video_data)
         
@@ -5844,8 +6589,12 @@ def save_export_as_excel(export_data: List[Dict[str, Any]], filepath_or_buffer) 
         }
         
         # Add answers for each question
-        for question in all_questions:
-            row[question] = video["answers"].get(question, "")
+        for i, question in enumerate(all_questions):
+            display_text = video["question_display_text"].get(question, question)
+            display_value = video["answer_display_values"].get(question, "")
+            
+            row[f"Q{i}: {question}"] = display_text      # Custom display question text
+            row[f"Q{i} Answer"] = display_value          # Custom display answer value
         
         rows.append(row)
     

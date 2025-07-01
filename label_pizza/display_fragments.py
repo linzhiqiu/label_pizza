@@ -23,7 +23,8 @@ from label_pizza.database_utils import (
     check_project_has_full_ground_truth, check_all_questions_have_ground_truth,
     check_ground_truth_exists_for_group, get_user_assignment_dates,
     get_project_groups_with_projects, calculate_user_overall_progress,
-    get_cached_user_completion_progress, get_optimized_all_project_annotators
+    get_cached_user_completion_progress, get_optimized_all_project_annotators,
+    get_project_custom_display_data, get_questions_by_group_with_custom_display_cached
 )
 from label_pizza.autosubmit_features import (
     display_manual_auto_submit_controls, run_project_wide_auto_submit_on_entry,
@@ -118,7 +119,13 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
     """Display question group content with preloaded answers support"""
 
     try:
-        questions = get_questions_by_group_cached(group_id=group_id, session=session)
+        # questions = get_questions_by_group_cached(group_id=group_id, session=session)
+        questions = get_questions_with_custom_display_if_enabled(
+            group_id=group_id, 
+            project_id=project_id, 
+            video_id=video["id"], 
+            session=session
+        )
         
         if not questions:
             custom_info("No questions in this group.")
@@ -406,6 +413,29 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
             st.error("Failed to load question group properly")
             st.form_submit_button("Unable to Load Questions", disabled=True)
 
+def get_questions_with_custom_display_if_enabled(
+    group_id: int, 
+    project_id: int, 
+    video_id: int, 
+    session: Session
+) -> List[Dict]:
+    """Load questions with custom display if enabled, otherwise use cached version"""
+    
+    # Get custom display data for project (cached)
+    custom_display_data = get_project_custom_display_data(project_id, session)
+    if custom_display_data["has_custom_display"]:
+        # Use custom display version with cached data
+        return get_questions_by_group_with_custom_display_cached(
+            group_id=group_id, 
+            project_id=project_id, 
+            video_id=video_id, 
+            session=session
+        )
+    else:
+        # Use original cached version
+        return get_questions_by_group_cached(group_id=group_id, session=session)
+
+
 
 ###############################################################################
 # QUESTION DISPLAY FUNCTIONS
@@ -431,17 +461,19 @@ def display_single_choice_question(
 ) -> str:
     """OPTIMIZED: Display a single choice question with preloaded answer support"""
     question_id = question["id"]
-    question_text = question["display_text"]
-    options = question["options"]
-    display_values = question.get("display_values", options)
+    question_display_text = question.get("display_text", question["text"])
+    question_original_text = question["text"]  # Always use original for logic
+
+    original_options = question["options"]
+    display_values = question.get("display_values", original_options)
     
-    display_to_value = dict(zip(display_values, options))
-    value_to_display = dict(zip(options, display_values))
+    display_to_value = dict(zip(display_values, original_options))
+    value_to_display = dict(zip(original_options, display_values))
     
     # Get preloaded answer
     preloaded_value = ""
     if preloaded_answers:
-        key = (video_id, group_id, question_text)
+        key = (video_id, group_id, question_original_text)
         preloaded_value = preloaded_answers.get(key, "")
     
     # Use preloaded value if available, otherwise use existing value
@@ -450,7 +482,7 @@ def display_single_choice_question(
     if not current_value:
         # Try both possible field names for default option
         default_option = question.get("default_option")
-        if default_option and default_option in options:
+        if default_option and default_option in original_options:
             current_value = default_option
     
     # Calculate default index using current_value (which includes preloaded)
@@ -462,11 +494,11 @@ def display_single_choice_question(
     
     # Question header
     if role == "reviewer" and is_modified_by_admin:
-        st.error(f"🔒 {question_text}")
+        st.error(f"🔒 {question_display_text}")
     elif role == "meta_reviewer" and is_modified_by_admin:
-        st.warning(f"❓ (Overridden by Admin) {question_text}")
+        st.warning(f"❓ (Overridden by Admin) {question_display_text}")
     else:
-        custom_info(f"❓ {question_text}")
+        custom_info(f"❓ {question_display_text}")
     
     # Training mode feedback
     if mode == "Training" and form_disabled and gt_value and role == "annotator":
@@ -507,9 +539,9 @@ def display_single_choice_question(
         current_value = admin_info["current_value"]
         admin_name = admin_info["admin_name"]
 
-        enhanced_options = _get_enhanced_options_for_reviewer(
+        enhanced_options = _get_options_for_reviewer(
             video_id=video_id, project_id=project_id, question_id=question_id, 
-            options=options, display_values=display_values, session=session,
+            original_options=original_options, display_values=display_values, session=session,
             selected_annotators=selected_annotators or []
         )
         
@@ -535,9 +567,9 @@ def display_single_choice_question(
         
     elif role in ["reviewer", "meta_reviewer", "reviewer_resubmit"]:
         # OPTIMIZED: Use cached enhanced options
-        enhanced_options = _get_enhanced_options_for_reviewer(
+        enhanced_options = _get_options_for_reviewer(
             video_id=video_id, project_id=project_id, question_id=question_id, 
-            options=options, display_values=display_values, session=session,
+            original_options=original_options, display_values=display_values, session=session,
             selected_annotators=selected_annotators or []
         )
         
@@ -546,7 +578,7 @@ def display_single_choice_question(
         # Use default_idx which now includes preloaded values
         current_idx = default_idx
         if current_value:
-            for i, opt in enumerate(options):
+            for i, opt in enumerate(original_options):
                 if opt == current_value:
                     current_idx = i
                     break
@@ -561,14 +593,14 @@ def display_single_choice_question(
             label_visibility="collapsed",
             horizontal=True
         )
-        result = options[selected_idx]
+        result = original_options[selected_idx]
         
     else:
         # Regular display for annotators
         if mode == "Training" and form_disabled and gt_value:
             enhanced_display_values = []
             for i, display_val in enumerate(display_values):
-                actual_val = options[i] if i < len(options) else display_val
+                actual_val = original_options[i] if i < len(original_options) else display_val
                 if actual_val == gt_value:
                     enhanced_display_values.append(f"🏆 {display_val} (Ground Truth)")
                 elif actual_val == existing_value and actual_val != gt_value:
@@ -586,10 +618,8 @@ def display_single_choice_question(
                 horizontal=True
             )
             
-            result = display_to_value.get(
-                selected_display.replace("🏆 ", "").replace(" (Ground Truth)", "").replace("❌ ", "").replace(" (Your Answer)", ""), 
-                existing_value
-            )
+            clean_display = selected_display.replace("🏆 ", "").replace(" (Ground Truth)", "").replace("❌ ", "").replace(" (Your Answer)", "")
+            result = display_to_value.get(clean_display, existing_value)
         else:
             selected_display = st.radio(
                 "Select your answer:",
@@ -626,13 +656,13 @@ def display_description_question(
     """OPTIMIZED: Display a description question with preloaded answer support"""
     
     question_id = question["id"]
-    question_text = question["display_text"]
-    question_key = question["text"]
+    question_display_text = question.get("display_text", question["text"])
+    question_original_text = question["text"]  # Always use original for logic
     
     # Get preloaded answer
     preloaded_value = ""
     if preloaded_answers:
-        key = (video_id, group_id, question_text)
+        key = (video_id, group_id, question_original_text)
         preloaded_value = preloaded_answers.get(key, "")
     
     # Use preloaded value if available, otherwise use existing value
@@ -640,11 +670,11 @@ def display_description_question(
     
     # Question header
     if role == "reviewer" and is_modified_by_admin:
-        st.error(f"🔒 {question_text}")
+        st.error(f"🔒 {question_display_text}")
     elif role == "meta_reviewer" and is_modified_by_admin:
-        st.warning(f"❓ (Overridden by Admin) {question_text}")
+        st.warning(f"❓ (Overridden by Admin) {question_display_text}")
     else:
-        custom_info(f"❓ {question_text}")
+        custom_info(f"❓ {question_display_text}")
     
     # Training mode feedback
     if mode == "Training" and form_disabled and gt_value and role == "annotator":
@@ -719,7 +749,7 @@ def display_description_question(
         if show_annotators or (role in ["meta_reviewer", "reviewer_resubmit"] and existing_value):
             _display_enhanced_helper_text_answers(
                 video_id=video_id, project_id=project_id, question_id=question_id, 
-                question_text=question_key, text_key=text_key,
+                question_text=question_original_text, text_key=text_key,
                 gt_value=existing_value if role in ["meta_reviewer", "reviewer_resubmit"] else "",
                 role=role, answer_reviews=answer_reviews, session=session,
                 selected_annotators=selected_annotators or [],
@@ -883,9 +913,9 @@ def display_question_status(
 
 
 
-def _get_enhanced_options_for_reviewer(
+def _get_options_for_reviewer(
     video_id: int, project_id: int, question_id: int, 
-    options: List[str], display_values: List[str], 
+    original_options: List[str], display_values: List[str], 
     session: Session, selected_annotators: List[str] = None
 ) -> List[str]:
     """OPTIMIZED: Get enhanced options using cached video data"""
@@ -908,8 +938,8 @@ def _get_enhanced_options_for_reviewer(
                     # question_gt = gt_df[gt_df["Question ID"] == question_id]
                     # if not question_gt.empty:
                     gt_selection = gt_row["Answer Value"]
-                    for i, option in enumerate(options):
-                        if str(option) == str(gt_selection):
+                    for i, original_option in enumerate(original_options):
+                        if str(original_option) == str(gt_selection):
                             enhanced_options[i] += " — 🏆 GT"
             except:
                 pass
@@ -974,14 +1004,14 @@ def _get_enhanced_options_for_reviewer(
         enhanced_options = []
         
         for i, display_val in enumerate(display_values):
-            actual_val = options[i] if i < len(options) else display_val
+            original_val = original_options[i] if i < len(original_options) else display_val
             option_text = display_val
             
             selection_info = []
             
             # Add annotator info
-            if actual_val in option_selections:
-                annotators = [sel["initials"] for sel in option_selections[actual_val]]
+            if original_val in option_selections:
+                annotators = [sel["initials"] for sel in option_selections[original_val]]
                 count = len(annotators)
                 
                 if total_annotators > 0:
@@ -992,7 +1022,7 @@ def _get_enhanced_options_for_reviewer(
                     selection_info.append(f"{', '.join(annotators)}")
             
             # Add ground truth indicator
-            if gt_selection and str(actual_val) == str(gt_selection):
+            if gt_selection and str(original_val) == str(gt_selection):
                 selection_info.append("🏆 GT")
             
             if selection_info:
@@ -1003,7 +1033,7 @@ def _get_enhanced_options_for_reviewer(
         return enhanced_options
         
     except Exception as e:
-        print(f"Error in _get_enhanced_options_for_reviewer: {e}")
+        print(f"Error in _get_options_for_reviewer: {e}")
         # Fallback to original
         return display_values
 
@@ -2372,7 +2402,10 @@ def _get_submit_button_config(role: str, form_disabled: bool, all_questions_modi
 
 def _get_question_display_data(video_id: int, project_id: int, user_id: int, group_id: int, role: str, mode: str, session: Session, has_any_admin_modified_questions: bool) -> Dict:
     """Get all the data needed to display a question group"""
-    questions = get_questions_by_group_cached(group_id=group_id, session=session)
+    # questions = get_questions_by_group_cached(group_id=group_id, session=session)
+    questions = get_questions_with_custom_display_if_enabled(
+        group_id=group_id, project_id=project_id, video_id=video_id, session=session
+    )
     
     if not questions:
         return {"questions": [], "error": "No questions in this group."}
@@ -2933,6 +2966,9 @@ def display_project_view(user_id: int, role: str, session: Session):
         for key in list(st.session_state.keys()):
             if key.startswith(f"video_sort_") or key.startswith(f"video_filter_") or key.startswith(f"question_order_"):
                 del st.session_state[key]
+
+        clear_custom_display_cache(project_id)
+
         st.rerun()
     
     try:

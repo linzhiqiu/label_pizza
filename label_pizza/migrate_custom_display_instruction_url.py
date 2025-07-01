@@ -5,7 +5,8 @@ This script:
 1. Adds has_custom_display column to schemas table if it doesn't exist
 2. Adds instructions_url column to schemas table if it doesn't exist
 3. Creates ProjectVideoQuestionDisplay table if it doesn't exist
-4. Populates has_custom_display with default values
+4. Handles column rename from custom_display_values to custom_option_display_map
+5. Populates has_custom_display with default values
 """
 
 import os
@@ -120,6 +121,49 @@ def main():
             
             if table_exists:
                 print("✅ project_video_question_displays table already exists")
+                
+                # Step 3a: Check for column rename (custom_display_values -> custom_option_display_map)
+                print("🔍 Checking for column name updates in project_video_question_displays...")
+                
+                check_old_column = conn.execute(text("""
+                    SELECT COUNT(*) 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'project_video_question_displays' 
+                    AND column_name = 'custom_display_values'
+                """))
+                
+                check_new_column = conn.execute(text("""
+                    SELECT COUNT(*) 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'project_video_question_displays' 
+                    AND column_name = 'custom_option_display_map'
+                """))
+                
+                old_column_exists = check_old_column.fetchone()[0] > 0
+                new_column_exists = check_new_column.fetchone()[0] > 0
+                
+                if old_column_exists and not new_column_exists:
+                    print("🔄 Renaming custom_display_values to custom_option_display_map...")
+                    conn.execute(text("""
+                        ALTER TABLE project_video_question_displays 
+                        RENAME COLUMN custom_display_values TO custom_option_display_map
+                    """))
+                    print("✅ Column renamed successfully")
+                elif old_column_exists and new_column_exists:
+                    print("⚠️  Both old and new columns exist! Manual intervention may be required.")
+                    print("   Old column: custom_display_values")
+                    print("   New column: custom_option_display_map")
+                    print("   Consider migrating data and dropping the old column.")
+                elif new_column_exists:
+                    print("✅ custom_option_display_map column already exists")
+                else:
+                    print("➕ Adding missing custom_option_display_map column...")
+                    conn.execute(text("""
+                        ALTER TABLE project_video_question_displays 
+                        ADD COLUMN custom_option_display_map JSONB
+                    """))
+                    print("✅ custom_option_display_map column added successfully")
+                    
             else:
                 print("➕ Creating project_video_question_displays table...")
                 
@@ -130,7 +174,7 @@ def main():
                         video_id INTEGER NOT NULL,
                         question_id INTEGER NOT NULL,
                         custom_display_text TEXT,
-                        custom_display_values JSONB,
+                        custom_option_display_map JSONB,
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                         PRIMARY KEY (project_id, video_id, question_id)
@@ -203,7 +247,22 @@ def main():
             if total_schemas > 10:
                 print(f"... and {total_schemas - 10} more schemas")
             
-            # Step 7: Show ProjectVideoQuestionDisplay table status
+            # Step 7: Show ProjectVideoQuestionDisplay table status and column info
+            print("\n🔍 Checking project_video_question_displays table structure...")
+            
+            # Check current columns
+            columns_result = conn.execute(text("""
+                SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns 
+                WHERE table_name = 'project_video_question_displays'
+                ORDER BY ordinal_position
+            """))
+            
+            print("📋 Current table columns:")
+            for column in columns_result:
+                nullable = "NULL" if column[2] == "YES" else "NOT NULL"
+                print(f"   • {column[0]} ({column[1]}) - {nullable}")
+            
             display_count = conn.execute(text("""
                 SELECT COUNT(*) FROM project_video_question_displays
             """))
@@ -219,6 +278,8 @@ def main():
                 print("  ✅ Added instructions_url column to schemas table")
             if not table_exists:
                 print("  ✅ Created project_video_question_displays table")
+            else:
+                print("  ✅ Verified project_video_question_displays table structure")
             print("  ✅ All schemas have proper default values")
                 
     except Exception as e:
@@ -234,7 +295,8 @@ if __name__ == "__main__":
     print("2. ➕ Add has_custom_display column to schemas (if needed)")
     print("3. ➕ Add instructions_url column to schemas (if needed)")
     print("4. 🏗️  Create project_video_question_displays table (if needed)")
-    print("5. 🔄 Set default values for new columns")
-    print("6. ✅ Verify the migration")
+    print("5. 🔄 Handle column rename: custom_display_values → custom_option_display_map")
+    print("6. 🔄 Set default values for new columns")
+    print("7. ✅ Verify the migration")
     print()
     main()

@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from label_pizza.services import (
     AuthService, AnnotatorService, GroundTruthService, 
-    QuestionService, SchemaService,
+    QuestionService, SchemaService, CustomDisplayService,
     ProjectService, VideoService, ProjectGroupService
 )
 from label_pizza.db import SessionLocal
@@ -310,6 +310,127 @@ def get_cached_user_completion_progress(project_id: int, session: Session) -> Di
     
     return st.session_state[cache_key]
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour - custom display changes rarely
+def get_cached_custom_display_data(project_id: int, session_id: str) -> Dict[str, Any]:
+    """Cache all custom display data for a project to minimize database calls"""
+    with SessionLocal() as session:
+        try:
+            # Check if project's schema has custom display enabled
+            project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+            
+            try:
+                schema_details = SchemaService.get_schema_details(schema_id=project.schema_id, session=session)
+                if not schema_details.get("has_custom_display", False):
+                    return {"has_custom_display": False, "custom_displays": {}}
+            except ValueError:
+                # Schema not found
+                return {"has_custom_display": False, "custom_displays": {}}
+            
+            # Get all custom display entries for this project
+            custom_displays = CustomDisplayService.get_all_custom_displays_for_project(
+                project_id=project_id, session=session
+            )
+            
+            # Organize by video_id and question_id for efficient lookup
+            organized_displays = {}
+            for display in custom_displays:
+                video_id = display["video_id"]
+                question_id = display["question_id"]
+                
+                if video_id not in organized_displays:
+                    organized_displays[video_id] = {}
+                
+                organized_displays[video_id][question_id] = {
+                    "custom_display_text": display["custom_display_text"],
+                    "custom_option_display_map": display["custom_option_display_map"]
+                }
+            
+            return {
+                "has_custom_display": True,
+                "custom_displays": organized_displays,
+                "schema_id": schema_details["id"]
+            }
+            
+        except Exception as e:
+            print(f"Error in get_cached_custom_display_data: {e}")
+            return {"has_custom_display": False, "custom_displays": {}}
+
+
+def get_project_custom_display_data(project_id: int, session: Session) -> Dict[str, Any]:
+    """Get custom display data for project with session state caching"""
+    cache_key = f"custom_display_data_{project_id}"
+    
+    if cache_key not in st.session_state:
+        session_id = get_session_cache_key()
+        st.session_state[cache_key] = get_cached_custom_display_data(project_id, session_id)
+    
+    return st.session_state[cache_key]
+
+def get_questions_by_group_with_custom_display_cached(
+    group_id: int, 
+    project_id: int, 
+    video_id: int, 
+    session: Session
+) -> List[Dict]:
+    """Get questions by group with custom display applied, using cached data"""
+    
+    # Get custom display data for project
+    custom_display_data = get_project_custom_display_data(project_id, session)
+    
+    if not custom_display_data["has_custom_display"]:
+        # No custom display - use original method
+        return get_questions_by_group_cached(group_id, session)
+    
+    # Get base questions
+    base_questions = get_questions_by_group_cached(group_id, session)
+    
+    # Apply custom display from cached data
+    custom_displays = custom_display_data["custom_displays"].get(video_id, {})
+    
+    enhanced_questions = []
+    for question in base_questions:
+        question_id = question["id"]
+        enhanced_question = question.copy()
+        
+        # Apply custom display if available
+        if question_id in custom_displays:
+            custom_data = custom_displays[question_id]
+            
+            # Override display text if available
+            if custom_data["custom_display_text"]:
+                enhanced_question["display_text"] = custom_data["custom_display_text"]
+            
+            # Override display values if available
+            if (custom_data["custom_option_display_map"] and 
+                question["type"] == "single" and 
+                question["options"]):
+                
+                new_display_values = []
+                for option_value in question["options"]:
+                    custom_display_text = custom_data["custom_option_display_map"].get(option_value)
+                    if custom_display_text:
+                        new_display_values.append(custom_display_text)
+                    else:
+                        # Fall back to original display value
+                        original_index = question["options"].index(option_value)
+                        original_display = (question["display_values"][original_index] 
+                                          if question["display_values"] else option_value)
+                        new_display_values.append(original_display)
+                
+                enhanced_question["display_values"] = new_display_values
+        
+        enhanced_questions.append(enhanced_question)
+    
+    return enhanced_questions
+
+def clear_custom_display_cache(project_id: int):
+    """Clear custom display cache for a specific project"""
+    cache_key = f"custom_display_data_{project_id}"
+    if cache_key in st.session_state:
+        del st.session_state[cache_key]
+
+
+
 ###############################################################################
 # Data Fetching Functions
 ###############################################################################
@@ -423,7 +544,8 @@ def clear_project_cache(project_id: int):
         if (f"cache_project_{project_id}" in key or 
             f"cached_annotators_{project_id}" in key or
             f"completion_progress_{project_id}" in key or
-            f"question_groups_{project_id}" in key):
+            f"question_groups_{project_id}" in key or
+            f"custom_display_data_{project_id}" in key):
             cache_keys_to_clear.append(key)
     
     for key in cache_keys_to_clear:

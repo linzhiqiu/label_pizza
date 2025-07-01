@@ -173,7 +173,7 @@ class ProjectVideoQuestionDisplay(Base):
     
     # Custom display overrides (nullable - only override what's needed)
     custom_display_text = Column(Text, nullable=True)  # Override question display_text
-    custom_display_values = Column(JSONB, nullable=True)  # Override option display_values
+    custom_option_display_map = Column(JSONB, nullable=True)  # Override option display_values, e.g., {"A": "(A) Pizza", "B": "(B) Sandwich"}
     
     created_at = Column(DateTime(timezone=True), default=now)
     updated_at = Column(DateTime(timezone=True), default=now, onupdate=now)

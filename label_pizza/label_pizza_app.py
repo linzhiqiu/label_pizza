@@ -1,5 +1,5 @@
 """
-Label Pizza - Modern Streamlit App
+Label Pizza - Modern Streamlit App (label_pizza_app.py)
 ==================================
 Updated with Meta-Reviewer Portal, copy/paste functionality, approve/reject buttons, improved dashboard,
 NEW ACCURACY FEATURES for training mode projects, ENHANCED ANNOTATOR SELECTION, and ADVANCED SORTING/FILTERING.
@@ -32,7 +32,7 @@ from label_pizza.ui_components import (
     custom_info, display_user_simple
 )
 from label_pizza.database_utils import (
-    get_db_session, handle_database_errors
+    get_db_session, handle_database_errors, clear_custom_display_cache
 )
 from label_pizza.display_fragments import (
     display_project_dashboard, display_project_view
@@ -955,6 +955,10 @@ def main():
                 st.session_state.selected_project_id = None
                 if "selected_annotators" in st.session_state:
                     del st.session_state.selected_annotators
+                
+                project_id = st.session_state.get("selected_project_id")
+                if project_id:
+                    clear_custom_display_cache(project_id)
                 st.rerun()
         
         if st.button("🚪 Logout", use_container_width=True):

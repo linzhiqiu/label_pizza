@@ -280,7 +280,7 @@ For single-choice questions:
 | ------ | ---- | ----- |
 | `project_id`, `video_id`, `question_id` | INT — **composite PK** |
 | `custom_display_text` | TEXT nullable | Override question display_text |
-| `custom_display_values` | JSONB nullable | Override option display_values |
+| `custom_option_display_map` | JSONB nullable | Override option display_values |
 | `created_at` | TIMESTAMPTZ |
 | `updated_at` | TIMESTAMPTZ |
 

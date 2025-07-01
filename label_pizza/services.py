@@ -767,6 +767,27 @@ class ProjectService:
         if not project:
             raise ValueError(f"Project with ID {project_id} not found")
         return project
+    
+    @staticmethod
+    def get_project_dict_by_id(project_id: int, session: Session) -> Dict[str, Any]:
+        """Get project details as a dictionary by ID.
+        
+        Returns:
+            Dictionary with project details: id, name, description, schema_id, etc.
+        """
+        project = session.get(Project, project_id)
+        if not project:
+            raise ValueError(f"Project with ID {project_id} not found")
+        
+        return {
+            "id": project.id,
+            "name": project.name,
+            "description": project.description,
+            "schema_id": project.schema_id,
+            "created_at": project.created_at,
+            "is_archived": project.is_archived,
+        }
+
 
     @staticmethod
     def add_user_to_project(project_id: int, user_id: int, role: str, session: Session, user_weight: Optional[float] = None) -> None:
@@ -1001,7 +1022,10 @@ class SchemaService:
             rows.append({
                 "ID": s.id,
                 "Name": s.name,
-                "Question Groups": ", ".join(g.title for g in groups) if groups else "No groups"
+                "Instructions URL": s.instructions_url,
+                "Question Groups": ", ".join(g.title for g in groups) if groups else "No groups",
+                "Has Custom Display": s.has_custom_display,
+                "Archived": s.is_archived
             })
         return pd.DataFrame(rows)
 
@@ -1093,7 +1117,9 @@ class SchemaService:
     def verify_create_schema(
             name: str,
             question_group_ids: List[int],
-            session: Session
+            instructions_url: Optional[str] = None,
+            has_custom_display: bool = False,
+            session: Session = None
     ) -> None:
         """Verify parameters for creating a new schema.
 
@@ -1103,6 +1129,8 @@ class SchemaService:
         Args:
             name: Schema name
             question_group_ids: List of question group IDs in desired order
+            instructions_url: URL for schema instructions
+            has_custom_display: Whether schema has custom display
             session: Database session
 
         Raises:
@@ -1120,6 +1148,12 @@ class SchemaService:
         # Validate question group IDs
         if not question_group_ids:
             raise ValueError("Schema must contain at least one question group")
+
+        # Validate instructions URL if provided
+        if instructions_url:
+            instructions_url = instructions_url.strip()
+            if not instructions_url.startswith(("http://", "https://")):
+                raise ValueError("Instructions URL must start with http:// or https://")
 
         # Validate all question groups
         for group_id in question_group_ids:
@@ -1140,12 +1174,20 @@ class SchemaService:
                         f"Question group {group.title} is not reusable and is already used in schema {existing_schema.name}")
 
     @staticmethod
-    def create_schema(name: str, question_group_ids: List[int], session: Session) -> Schema:
+    def create_schema(
+        name: str,
+        question_group_ids: List[int],
+        instructions_url: Optional[str] = None,
+        has_custom_display: bool = False,
+        session: Session = None
+    ) -> Schema:
         """Create a new schema with its question groups.
 
         Args:
             name: Schema name
             question_group_ids: List of question group IDs in desired order
+            instructions_url: URL for schema instructions
+            has_custom_display: Whether schema has custom display
             session: Database session
 
         Returns:
@@ -1155,10 +1197,10 @@ class SchemaService:
             ValueError: If schema with same name exists or validation fails
         """
         # First, verify all parameters (will raise ValueError if validation fails)
-        SchemaService.verify_create_schema(name, question_group_ids, session)
+        SchemaService.verify_create_schema(name, question_group_ids, instructions_url, has_custom_display, session)
 
         # Create schema object
-        schema = Schema(name=name)
+        schema = Schema(name=name, instructions_url=instructions_url, has_custom_display=has_custom_display)
         session.add(schema)
         session.flush()  # Get schema ID
 
@@ -1173,6 +1215,174 @@ class SchemaService:
 
         session.commit()
         return schema
+    
+    @staticmethod
+    def get_schema_details(schema_id: int, session: Session) -> Dict[str, Any]:
+        """Get complete schema details including instructions URL.
+        
+        Args:
+            schema_id: Schema ID
+            session: Database session
+            
+        Returns:
+            Dictionary containing schema details
+            
+        Raises:
+            ValueError: If schema not found
+        """
+        schema = session.get(Schema, schema_id)
+        if not schema:
+            raise ValueError(f"Schema with ID {schema_id} not found")
+        
+        return {
+            "id": schema.id,
+            "name": schema.name,
+            "instructions_url": schema.instructions_url,
+            "created_at": schema.created_at,
+            "updated_at": schema.updated_at,
+            "has_custom_display": schema.has_custom_display,
+            "is_archived": schema.is_archived
+        }
+
+    @staticmethod
+    def verify_edit_schema(
+        schema_id: int,
+        name: Optional[str] = None,
+        instructions_url: Optional[str] = None,
+        has_custom_display: Optional[bool] = None,
+        is_archived: Optional[bool] = None,
+        session: Session = None
+    ) -> None:
+        """Verify parameters for editing a schema.
+
+        This function performs all validation checks and raises ValueError
+        if any validation fails. It does not return any objects.
+
+        Args:
+            schema_id: Schema ID
+            name: New schema name (optional)
+            instructions_url: New instructions URL (optional, use empty string to clear)
+            has_custom_display: New custom display flag (optional)
+            is_archived: New archive status (optional)
+            session: Database session
+
+        Raises:
+            ValueError: If schema not found or validation fails
+        """
+        # Check if schema exists
+        schema = session.get(Schema, schema_id)
+        if not schema:
+            raise ValueError(f"Schema with ID {schema_id} not found")
+        
+        # Validate name if provided
+        if name is not None:
+            name = name.strip()
+            if not name:
+                raise ValueError("Schema name cannot be empty")
+            
+            # Check for unique name (excluding current schema)
+            existing = session.scalar(
+                select(Schema).where(Schema.name == name, Schema.id != schema_id)
+            )
+            if existing:
+                raise ValueError(f"Schema with name '{name}' already exists")
+        
+        # Validate instructions URL if provided
+        if instructions_url is not None:
+            if instructions_url.strip():
+                instructions_url = instructions_url.strip()
+                if not instructions_url.startswith(("http://", "https://")):
+                    raise ValueError("Instructions URL must start with http:// or https://")
+        
+        # Validate archive status change if provided
+        if is_archived is not None:
+            if is_archived and not schema.is_archived:
+                # Trying to archive - check no non-archived projects are using this schema
+                projects_using_schema = session.scalars(
+                    select(Project)
+                    .where(
+                        Project.schema_id == schema_id,
+                        Project.is_archived == False
+                    )
+                ).all()
+                
+                if projects_using_schema:
+                    project_names = [p.name for p in projects_using_schema]
+                    raise ValueError(
+                        f"Cannot archive schema. The following non-archived projects are using it: "
+                        f"{', '.join(project_names)}"
+                    )
+            
+            elif not is_archived and schema.is_archived:
+                # Trying to unarchive - check all question groups in schema are not archived
+                archived_groups = session.scalars(
+                    select(QuestionGroup)
+                    .join(SchemaQuestionGroup, QuestionGroup.id == SchemaQuestionGroup.question_group_id)
+                    .where(
+                        SchemaQuestionGroup.schema_id == schema_id,
+                        QuestionGroup.is_archived == True
+                    )
+                ).all()
+                
+                if archived_groups:
+                    group_names = [g.title for g in archived_groups]
+                    raise ValueError(
+                        f"Cannot unarchive schema. The following question groups in the schema are archived: "
+                        f"{', '.join(group_names)}"
+                    )
+
+    @staticmethod
+    def edit_schema(
+        schema_id: int, 
+        name: Optional[str] = None,
+        instructions_url: Optional[str] = None,
+        has_custom_display: Optional[bool] = None,
+        is_archived: Optional[bool] = None,
+        session: Session = None
+    ) -> None:
+        """Edit a schema's properties.
+        
+        Args:
+            schema_id: Schema ID
+            name: New schema name (optional)
+            instructions_url: New instructions URL (optional, use empty string to clear)
+            has_custom_display: New custom display flag (optional)
+            is_archived: New archive status (optional)
+            session: Database session
+            
+        Raises:
+            ValueError: If schema not found or validation fails
+        """
+        # First, verify all parameters (will raise ValueError if validation fails)
+        SchemaService.verify_edit_schema(
+            schema_id, name, instructions_url, has_custom_display, is_archived, session
+        )
+        
+        # Get schema object for updating
+        schema = session.get(Schema, schema_id)
+        
+        # Update name if provided
+        if name is not None:
+            schema.name = name.strip()
+        
+        # Update instructions URL if provided
+        if instructions_url is not None:
+            if instructions_url.strip():
+                schema.instructions_url = instructions_url.strip()
+            else:
+                # Empty string means clear the URL
+                schema.instructions_url = None
+        
+        # Update custom display flag if provided
+        if has_custom_display is not None:
+            schema.has_custom_display = has_custom_display
+        
+        # Update archive status if provided
+        if is_archived is not None:
+            schema.is_archived = is_archived
+        
+        schema.updated_at = datetime.now(timezone.utc)
+        session.commit()
 
     @staticmethod
     def archive_schema(schema_id: int, session: Session) -> None:
@@ -1183,14 +1393,10 @@ class SchemaService:
             session: Database session
             
         Raises:
-            ValueError: If schema not found
+            ValueError: If schema not found or has active projects
         """
-        schema = session.get(Schema, schema_id)
-        if not schema:
-            raise ValueError(f"Schema with ID {schema_id} not found")
-            
-        schema.is_archived = True
-        session.commit()
+        # Use the edit function with proper validation
+        SchemaService.edit_schema(schema_id=schema_id, is_archived=True, session=session)
 
     @staticmethod
     def unarchive_schema(schema_id: int, session: Session) -> None:
@@ -1201,14 +1407,10 @@ class SchemaService:
             session: Database session
             
         Raises:
-            ValueError: If schema not found
+            ValueError: If schema not found or has archived question groups
         """
-        schema = session.get(Schema, schema_id)
-        if not schema:
-            raise ValueError(f"Schema with ID {schema_id} not found")
-            
-        schema.is_archived = False
-        session.commit()
+        # Use the edit function with proper validation
+        SchemaService.edit_schema(schema_id=schema_id, is_archived=False, session=session)
 
     @staticmethod
     def get_question_group_order(schema_id: int, session: Session) -> List[int]:
@@ -4575,6 +4777,25 @@ class ProjectGroupService:
             select(Project).join(ProjectGroupProject, Project.id == ProjectGroupProject.project_id)
             .where(ProjectGroupProject.project_group_id == group_id)
         ).all()
+        # Convert group to dict
+        group = {
+            "id": group.id,
+            "name": group.name,
+            "description": group.description,
+            "created_at": group.created_at
+        }
+        # Convert projects to dicts
+        projects = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "schema_id": p.schema_id,
+                "description": p.description,
+                "created_at": p.created_at,
+                "is_archived": p.is_archived
+            }
+            for p in projects
+        ]
         return {"group": group, "projects": projects}
     
     @staticmethod
@@ -4589,6 +4810,15 @@ class ProjectGroupService:
     @staticmethod
     def list_project_groups(session: Session):
         groups = session.scalars(select(ProjectGroup)).all()
+        groups = [
+            {
+                "id": g.id,
+                "name": g.name,
+                "description": g.description,
+                "created_at": g.created_at
+            }
+            for g in groups
+        ]
         return groups
 
     @staticmethod

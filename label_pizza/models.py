@@ -102,8 +102,10 @@ class Schema(Base):
     __tablename__ = "schemas"
     id = Column(Integer, primary_key=True)
     name = Column(Text, unique=True, nullable=False)
+    instructions_url = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=now)
     updated_at = Column(DateTime(timezone=True), default=now, onupdate=now)
+    has_custom_display = Column(Boolean, default=False)
     is_archived = Column(Boolean, default=False)
 
 class SchemaQuestionGroup(Base):
@@ -160,6 +162,27 @@ class ProjectGroupProject(Base):
     __tablename__ = "project_group_projects"
     project_group_id = Column(Integer, primary_key=True)
     project_id = Column(Integer, primary_key=True)
+
+class ProjectVideoQuestionDisplay(Base):
+    """Custom display overrides for specific project-video-question combinations"""
+    __tablename__ = "project_video_question_displays"
+    
+    project_id = Column(Integer, primary_key=True)
+    video_id = Column(Integer, primary_key=True) 
+    question_id = Column(Integer, primary_key=True)
+    
+    # Custom display overrides (nullable - only override what's needed)
+    custom_display_text = Column(Text, nullable=True)  # Override question display_text
+    custom_display_values = Column(JSONB, nullable=True)  # Override option display_values
+    
+    created_at = Column(DateTime(timezone=True), default=now)
+    updated_at = Column(DateTime(timezone=True), default=now, onupdate=now)
+    
+    __table_args__ = (
+        # Primary key is the composite key above
+        Index("ix_project_display_lookup", "project_id"),  # Fast project lookups
+        Index("ix_video_display_lookup", "project_id", "video_id"),  # Fast video lookups
+    )
 
 class AnnotatorAnswer(Base):
     """Stores annotator submissions with confidence scores and modification history."""

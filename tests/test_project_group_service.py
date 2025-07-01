@@ -17,7 +17,7 @@ def test_project_group_service_create_project_group(session, test_project):
     # Verify project assignment using get_project_group_by_id
     result = ProjectGroupService.get_project_group_by_id(group.id, session)
     assert len(result["projects"]) == 1
-    assert result["projects"][0].id == test_project.id
+    assert result["projects"][0]["id"] == test_project.id
 
 def test_project_group_service_create_project_group_duplicate(session, test_project):
     """Test creating a project group with duplicate name."""
@@ -74,7 +74,7 @@ def test_project_group_service_edit_project_group(session, test_project):
     # Verify project assignments unchanged using get_project_group_by_id
     result = ProjectGroupService.get_project_group_by_id(group.id, session)
     assert len(result["projects"]) == 1
-    assert result["projects"][0].id == test_project.id
+    assert result["projects"][0]["id"] == test_project.id
 
 def test_project_group_service_edit_project_group_not_found(session):
     """Test editing a non-existent project group."""
@@ -163,7 +163,7 @@ def test_project_group_service_edit_project_group_add_remove_projects(session, t
     # Verify only second project remains using get_project_group_by_id
     result = ProjectGroupService.get_project_group_by_id(group.id, session)
     assert len(result["projects"]) == 1
-    assert result["projects"][0].id == project2.id
+    assert result["projects"][0]["id"] == project2.id
 
 def test_project_group_service_get_project_group_by_id(session, test_project):
     """Test getting a project group by ID."""
@@ -181,7 +181,7 @@ def test_project_group_service_get_project_group_by_id(session, test_project):
     assert result["group"].name == "test_group"
     assert result["group"].description == "Test description"
     assert len(result["projects"]) == 1
-    assert result["projects"][0].id == test_project.id
+    assert result["projects"][0]["id"] == test_project.id
 
 def test_project_group_service_get_project_group_by_id_not_found(session):
     """Test getting a non-existent project group."""
@@ -208,7 +208,7 @@ def test_project_group_service_list_project_groups(session, test_project):
     groups = ProjectGroupService.list_project_groups(session)
     
     assert len(groups) == 2
-    group_names = {g.name for g in groups}
+    group_names = {g["name"] for g in groups}
     assert group_names == {"group1", "group2"}
 
 def test_project_group_service_validate_project_group_uniqueness(session):

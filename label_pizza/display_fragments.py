@@ -39,11 +39,11 @@ from label_pizza.accuracy_analytics import display_user_accuracy_simple
 def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: str, mode: str, session: Session):
     """Display a single video-answer pair in side-by-side layout with tabs"""
     try:
-        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
         
         # Add transaction recovery for question groups
         try:
-            question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         except Exception as qg_error:
             # Try to recover by creating a new session
             st.error(f"Database error occurred. Refreshing...")
@@ -1754,7 +1754,7 @@ def display_enhanced_filter_tab(project_id: int, session: Session):
     custom_info("💡 Filters only work on questions that have ground truth answers. Complete annotation first to see more filter options.")
 
 
-def display_order_tab(project_id: int, role: str, project: Any, session: Session):
+def display_order_tab(project_id: int, role: str, project: Dict, session: Session):
     """Display question group order tab - shared between reviewer and meta-reviewer"""
     st.markdown("#### 📋 Question Group Display Order")
     
@@ -1767,7 +1767,7 @@ def display_order_tab(project_id: int, role: str, project: Any, session: Session
     """, unsafe_allow_html=True)
     
     # Get question groups for this project
-    question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+    question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
     
     if question_groups:
         order_key = f"question_order_{project_id}_{role}"
@@ -2031,8 +2031,8 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         
         # Get project details
         try:
-            project = ProjectService.get_project_by_id(project_id=project_id, session=session)
-            question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+            project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         except Exception as e:
             st.error(f"Error loading project details: {str(e)}")
             return
@@ -2137,8 +2137,8 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         
         # Get project details
         try:
-            project = ProjectService.get_project_by_id(project_id=project_id, session=session)
-            question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+            project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         except Exception as e:
             st.error(f"Error loading project details: {str(e)}")
             return
@@ -2921,17 +2921,6 @@ def display_project_progress(user_id: int, project_id: int, role: str, session: 
 
 def display_project_view(user_id: int, role: str, session: Session):
     """Display the selected project with modern, compact layout and enhanced sorting/filtering"""
-    # 🔍 DEBUG: Let's see what's happening
-    # import time
-    # current_time = time.time()
-    # if 'last_render_time' not in st.session_state:
-    #     st.session_state.last_render_time = current_time
-    #     print(f"🔍 FIRST RENDER of project view")
-    # else:
-    #     time_diff = current_time - st.session_state.last_render_time
-    #     st.session_state.last_render_time = current_time
-    #     print(f"🔍 RE-RENDER of project view (after {time_diff:.2f}s)")
-    
 
     project_id = st.session_state.selected_project_id
     
@@ -2947,7 +2936,14 @@ def display_project_view(user_id: int, role: str, session: Session):
         st.rerun()
     
     try:
-        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        try:
+            schema_details = SchemaService.get_schema_details(schema_id=project["schema_id"], session=session)
+            instructions_url = schema_details.get("instructions_url")
+        except Exception as e:
+            print(f"Error getting schema details: {e}")
+            instructions_url = None
+
     except ValueError as e:
         st.error(f"Error loading project: {str(e)}")
         return
@@ -2961,7 +2957,7 @@ def display_project_view(user_id: int, role: str, session: Session):
     
     mode = "Training" if check_project_has_full_ground_truth(project_id=project_id, session=session) else "Annotation"
     
-    st.markdown(f"## 📁 {project.name}")
+    st.markdown(f"## 📁 {project['name']}")
     
     # Mode display
     if role == "annotator":
@@ -2992,14 +2988,9 @@ def display_project_view(user_id: int, role: str, session: Session):
         
     # Role-specific control panels - NO AUTO-SUBMIT FOR META-REVIEWER
     if role == "reviewer":
-        # st.markdown("---")
-        # 🔍 DEBUG: Let's see what's happening with tab state
-        # print(f"🔍 About to create reviewer tabs")
-        # print(f"🔍 Session state keys with project_id: {[k for k in st.session_state.keys() if str(project_id) in k]}")
-    
         if mode == "Training":
-            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab = st.tabs([
-                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit"
+            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
+                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit", "📖 Instructions"
             ])
             
             with analytics_tab:
@@ -3022,8 +3013,8 @@ def display_project_view(user_id: int, role: str, session: Session):
                 # """, unsafe_allow_html=True)
                 custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
         else:
-            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab = st.tabs([
-                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit"
+            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
+                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit", "📖 Instructions"
             ])
         
         with annotator_tab:
@@ -3065,14 +3056,17 @@ def display_project_view(user_id: int, role: str, session: Session):
         
         with auto_submit_tab:
             display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
+        
+        with instruction_tab:
+            display_instruction_tab_content(instructions_url=instructions_url)
     
     elif role == "meta_reviewer":
         # st.markdown("---")
         
         # NO AUTO-SUBMIT TAB FOR META-REVIEWER
         if mode == "Training":
-            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab = st.tabs([
-                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout"
+            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
+                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "📖 Instructions"
             ])
             
             with analytics_tab:
@@ -3095,8 +3089,8 @@ def display_project_view(user_id: int, role: str, session: Session):
                 # """, unsafe_allow_html=True)
                 custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
         else:
-            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab = st.tabs([
-                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout"
+            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
+                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "📖 Instructions"
             ])
         
         with annotator_tab:
@@ -3135,11 +3129,17 @@ def display_project_view(user_id: int, role: str, session: Session):
         
         with layout_tab:
             display_layout_tab_content(videos=videos, role=role)
+        
+        with instruction_tab:
+            display_instruction_tab_content(instructions_url=instructions_url)
     
     else:  # Annotator role
         # st.markdown("---")
         
-        layout_tab, sort_tab, auto_submit_tab = st.tabs(["🎛️ Layout Settings", "🔄 Sort", "⚡ Auto-Submit"])
+        instruction_tab, layout_tab, sort_tab, auto_submit_tab = st.tabs(["📖 Instructions", "🎛️ Layout Settings", "🔄 Sort", "⚡ Auto-Submit"])
+        
+        with instruction_tab:
+            display_instruction_tab_content(instructions_url=instructions_url)
         
         with layout_tab:
             display_layout_tab_content(videos=videos, role=role)
@@ -3249,8 +3249,39 @@ def display_project_view(user_id: int, role: str, session: Session):
     
     display_pagination_controls(current_page, total_pages, page_key, role, project_id, "bottom", video_list_info_str)
 
-
-
+def display_instruction_tab_content(instructions_url: Optional[str]):
+    """Display instruction tab content with external URL button"""
+    st.markdown("#### 📖 Project Instructions")
+    
+    st.markdown(f"""
+    <div style="{get_card_style('#B180FF')}text-align: center;">
+        <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+            📚 Access detailed instructions and guidelines for this annotation project
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if instructions_url:
+        st.link_button("🔗 Open Instructions", 
+                      url=instructions_url,
+                      use_container_width=True,
+                      help="Open the project instructions in a new tab")
+        
+    else:
+        st.button("🔗 Open Instructions", 
+                 disabled=True, 
+                 use_container_width=True,
+                 help="No instructions URL configured for this project")
+        
+        st.markdown(f"""
+        <div style="margin-top: 16px; padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <p style="margin: 0; color: #856404; font-size: 0.9rem;">
+                ⚠️ <strong>No instructions available</strong><br>
+                Contact your project administrator to add instructions for this project.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
 ###############################################################################
 # PROJECT DASHBOARD FUNCTIONS
 ###############################################################################

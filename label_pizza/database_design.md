@@ -130,8 +130,10 @@ For single-choice questions:
 | ------ | ---- | ----- |
 | `id`          | INT PK |
 | `name`        | TEXT UNIQUE NOT NULL |
+| `instructions_url` | TEXT |
 | `created_at`  | TIMESTAMPTZ |
 | `updated_at`  | TIMESTAMPTZ |
+| `has_custom_display` | BOOL |
 | `is_archived` | BOOL |
 
 **Link** `schema_question_groups` – PK `(schema_id, question_group_id)`, plus `display_order`.
@@ -269,6 +271,27 @@ For single-choice questions:
 | `reviewed_at` | TIMESTAMPTZ |
 
 **Rationale** – Tracks review status and comments for annotator answers. One review per answer. Manual moderation of free-text; single-choice rows auto-grade.
+
+---
+
+## 12 · `project_video_question_displays`
+
+| column | type | notes |
+| ------ | ---- | ----- |
+| `project_id`, `video_id`, `question_id` | INT — **composite PK** |
+| `custom_display_text` | TEXT nullable | Override question display_text |
+| `custom_display_values` | JSONB nullable | Override option display_values |
+| `created_at` | TIMESTAMPTZ |
+| `updated_at` | TIMESTAMPTZ |
+
+### 12.1 Constraints & Indexes
+
+| kind | columns / condition |
+| ---- | ------------------- |
+| Index | `(project_id)` |
+| Index | `(project_id, video_id)` |
+
+**Rationale** – Custom display overrides for specific project-video-question combinations. Only stores overrides when customization is needed. Performance optimized with schema-level `has_custom_display` flag to skip entire lookup for non-custom projects.
 
 ---
 

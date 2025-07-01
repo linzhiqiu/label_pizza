@@ -272,8 +272,8 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
             assigned_project_ids = set()
             for group in project_groups:
                 try:
-                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group.id, session=session)
-                    assigned_project_ids.update(p.id for p in group_info["projects"])
+                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group["id"], session=session)
+                    assigned_project_ids.update(int(p["id"]) for p in group_info["projects"])
                 except:
                     continue
             
@@ -286,7 +286,7 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
         
         # Initialize selections
         if "admin_selected_groups" not in st.session_state:
-            st.session_state.admin_selected_groups = [g.id for g in project_groups]
+            st.session_state.admin_selected_groups = [g["id"] for g in project_groups]
         if "admin_include_unassigned" not in st.session_state:
             st.session_state.admin_include_unassigned = unassigned_project_count > 0
         
@@ -295,7 +295,7 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
         
         with action_col1:
             if st.button("✅ Select All Groups", key="admin_select_all_groups", use_container_width=True):
-                st.session_state.admin_selected_groups = [g.id for g in project_groups]
+                st.session_state.admin_selected_groups = [g["id"] for g in project_groups]
                 st.rerun(scope="fragment")
         
         with action_col2:
@@ -344,7 +344,7 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                 with cols[i % num_cols]:
                     # Get project count
                     try:
-                        group_info = ProjectGroupService.get_project_group_by_id(group_id=group.id, session=session)
+                        group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group["id"]), session=session)
                         project_count = len(group_info["projects"])
                     except:
                         project_count = 0
@@ -352,10 +352,10 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                     is_selected = group.id in st.session_state.admin_selected_groups
                     
                     checkbox_value = st.checkbox(
-                        f"**{group.name}**",
+                        f"**{group['name']}**",
                         value=is_selected,
-                        key=f"admin_group_cb_{group.id}",
-                        help=f"Description: {group.description or 'No description'}"
+                        key=f"admin_group_cb_{group['id']}",
+                        help=f"Description: {group['description'] or 'No description'}"
                     )
                     
                     # Project group info card
@@ -368,13 +368,13 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                             📁 {project_count} project{'s' if project_count != 1 else ''}
                         </div>
                         <div style="color: #424242; font-size: 0.85rem; line-height: 1.4;">
-                            {group.description if group.description else '<em>No description provided</em>'}
+                            {group['description'] if group['description'] else '<em>No description provided</em>'}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
                     
                     if checkbox_value:
-                        updated_selections.append(group.id)
+                        updated_selections.append(int(group["id"]))
             
             if set(updated_selections) != set(st.session_state.admin_selected_groups):
                 st.session_state.admin_selected_groups = updated_selections
@@ -1131,8 +1131,8 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
             assigned_project_ids = set()
             for group_id in selected_group_ids:
                 try:
-                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
-                    assigned_project_ids.update(p.id for p in group_info["projects"])
+                    group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group_id), session=session)
+                    assigned_project_ids.update(int(p["id"]) for p in group_info["projects"])
                 except:
                     continue
             
@@ -1167,26 +1167,26 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
         try:
             # Get group info
             group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
-            group_name = group_info["group"].name
+            group_name = group_info["group"]["name"]
             projects = group_info["projects"]
             
             group_results = {"group_name": group_name, "projects": {}}
             
             for project in projects:
                 # Check if video is in this project
-                project_videos = VideoService.get_project_videos(project_id=project.id, session=session)
+                project_videos = VideoService.get_project_videos(project_id=int(project["id"]), session=session)
                 video_in_project = any(v["id"] == video_id for v in project_videos)
                 
                 if not video_in_project:
                     continue
                 
                 # Get project ground truth only
-                project_results = get_project_ground_truth_for_video(video_id, project.id, session)
+                project_results = get_project_ground_truth_for_video(video_id, int(project["id"]), session)
                 
                 if project_results["has_data"]:
-                    group_results["projects"][project.id] = {
-                        "project_name": project.name,
-                        "project_description": project.description,
+                    group_results["projects"][int(project["id"])] = {
+                        "project_name": project["name"],
+                        "project_description": project["description"],
                         **project_results
                     }
             
@@ -1204,11 +1204,11 @@ def get_project_ground_truth_for_video(video_id: int, project_id: int, session: 
     
     try:
         # Get project info
-        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
         
         # Get schema question groups
         question_groups = SchemaService.get_schema_question_groups_list(
-            schema_id=project.schema_id, session=session
+            schema_id=project["schema_id"], session=session
         )
         
         project_results = {
@@ -1609,7 +1609,7 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
     """Display and edit questions for a specific project in criteria search"""
     
     try:
-        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
         
         # Get the question groups that contain our criteria questions
         question_ids = [q["question_id"] for q in criteria_questions]
@@ -1623,7 +1623,7 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
             # Find which question group this question belongs to
             try:
                 question_groups = SchemaService.get_schema_question_groups_list(
-                    schema_id=project.schema_id, session=session
+                    schema_id=project["schema_id"], session=session
                 )
                 
                 for group in question_groups:
@@ -2027,8 +2027,8 @@ def display_completion_status_video_result(result: Dict, user_id: int, autoplay:
     with question_col:
         # Show ALL question groups for this project (like reviewer/meta-reviewer portal)
         try:
-            project = ProjectService.get_project_by_id(project_id=project_id, session=session)
-            question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+            project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
             
             if not question_groups:
                 st.info("No question groups found for this project.")
@@ -2324,7 +2324,7 @@ def execute_project_based_search(project_ids: List[int], completion_filter: str,
     seen_combinations = set()  # Track (video_id, project_id) to avoid duplicates
     
     for project_id in project_ids:
-        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
         project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
         
         for video_info in project_videos:
@@ -2375,7 +2375,7 @@ def execute_project_based_search(project_ids: List[int], completion_filter: str,
                     "video_uid": video_uid,
                     "video_url": video_info["url"],
                     "project_id": project_id,
-                    "project_name": project.name,
+                    "project_name": project["name"],
                     "completion_status": completion_status,
                     "completed_questions": completed_questions if completion_status != "error" else 0,
                     "total_questions": total_questions if completion_status != "error" else 0

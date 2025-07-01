@@ -1481,8 +1481,8 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
     
     try:
         # Get all data in fewer queries
-        project = ProjectService.get_project_by_id(project_id=project_id, session=session)
-        question_groups = get_schema_question_groups(schema_id=project.schema_id, session=session)
+        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         videos = get_project_videos(project_id=project_id, session=session)
         
         # Find auto-submit groups first

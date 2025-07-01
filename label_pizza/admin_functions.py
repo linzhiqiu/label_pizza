@@ -739,7 +739,7 @@ def admin_questions():
                                 new_description = st.text_area(
                                     "Description",
                                     value=group_details["description"] or "",
-                                    key="admin_edit_group_description"
+                                    key="admin_edit_question_group_description"
                                 )
                                 
                                 # Verification function editing
@@ -1650,32 +1650,433 @@ def admin_schemas():
     
     with get_db_session() as session:
         schemas_df = SchemaService.get_all_schemas(session=session)
-        st.dataframe(schemas_df, use_container_width=True)
         
-        with st.expander("➕ Create Schema"):
-            schema_name = st.text_input("Schema Name", key="admin_schema_name")
+        if not schemas_df.empty:
+            # Summary stats
+            total_schemas = len(schemas_df)
+            # Handle if columns don't exist
+            if "Archived" in schemas_df.columns:
+                archived_schemas = len(schemas_df[schemas_df["Archived"]])
+            else:
+                archived_schemas = 0
+            active_schemas = total_schemas - archived_schemas
             
-            groups_df = QuestionGroupService.get_all_groups(session=session)
-            if groups_df.empty:
-                st.warning("No question groups available.")
-                return
+            if "Has Custom Display" in schemas_df.columns:
+                schemas_with_custom_display = len(schemas_df[schemas_df["Has Custom Display"]])
+            else:
+                schemas_with_custom_display = 0
+            
+            # Display summary
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("📋 Total Schemas", total_schemas)
+            with col2:
+                st.metric("✅ Active Schemas", active_schemas)
+            with col3:
+                st.metric("🗄️ Archived Schemas", archived_schemas)
+            with col4:
+                st.metric("🎨 Custom Display", schemas_with_custom_display)
+            
+            st.markdown("---")
+            
+            # Search and filter
+            search_col1, search_col2 = st.columns([2, 1])
+            with search_col1:
+                search_term = st.text_input("🔍 Search schemas", placeholder="Schema name or question groups...")
+            with search_col2:
+                show_archived = st.checkbox("Show archived schemas", value=False)
+            
+            # Filter schemas
+            filtered_schemas = schemas_df.copy()
+            
+            if not show_archived and "Archived" in filtered_schemas.columns:
+                filtered_schemas = filtered_schemas[~filtered_schemas["Archived"]]
+            
+            if search_term:
+                mask = (
+                    filtered_schemas["Name"].str.contains(search_term, case=False, na=False) |
+                    filtered_schemas["Question Groups"].str.contains(search_term, case=False, na=False)
+                )
+                filtered_schemas = filtered_schemas[mask]
+            
+            # Show filter results
+            if search_term or not show_archived:
+                filters_applied = []
+                if search_term:
+                    filters_applied.append(f"search: '{search_term}'")
+                if not show_archived:
+                    filters_applied.append("active only")
                 
-            available_groups = groups_df[~groups_df["Archived"]]
-            selected_groups = st.multiselect(
-                "Question Groups", 
-                available_groups["ID"].tolist(),
-                format_func=lambda x: available_groups[available_groups["ID"]==x]["Name"].iloc[0],
-                key="admin_schema_groups"
-            )
+                custom_info(f"Showing {len(filtered_schemas)} of {total_schemas} schemas ({', '.join(filters_applied)})")
             
-            if st.button("Create Schema", key="admin_create_schema_btn"):
+            # Sort schemas by name
+            filtered_schemas = filtered_schemas.sort_values("Name")
+            
+            # Display schemas in collapsible format
+            for _, schema_row in filtered_schemas.iterrows():
+                schema_id = schema_row["ID"]
+                schema_name = schema_row["Name"]
+                question_groups = schema_row["Question Groups"]
+                instructions_url = schema_row.get("Instructions URL", "") if "Instructions URL" in schemas_df.columns else ""
+                has_custom_display = schema_row.get("Has Custom Display", False) if "Has Custom Display" in schemas_df.columns else False
+                is_archived = schema_row.get("Archived", False) if "Archived" in schemas_df.columns else False
+                
+                # Build status indicators
+                status_indicators = []
+                if is_archived:
+                    status_indicators.append("🗄️ Archived")
+                else:
+                    status_indicators.append("✅ Active")
+                
+                if has_custom_display:
+                    status_indicators.append("🎨 Custom Display")
+                
+                if instructions_url:
+                    status_indicators.append("📖 Has Instructions")
+                
+                if question_groups and question_groups != "No groups":
+                    group_count = len([g.strip() for g in question_groups.split(",") if g.strip()])
+                    status_indicators.append(f"📁 {group_count} groups")
+                else:
+                    status_indicators.append("❌ No groups")
+                
+                # Create header
+                header = f"**{schema_name}** • {' • '.join(status_indicators)}"
+                
+                with st.expander(header, expanded=False):
+                    # Schema metadata section
+                    st.markdown("### 📋 Schema Information")
+                    
+                    info_col1, info_col2 = st.columns(2)
+                    
+                    with info_col1:
+                        st.markdown(f"**ID:** {schema_id}")
+                        st.markdown(f"**Name:** {schema_name}")
+                        st.markdown(f"**Status:** {'🗄️ Archived' if is_archived else '✅ Active'}")
+                        st.markdown(f"**Custom Display:** {'🎨 Yes' if has_custom_display else '❌ No'}")
+                    
+                    with info_col2:
+                        if instructions_url:
+                            st.markdown(f"**Instructions URL:** [📖 View Instructions]({instructions_url})")
+                        else:
+                            st.markdown("**Instructions URL:** ❌ Not set")
+                        
+                        if question_groups and question_groups != "No groups":
+                            st.markdown("**Question Groups:**")
+                            group_names = [g.strip() for g in question_groups.split(",") if g.strip()]
+                            for group_name in group_names:
+                                st.markdown(f"  • {group_name}")
+                        else:
+                            st.markdown("**Question Groups:** ❌ No groups assigned")
+                    
+                    # Question groups section with details
+                    st.markdown("### 📁 Question Groups Details")
+                    
+                    try:
+                        schema_groups_df = SchemaService.get_schema_question_groups(
+                            schema_id=schema_id, session=session
+                        )
+                        
+                        if not schema_groups_df.empty:
+                            for i, group_row in schema_groups_df.iterrows():
+                                group_id = group_row["ID"]
+                                group_title = group_row["Title"]
+                                group_display_title = group_row["Display Title"]
+                                group_description = group_row["Description"]
+                                is_reusable = group_row["Reusable"]
+                                is_archived_group = group_row["Archived"]
+                                display_order = group_row["Display Order"]
+                                question_count = group_row["Question Count"]
+                                
+                                # Group status indicators
+                                group_status = []
+                                if is_archived_group:
+                                    group_status.append("🗄️ Archived")
+                                else:
+                                    group_status.append("✅ Active")
+                                
+                                if is_reusable:
+                                    group_status.append("🔄 Reusable")
+                                else:
+                                    group_status.append("🔒 Non-reusable")
+                                
+                                group_status.append(f"📝 {question_count} questions")
+                                
+                                st.markdown(f"**{display_order + 1}. {group_display_title}** (Internal: {group_title}) • {' • '.join(group_status)}")
+                                if group_description:
+                                    st.caption(f"Description: {group_description}")
+                        else:
+                            custom_info("No question groups found in this schema")
+                            
+                    except Exception as e:
+                        st.error(f"Error loading question groups: {str(e)}")
+        else:
+            custom_info("No schemas found in the database.")
+        
+        st.markdown("---")
+        
+        # Management section
+        schema_management_tabs = st.tabs(["➕ Create Schema", "✏️ Edit Schema"])
+        
+        with schema_management_tabs[0]:
+            st.markdown("### 🆕 Create New Schema")
+            
+            schema_name = st.text_input("Schema Name", key="admin_schema_name", 
+                                      placeholder="Enter schema name...")
+            
+            # Instructions URL
+            instructions_url = st.text_input("Instructions URL (optional)", key="admin_schema_instructions", 
+                                           placeholder="https://example.com/instructions", 
+                                           help="URL linking to instructions for this schema")
+            
+            # Custom display checkbox
+            has_custom_display = st.checkbox("Has Custom Display", key="admin_schema_custom_display", 
+                                           help="Enable if this schema has custom display logic")
+            
+            # Question groups selection
+            st.markdown("**📁 Select Question Groups:**")
+            groups_df = QuestionGroupService.get_all_groups(session=session)
+            if not groups_df.empty:
+                available_groups = groups_df[~groups_df["Archived"]]
+                if not available_groups.empty:
+                    selected_groups = st.multiselect(
+                        "Question Groups (in desired order)", 
+                        available_groups["ID"].tolist(),
+                        format_func=lambda x: f"{available_groups[available_groups['ID']==x]['Name'].iloc[0]} - {available_groups[available_groups['ID']==x]['Description'].iloc[0][:50]}{'...' if len(str(available_groups[available_groups['ID']==x]['Description'].iloc[0])) > 50 else ''}",
+                        key="admin_schema_groups",
+                        help="Select question groups in the order they should appear"
+                    )
+                    
+                    if selected_groups:
+                        st.markdown("**📋 Selected Groups (Preview Order):**")
+                        for i, group_id in enumerate(selected_groups):
+                            group_name = available_groups[available_groups["ID"]==group_id]["Name"].iloc[0]
+                            st.markdown(f"{i+1}. {group_name}")
+                else:
+                    st.warning("No non-archived question groups available.")
+                    selected_groups = []
+            else:
+                st.warning("No question groups available.")
+                selected_groups = []
+            
+            if st.button("🚀 Create Schema", key="admin_create_schema_btn", type="primary", use_container_width=True):
                 if schema_name and selected_groups:
                     try:
-                        SchemaService.create_schema(name=schema_name, question_group_ids=selected_groups, session=session)
-                        st.success("Schema created!")
+                        # Clean up instructions URL
+                        clean_instructions_url = instructions_url.strip() if instructions_url else None
+                        if clean_instructions_url == "":
+                            clean_instructions_url = None
+                        
+                        SchemaService.create_schema(
+                            name=schema_name, 
+                            question_group_ids=selected_groups, 
+                            instructions_url=clean_instructions_url,
+                            has_custom_display=has_custom_display,
+                            session=session
+                        )
+                        st.success("✅ Schema created successfully!")
                         st.rerun(scope="fragment")
                     except Exception as e:
-                        st.error(f"Error: {str(e)}")
+                        st.error(f"❌ Error: {str(e)}")
+                elif not schema_name:
+                    st.error("❌ Schema name is required")
+                elif not selected_groups:
+                    st.error("❌ At least one question group must be selected")
+        
+        with schema_management_tabs[1]:
+            st.markdown("### ✏️ Edit Existing Schema")
+            
+            if not schemas_df.empty:
+                available_schemas = schemas_df  # Show all schemas for editing (including archived)
+                if not available_schemas.empty:
+                    schema_options = {f"{row['Name']} (ID: {row['ID']})": row['ID'] for _, row in available_schemas.iterrows()}
+                    
+                    # Check for selection change and clear state if needed
+                    previous_selection = st.session_state.get("admin_edit_schema_previous_selection")
+                    
+                    selected_schema_name = st.selectbox(
+                        "Select Schema to Edit",
+                        list(schema_options.keys()),
+                        key="admin_edit_schema_select",
+                        help="Choose a schema to modify"
+                    )
+                    
+                    # If selection changed, clear related session state and rerun
+                    if selected_schema_name and selected_schema_name != previous_selection:
+                        st.session_state["admin_edit_schema_previous_selection"] = selected_schema_name
+                        selected_schema_id = schema_options[selected_schema_name]
+                        
+                        # Clear any existing order state for this schema
+                        order_key = f"edit_schema_order_{selected_schema_id}"
+                        if order_key in st.session_state:
+                            del st.session_state[order_key]
+                        
+                        st.rerun()
+                    
+                    if selected_schema_name:
+                        selected_schema_id = schema_options[selected_schema_name]
+                        
+                        try:
+                            schema_details = SchemaService.get_schema_details(
+                                schema_id=selected_schema_id, session=session
+                            )
+                            
+                            # Basic schema information editing
+                            st.markdown("### 📋 Basic Information")
+                            
+                            new_name = st.text_input(
+                                "Schema Name",
+                                value=schema_details["name"],
+                                key="admin_edit_schema_name"
+                            )
+                            
+                            new_instructions_url = st.text_input(
+                                "Instructions URL",
+                                value=schema_details["instructions_url"] or "",
+                                key="admin_edit_schema_instructions",
+                                placeholder="https://example.com/instructions",
+                                help="Leave empty to remove instructions URL"
+                            )
+                            
+                            edit_col1, edit_col2 = st.columns(2)
+                            with edit_col1:
+                                new_has_custom_display = st.checkbox(
+                                    "Has Custom Display",
+                                    value=schema_details["has_custom_display"],
+                                    key="admin_edit_schema_custom_display"
+                                )
+                            
+                            with edit_col2:
+                                new_is_archived = st.checkbox(
+                                    "Archived",
+                                    value=schema_details["is_archived"],
+                                    key="admin_edit_schema_archived",
+                                    help="Archive schema to prevent use in new projects"
+                                )
+                            
+                            # Question group order management
+                            st.markdown("### 📁 Question Group Order Management")
+                            current_order = SchemaService.get_question_group_order(schema_id=selected_schema_id, session=session)
+                            
+                            if current_order:
+                                groups_df = QuestionGroupService.get_all_groups(session=session)
+                                
+                                order_key = f"edit_schema_order_{selected_schema_id}"
+                                if order_key not in st.session_state:
+                                    st.session_state[order_key] = current_order.copy()
+                                
+                                working_order = st.session_state[order_key]
+                                
+                                custom_info("💡 Use the ⬆️ and ⬇️ buttons to reorder question groups. Changes will be applied when you click 'Update Schema'.")
+                                
+                                if len(working_order) > 5:
+                                    search_term = st.text_input(
+                                        "🔍 Search question groups (to quickly find groups in large schemas)",
+                                        key=f"search_groups_{selected_schema_id}",
+                                        placeholder="Type part of a group name..."
+                                    )
+                                else:
+                                    search_term = ""
+                                
+                                for i, group_id in enumerate(working_order):
+                                    group_row = groups_df[groups_df["ID"] == group_id]
+                                    if not group_row.empty:
+                                        group_name = group_row.iloc[0]["Name"]
+                                        group_display_title = group_row.iloc[0]["Display Title"]
+                                        group_description = group_row.iloc[0]["Description"]
+                                        is_archived_group = group_row.iloc[0]["Archived"]
+                                        
+                                        if search_term and search_term.lower() not in group_name.lower() and search_term.lower() not in group_display_title.lower():
+                                            continue
+                                        
+                                        group_order_col1, group_order_col2, group_order_col3 = st.columns([0.1, 0.8, 0.1])
+                                        
+                                        with group_order_col1:
+                                            if st.button("⬆️", key=f"group_up_{selected_schema_id}_{group_id}_{i}", 
+                                                        disabled=(i == 0), help="Move up"):
+                                                st.session_state[order_key][i], st.session_state[order_key][i-1] = \
+                                                    st.session_state[order_key][i-1], st.session_state[order_key][i]
+                                                st.rerun()
+                                        
+                                        with group_order_col2:
+                                            status_icon = "🗄️" if is_archived_group else "✅"
+                                            display_text = f"{group_display_title} (Internal: {group_name})"
+                                            if len(display_text) > 80:
+                                                display_text = display_text[:80] + '...'
+                                            
+                                            if search_term and (search_term.lower() in group_name.lower() or search_term.lower() in group_display_title.lower()):
+                                                st.write(f"**{i+1}.** {status_icon} {display_text} 🔍")
+                                            else:
+                                                st.write(f"**{i+1}.** {status_icon} {display_text}")
+                                            
+                                            if group_description:
+                                                st.caption(f"Description: {group_description[:100]}{'...' if len(group_description) > 100 else ''}")
+                                            st.caption(f"ID: {group_id}")
+                                        
+                                        with group_order_col3:
+                                            if st.button("⬇️", key=f"group_down_{selected_schema_id}_{group_id}_{i}", 
+                                                        disabled=(i == len(working_order) - 1), help="Move down"):
+                                                st.session_state[order_key][i], st.session_state[order_key][i+1] = \
+                                                    st.session_state[order_key][i+1], st.session_state[order_key][i]
+                                                st.rerun()
+                                
+                                group_order_action_col1, group_order_action_col2 = st.columns(2)
+                                with group_order_action_col1:
+                                    if st.button("🔄 Reset Group Order", key=f"reset_group_order_{selected_schema_id}"):
+                                        st.session_state[order_key] = current_order.copy()
+                                        st.rerun()
+                                
+                                with group_order_action_col2:
+                                    if working_order != current_order:
+                                        st.warning("⚠️ Group order changed - click 'Update Schema' to save")
+                                    else:
+                                        st.success("✅ Order matches saved state")
+                                
+                                new_group_order = working_order
+                            else:
+                                new_group_order = current_order
+                                custom_info("No question groups in this schema.")
+                            
+                            if st.button("💾 Update Schema", key="admin_update_schema_btn", type="primary", use_container_width=True):
+                                try:
+                                    # Prepare instructions URL (empty string means clear it)
+                                    clean_instructions_url = new_instructions_url.strip() if new_instructions_url else ""
+                                    if clean_instructions_url == "":
+                                        clean_instructions_url = ""  # This will be handled by edit_schema to set to None
+                                    
+                                    SchemaService.edit_schema(
+                                        schema_id=selected_schema_id,
+                                        name=new_name if new_name != schema_details["name"] else None,
+                                        instructions_url=clean_instructions_url if clean_instructions_url != (schema_details["instructions_url"] or "") else None,
+                                        has_custom_display=new_has_custom_display if new_has_custom_display != schema_details["has_custom_display"] else None,
+                                        is_archived=new_is_archived if new_is_archived != schema_details["is_archived"] else None,
+                                        session=session
+                                    )
+                                    
+                                    # Update question group order if changed
+                                    if new_group_order != current_order:
+                                        SchemaService.update_question_group_order(
+                                            schema_id=selected_schema_id, 
+                                            group_ids=new_group_order, 
+                                            session=session
+                                        )
+                                    
+                                    # Clear order state after successful update
+                                    order_key = f"edit_schema_order_{selected_schema_id}"
+                                    if order_key in st.session_state:
+                                        del st.session_state[order_key]
+                                    
+                                    st.success("✅ Schema updated successfully!")
+                                    st.rerun(scope="fragment")
+                                except Exception as e:
+                                    st.error(f"❌ Error updating schema: {str(e)}")
+                                    
+                        except Exception as e:
+                            st.error(f"Error loading schema details: {str(e)}")
+                else:
+                    custom_info("No schemas available to edit.")
+            else:
+                custom_info("No schemas available to edit.")
 
 @st.fragment
 def admin_users():
@@ -1842,9 +2243,9 @@ def admin_assignments():
                 project_groups = ProjectGroupService.list_project_groups(session=session)
                 project_group_lookup = {}
                 for group in project_groups:
-                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group.id, session=session)
+                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group["id"], session=session)
                     for project in group_info["projects"]:
-                        project_group_lookup[project.id] = group.name
+                        project_group_lookup[project["id"]] = group["name"]
             except:
                 project_group_lookup = {}
             
@@ -2190,22 +2591,22 @@ def admin_project_groups():
                 group_data = []
                 for group in groups:
                     try:
-                        group_info = ProjectGroupService.get_project_group_by_id(group_id=group.id, session=session)
+                        group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group["id"]), session=session)
                         project_count = len(group_info["projects"])
                         group_data.append({
-                            "ID": group.id,
-                            "Name": group.name,
-                            "Description": group.description,
+                            "ID": group["id"],
+                            "Name": group["name"],
+                            "Description": group["description"],
                             "Project Count": project_count,
-                            "Created": group.created_at
+                            "Created": group["created_at"]
                         })
                     except:
                         group_data.append({
-                            "ID": group.id,
-                            "Name": group.name,
-                            "Description": group.description,
+                            "ID": group["id"],
+                            "Name": group["name"],
+                            "Description": group["description"],
                             "Project Count": "Error",
-                            "Created": group.created_at
+                            "Created": group["created_at"]
                         })
                 
                 st.dataframe(pd.DataFrame(group_data), use_container_width=True)
@@ -2246,7 +2647,7 @@ def admin_project_groups():
             try:
                 groups = ProjectGroupService.list_project_groups(session=session)
                 if groups:
-                    group_options = {f"{g.name} (ID: {g.id})": g.id for g in groups}
+                    group_options = {f"{g['name']} (ID: {g['id']})": g['id'] for g in groups}
                     selected_group_name = st.selectbox(
                         "Select Group to Edit", 
                         list(group_options.keys()),
@@ -2264,22 +2665,22 @@ def admin_project_groups():
                         
                         new_name = st.text_input(
                             "Group Name", 
-                            value=current_group.name,
+                            value=current_group["name"],
                             key="admin_edit_group_name"
                         )
                         new_description = st.text_area(
                             "Description", 
-                            value=current_group.description or "",
-                            key="admin_edit_group_description"
+                            value=current_group["description"] or "",
+                            key="admin_edit_project_group_description"
                         )
                         
                         st.markdown("**Project Management:**")
                         
                         if current_projects:
                             st.markdown("**Current Projects:**")
-                            current_project_ids = [p.id for p in current_projects]
+                            current_project_ids = [p["id"] for p in current_projects]
                             for project in current_projects:
-                                st.write(f"- {project.name} (ID: {project.id})")
+                                st.write(f"- {project['name']} (ID: {project['id']})")
                         else:
                             custom_info("No projects currently in this group")
                             current_project_ids = []
@@ -2317,8 +2718,8 @@ def admin_project_groups():
                             try:
                                 ProjectGroupService.edit_project_group(
                                     group_id=selected_group_id,
-                                    name=new_name if new_name != current_group.name else None,
-                                    description=new_description if new_description != (current_group.description or "") else None,
+                                    name=new_name if new_name != current_group["name"] else None,
+                                    description=new_description if new_description != (current_group["description"] or "") else None,
                                     add_project_ids=add_projects if add_projects else None,
                                     remove_project_ids=remove_projects if remove_projects else None,
                                     session=session

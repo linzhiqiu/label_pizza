@@ -46,7 +46,7 @@ def resolve_projects_to_ids(projects, session):
         if isinstance(project, int):
             # It's already an ID, validate it exists
             try:
-                ProjectService.get_project_by_id(project, session)
+                ProjectService.get_project_dict_by_id(project, session)
                 project_ids.append(project)
             except ValueError as e:
                 raise ValueError(f"Project with ID {project} not found or is archived")

@@ -5792,6 +5792,7 @@ class AutoSubmitService:
             for question in questions:
                 question_id = question["id"]
                 question_text = question["text"]
+                question_type = question["type"]
                 
                 # Skip if answer already exists
                 if question_text in existing_answers and existing_answers[question_text]:
@@ -5799,6 +5800,23 @@ class AutoSubmitService:
                     continue
                 
                 virtual_responses = virtual_responses_by_question.get(question_id, [])
+                # ✅ CONSISTENCY: Same logic for description questions
+                if question_type == "description":
+                    if virtual_responses:
+                        # For description questions with virtual responses, use directly
+                        if len(virtual_responses) > 1:
+                            raise ValueError(f"Description question {question_id} has multiple virtual responses")
+                        selected_answer = virtual_responses[0]["answer"]
+                        results["answers"][question_text] = selected_answer
+                        
+                        # Add to vote details for transparency
+                        results["vote_details"][question_text] = {
+                            selected_answer: virtual_responses[0]["user_weight"]
+                        }
+                        continue
+                    # If no virtual response, fall through to weighted voting
+                
+
                 vote_weights = AutoSubmitService.get_weighted_votes_for_question(
                     video_id=video_id, project_id=project_id, question_id=question_id,
                     include_user_ids=include_user_ids, virtual_responses=virtual_responses, 
@@ -6048,6 +6066,7 @@ class ReviewerAutoSubmitService:
             for question in questions:
                 question_id = question["id"]
                 question_text = question["text"]
+                question_type = question["type"]
                 
                 # Skip if GROUND TRUTH answer already exists
                 if question_text in existing_answers and existing_answers[question_text]:
@@ -6055,6 +6074,29 @@ class ReviewerAutoSubmitService:
                     continue
                 
                 virtual_responses = virtual_responses_by_question.get(question_id, [])
+
+                # ✅ NEW LOGIC: Handle description questions differently
+                if question_type == "description":
+                    if virtual_responses:
+                        # FIXED: For description questions with virtual responses (specific annotator selected),
+                        # use the virtual response directly without weighted voting or threshold checking
+                        if len(virtual_responses) > 1:
+                            raise ValueError(f"Description question {question_id} has multiple virtual responses")
+                        selected_answer = virtual_responses[0]["answer"]
+                        results["answers"][question_text] = selected_answer
+                        
+                        # Add to vote details for transparency (show it was from virtual response)
+                        results["vote_details"][question_text] = {
+                            selected_answer: virtual_responses[0]["user_weight"]
+                        }
+                        
+                        # print(f"✅ Description question {question_id}: Using selected annotator's answer directly: {selected_answer[:50]}...")
+                        continue
+                    # else:
+                        # EXISTING LOGIC: No virtual response, use weighted voting for "Auto" mode
+                        # print(f"🔍 Description question {question_id}: No virtual response, using weighted voting")
+                        # Fall through to normal weighted voting logic below
+                
                 
                 # MINIMAL CHANGE: Use custom option weights for this question
                 question_custom_weights = None
@@ -6095,6 +6137,7 @@ class ReviewerAutoSubmitService:
             return results
             
         except Exception as e:
+            print(f"Error calculating auto-submit ground truth: {str(e)}")
             raise ValueError(f"Error calculating auto-submit ground truth: {str(e)}")
 
     @staticmethod

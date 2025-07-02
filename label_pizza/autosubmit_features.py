@@ -138,8 +138,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                     question_text = question["display_text"]
                     
                     with cols[i % 2]:
-                        short_text = question_text[:50] + "..." if len(question_text) > 50 else question_text
-                        st.markdown(f"*{short_text}*")
+                        st.markdown(f"*{question_text}*")
                         
                         if question["type"] == "single":
                             # FIXED: Store option weights separately, don't create virtual responses
@@ -284,10 +283,9 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                         st.session_state[thresholds_key][question_id] = 100.0  # DEFAULT TO 100% FOR REVIEWERS TOO
                     
                     with cols[i % 2]:
-                        short_text = question_text[:50] + "..." if len(question_text) > 50 else question_text
                         
                         new_threshold = st.slider(
-                            short_text,
+                            question_text,
                             min_value=0.0,
                             max_value=100.0,
                             value=st.session_state[thresholds_key][question_id],
@@ -329,8 +327,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                     virtual_responses = st.session_state[virtual_responses_key][question_id]
                     
                     with cols[i % 2]:
-                        short_text = question_text[:50] + "..." if len(question_text) > 50 else question_text
-                        st.markdown(f"*{short_text}*")
+                        st.markdown(f"*{question_text}*")
                         
                         # Current default answers
                         if virtual_responses:
@@ -406,10 +403,9 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                         st.session_state[thresholds_key][question_id] = 100.0
                     
                     with cols[i % 2]:
-                        short_text = question_text[:50] + "..." if len(question_text) > 50 else question_text
                         
                         new_threshold = st.slider(
-                            short_text,
+                            question_text,
                             min_value=0.0,
                             max_value=100.0,
                             value=st.session_state[thresholds_key][question_id],
@@ -526,8 +522,8 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
     # Progress tracking (unchanged)
     total_operations = len(selected_groups) * len(videos)
     st.markdown(f"### 🚀 Executing Auto-Submit")
-    st.caption(f"Processing {len(videos)} videos across {len(selected_groups)} question groups ({total_operations} total operations)")
-    
+    st.caption(f"Processing {len(videos)} videos across {len(selected_groups)} question groups")
+
     progress_bar = st.progress(0)
     status_container = st.empty()
     
@@ -545,9 +541,15 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
         group_id = group["ID"]
         group_display_title = group["Display Title"]
         
-        for video in videos:
+        for video_idx, video in enumerate(videos):
             video_id = video["id"]
             video_uid = video["uid"]
+
+            # Update progress per video
+            progress = (video_idx + 1) / len(videos)
+            progress_bar.progress(progress)
+            status_container.text(f"Processing video {video_idx + 1}/{len(videos)}: {video_uid}")
+    
             
             try:
                 # MINIMAL CHANGE: Add dynamic virtual responses for this video
@@ -608,11 +610,14 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
                     "error": str(e)
                 })
             
-            operation_count += 1
-            progress = operation_count / total_operations
-            progress_bar.progress(progress)
-            status_container.text(f"Processing: {operation_count}/{total_operations}")
+            # OUTDATED: Progress bar is updated per video now instead of per operation
+            # operation_count += 1
+            # progress = operation_count / total_operations
+            # progress_bar.progress(progress)
+            # status_container.text(f"Processing: {operation_count}/{total_operations}")
     
+    progress_bar.empty()
+    status_container.empty()
     # Results display (unchanged from original)
     st.markdown("### 📊 Auto-Submit Results")
     
@@ -730,9 +735,9 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
         groups_would_submit = 0
         groups_would_skip = 0
         
-        if len(videos) > 10:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+        
+        progress_bar = st.progress(0)
+        status_text = st.empty()
         
         video_results = {}
         
@@ -744,10 +749,10 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                 "groups": {}
             }
             
-            if len(videos) > 10:
-                progress = (video_idx + 1) / len(videos)
-                progress_bar.progress(progress)
-                status_text.text(f"Processing video {video_idx + 1}/{len(videos)}: {video_uid}")
+            
+            progress = (video_idx + 1) / len(videos)
+            progress_bar.progress(progress)
+            status_text.text(f"Processing video {video_idx + 1}/{len(videos)}: {video_uid}")
             
             for group in selected_groups:
                 group_id = group["ID"]
@@ -852,9 +857,8 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                         "details": f"❌ Error occurred (0/{total_questions_in_group} questions)"
                     }
         
-        if len(videos) > 10:
-            progress_bar.empty()
-            status_text.empty()
+        progress_bar.empty()
+        status_text.empty()
         
         # Rest of the display logic unchanged from original
         if video_results:
@@ -1006,6 +1010,12 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
         st.warning("Please configure annotators and question groups first.")
         return
     
+    st.markdown("### ⚡ Preloading Options")
+    st.caption(f"Processing {len(videos)} videos across {len(selected_groups)} question groups")
+
+    progress_bar = st.progress(0)
+    status_container = st.empty()
+    
     # Calculate winning answers for each video and group
     preloaded_answers_dict = {}
     total_preloaded = 0
@@ -1015,6 +1025,12 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
         
         for video in videos:
             video_id = video["id"]
+
+            # Update progress per video
+            progress = (video_idx + 1) / len(videos)
+            progress_bar.progress(progress)
+            status_container.text(f"Processing video {video_idx + 1}/{len(videos)}: {video['uid']}")
+            
             
             try:
                 if role == "reviewer":
@@ -1074,14 +1090,17 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
                     )
                 
                 # Store winning answers for passing to forms
-                for question_text, answer_value in result_answers.items():
-                    key = (video_id, group_id, question_text)
+                for question_id, answer_value in result_answers.items():
+                    key = (video_id, group_id, question_id)
                     preloaded_answers_dict[key] = answer_value
                     total_preloaded += 1
                 
             except Exception as e:
                 print(f"Error processing video {video['id']}, group {group_id}: {e}")
                 continue
+        
+    progress_bar.empty()
+    status_container.empty()
     
     # Store in session state for the display functions to access
     st.session_state[f"current_preloaded_answers_{role}_{project_id}"] = preloaded_answers_dict
@@ -1106,7 +1125,7 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
 
 def calculate_preload_answers_no_threshold(video_id: int, project_id: int, question_group_id: int, 
                                          include_user_ids: List[int], virtual_responses_by_question: Dict,
-                                         session: Session, user_weights: Dict[int, float] = None, role: str = "annotator") -> Dict[str, str]:
+                                         session: Session, user_weights: Dict[int, float] = None, role: str = "annotator") -> Dict[int, str]:
     """Calculate preload answers WITHOUT threshold requirements - REVERTED to original for annotators"""
     
     try:
@@ -1127,7 +1146,6 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
         
         for question in questions:
             question_id = question["id"]
-            question_text = question["display_text"]
             question_type = question["type"]
             
             if question_type == "single":
@@ -1185,7 +1203,7 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                 # Pick highest weighted option (NO THRESHOLD CHECK!)
                 if vote_counts:
                     winning_answer = max(vote_counts.keys(), key=lambda x: vote_counts[x])
-                    preload_answers[question_text] = winning_answer
+                    preload_answers[question_id] = winning_answer
                 
             elif question_type == "description":
                 # REVERTED: Original logic for description questions
@@ -1193,7 +1211,7 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                 
                 if virtual_responses:
                     # Use the configured answer from dropdown (ignore annotator weights for description)
-                    preload_answers[question_text] = virtual_responses[0]["answer"]
+                    preload_answers[question_id] = virtual_responses[0]["answer"]
                 else:
                     # Fall back to weight-based selection only if no dropdown selection made
                     # OPTIMIZED: Use cached data for description questions
@@ -1247,7 +1265,7 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                     # Pick highest weighted answer (NO THRESHOLD CHECK!)
                     if answer_scores:
                         winning_answer = max(answer_scores.keys(), key=lambda x: answer_scores[x])
-                        preload_answers[question_text] = winning_answer
+                        preload_answers[question_id] = winning_answer
         
         return preload_answers
         
@@ -1261,7 +1279,7 @@ def calculate_preload_with_weights(
     include_user_ids: List[int], virtual_responses_by_question: Dict,
     session: Session, user_weights: Dict[int, float] = None, 
     option_weights: Dict[int, Dict[str, float]] = None
-) -> Dict[str, str]:
+) -> Dict[int, str]:
     """Calculate preload answers for reviewers with custom option weights"""
     
     try:
@@ -1281,7 +1299,6 @@ def calculate_preload_with_weights(
         
         for question in questions:
             question_id = question["id"]
-            question_text = question["display_text"]
             question_type = question["type"]
             
             if question_type == "single":
@@ -1330,7 +1347,7 @@ def calculate_preload_with_weights(
                 # Pick highest weighted option (NO THRESHOLD CHECK!)
                 if vote_counts:
                     winning_answer = max(vote_counts.keys(), key=lambda x: vote_counts[x])
-                    preload_answers[question_text] = winning_answer
+                    preload_answers[question_id] = winning_answer
                 
             elif question_type == "description":
                 # For description questions, prioritize virtual responses (from selected annotator)
@@ -1338,7 +1355,7 @@ def calculate_preload_with_weights(
                 
                 if virtual_responses:
                     # Use the configured answer (from selected annotator for this video)
-                    preload_answers[question_text] = virtual_responses[0]["answer"]
+                    preload_answers[question_id] = virtual_responses[0]["answer"]
                 else:
                     # Fall back to weight-based selection
                     # OPTIMIZED: Use cached text answers
@@ -1389,7 +1406,7 @@ def calculate_preload_with_weights(
                     # Pick highest weighted answer (NO THRESHOLD CHECK!)
                     if answer_scores:
                         winning_answer = max(answer_scores.keys(), key=lambda x: answer_scores[x])
-                        preload_answers[question_text] = winning_answer
+                        preload_answers[question_id] = winning_answer
         
         return preload_answers
         
@@ -1475,7 +1492,6 @@ def build_virtual_responses_for_video(video_id: int, project_id: int, role: str,
     return virtual_responses
 
 
-
 def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session: Session):
     """Run auto-submit for all auto-submit groups across entire project when user first enters - OPTIMIZED"""
     
@@ -1500,101 +1516,125 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
         if not auto_submit_groups:
             return  # No auto-submit groups, exit early
         
-        # Batch check existing answers for all groups at once to reduce queries
-        existing_answers_cache = {}
-        for group in auto_submit_groups:
-            try:
-                user_answers = AnnotatorService.get_user_answers_for_question_group(
-                    video_id=None, project_id=project_id, user_id=user_id, 
-                    question_group_id=group["ID"], session=session
-                )
-                existing_answers_cache[group["ID"]] = user_answers
-            except:
-                existing_answers_cache[group["ID"]] = {}
+        # Create a placeholder for the entire progress section
+        progress_placeholder = st.empty()
         
-        # Process in smaller batches to avoid overwhelming the connection pool
-        batch_size = 5  # Process 5 videos at a time
-        
-        for i in range(0, len(videos), batch_size):
-            video_batch = videos[i:i + batch_size]
-            
-            for video in video_batch:
-                for group in auto_submit_groups:
-                    try:
-                        # Check cache first to avoid repeated queries
-                        cached_answers = existing_answers_cache.get(group["ID"], {})
-                        
-                        # Check if this specific video has answers
-                        has_answers = False
-                        try:
-                            video_answers = AnnotatorService.get_user_answers_for_question_group(
-                                video_id=video["id"], project_id=project_id, user_id=user_id, 
-                                question_group_id=group["ID"], session=session
-                            )
-                            if video_answers and any(answer.strip() for answer in video_answers.values() if answer):
-                                has_answers = True
-                        except Exception as e:
-                            print(f"Error getting user answers: {e}")
-                            pass
-                        
-                        if has_answers:
-                            continue
-                        
-                        # Get questions once per group
-                        questions = get_questions_by_group_cached(group_id=group["ID"], session=session)
-                        if not questions:
-                            continue
-                        
-                        # Create virtual responses
-                        virtual_responses_by_question = {}
-                        for question in questions:
-                            question_id = question["id"]
-                            
-                            if question["type"] == "single":
-                                if question.get("default_option"):
-                                    default_answer = question["default_option"]
-                                elif question.get("options") and len(question["options"]) > 0:
-                                    default_answer = question["options"][0]
-                                else:
-                                    continue  # Skip invalid questions
-                            else:
-                                default_answer = question.get("default_option", "Auto-generated response")
-                            
-                            virtual_responses_by_question[question_id] = [{
-                                "name": "System Default",
-                                "answer": default_answer,
-                                "user_weight": 1.0
-                            }]
-                        
-                        if not virtual_responses_by_question:
-                            continue
-                        
-                        thresholds = {q["id"]: 100.0 for q in questions}
-                        
-                        # Auto-submit with error handling
-                        try:
-                            AutoSubmitService.auto_submit_question_group(
-                                video_id=video["id"], project_id=project_id, question_group_id=group["ID"],
-                                user_id=user_id, include_user_ids=[user_id],
-                                virtual_responses_by_question=virtual_responses_by_question, thresholds=thresholds,
-                                session=session
-                            )
-                        except Exception as submit_error:
-                            # Log error but continue with other videos/groups
-                            print(f"Auto-submit failed for video {video['id']}, group {group['ID']}: {submit_error}")
-                            continue
-                        
-                    except Exception as group_error:
-                        print(f"Error processing group {group.get('ID', 'unknown')}: {group_error}")
-                        continue
-            
-            # Small delay between batches to prevent overwhelming the connection pool
-            import time
-            time.sleep(0.1)
-                        
-    except Exception as e:
-        pass  # Silently fail to not disrupt user experience
+        # Show progress for background auto-submit
+        with progress_placeholder.container():
+            st.markdown("### 🚀 Auto-Submit Default Answers for Videos")
+            st.caption(f"Pre-filling default answers for {len(videos)} videos to speed up your workflow")
 
+            progress_bar = st.progress(0)
+            status_container = st.empty()
+
+            # ... rest of the processing logic stays the same ...
+            
+            # Batch check existing answers for all groups at once to reduce queries
+            existing_answers_cache = {}
+            for group in auto_submit_groups:
+                try:
+                    user_answers = AnnotatorService.get_user_answers_for_question_group(
+                        video_id=None, project_id=project_id, user_id=user_id, 
+                        question_group_id=group["ID"], session=session
+                    )
+                    existing_answers_cache[group["ID"]] = user_answers
+                except:
+                    existing_answers_cache[group["ID"]] = {}
+            
+            # Process in smaller batches to avoid overwhelming the connection pool
+            batch_size = 5  # Process 5 videos at a time
+            
+            for i in range(0, len(videos), batch_size):
+                video_batch = videos[i:i + batch_size]
+                
+                for video_idx_in_batch, video in enumerate(video_batch):  # ✅ Fixed enumeration
+                    # Calculate overall video index
+                    overall_video_idx = i + video_idx_in_batch
+                    
+                    # Update progress per video
+                    progress = (overall_video_idx + 1) / len(videos)
+                    progress_bar.progress(progress)
+                    status_container.text(f"Setting up defaults for video {overall_video_idx + 1}/{len(videos)}: {video['uid']}")
+                    
+                    for group in auto_submit_groups:
+                        try:
+                            # Check cache first to avoid repeated queries
+                            cached_answers = existing_answers_cache.get(group["ID"], {})
+                            
+                            # Check if this specific video has answers
+                            has_answers = False
+                            try:
+                                video_answers = AnnotatorService.get_user_answers_for_question_group(
+                                    video_id=video["id"], project_id=project_id, user_id=user_id, 
+                                    question_group_id=group["ID"], session=session
+                                )
+                                if video_answers and any(answer.strip() for answer in video_answers.values() if answer):
+                                    has_answers = True
+                            except Exception as e:
+                                print(f"Error getting user answers: {e}")
+                                pass
+                            
+                            if has_answers:
+                                continue
+                            
+                            # Get questions once per group
+                            questions = get_questions_by_group_cached(group_id=group["ID"], session=session)
+                            if not questions:
+                                continue
+                            
+                            # Create virtual responses
+                            virtual_responses_by_question = {}
+                            for question in questions:
+                                question_id = question["id"]
+                                
+                                if question["type"] == "single":
+                                    if question.get("default_option"):
+                                        default_answer = question["default_option"]
+                                    elif question.get("options") and len(question["options"]) > 0:
+                                        default_answer = question["options"][0]
+                                    else:
+                                        continue  # Skip invalid questions
+                                else:
+                                    default_answer = question.get("default_option", "Auto-generated response")
+                                
+                                virtual_responses_by_question[question_id] = [{
+                                    "name": "System Default",
+                                    "answer": default_answer,
+                                    "user_weight": 1.0
+                                }]
+                            
+                            if not virtual_responses_by_question:
+                                continue
+                            
+                            thresholds = {q["id"]: 100.0 for q in questions}
+                            
+                            # Auto-submit with error handling
+                            try:
+                                AutoSubmitService.auto_submit_question_group(
+                                    video_id=video["id"], project_id=project_id, question_group_id=group["ID"],
+                                    user_id=user_id, include_user_ids=[user_id],
+                                    virtual_responses_by_question=virtual_responses_by_question, thresholds=thresholds,
+                                    session=session
+                                )
+                            except Exception as submit_error:
+                                # Log error but continue with other videos/groups
+                                print(f"Auto-submit failed for video {video['id']}, group {group['ID']}: {submit_error}")
+                                continue
+                            
+                        except Exception as group_error:
+                            print(f"Error processing group {group.get('ID', 'unknown')}: {group_error}")
+                            continue
+                
+                # Small delay between batches to prevent overwhelming the connection pool
+                import time
+                time.sleep(0.1)
+
+        # ✅ CRITICAL FIX: Clear the entire progress section after completion
+        progress_placeholder.empty()
+                       
+    except Exception as e:
+        print(f"Error running project-wide auto-submit: {e}")
+        pass  # Silently fail to not disrupt user experience
 
 ###############################################################################
 # Annotator Selection Functions

@@ -24,7 +24,8 @@ from label_pizza.database_utils import (
     check_ground_truth_exists_for_group, get_user_assignment_dates,
     get_project_groups_with_projects, calculate_user_overall_progress,
     get_cached_user_completion_progress, get_optimized_all_project_annotators,
-    get_project_custom_display_data, get_questions_by_group_with_custom_display_cached
+    get_project_custom_display_data, get_questions_by_group_with_custom_display_cached,
+    clear_custom_display_cache
 )
 from label_pizza.autosubmit_features import (
     display_manual_auto_submit_controls, run_project_wide_auto_submit_on_entry,
@@ -473,7 +474,7 @@ def display_single_choice_question(
     # Get preloaded answer
     preloaded_value = ""
     if preloaded_answers:
-        key = (video_id, group_id, question_original_text)
+        key = (video_id, group_id, question_id)
         preloaded_value = preloaded_answers.get(key, "")
     
     # Use preloaded value if available, otherwise use existing value
@@ -662,7 +663,7 @@ def display_description_question(
     # Get preloaded answer
     preloaded_value = ""
     if preloaded_answers:
-        key = (video_id, group_id, question_original_text)
+        key = (video_id, group_id, question_id)
         preloaded_value = preloaded_answers.get(key, "")
     
     # Use preloaded value if available, otherwise use existing value

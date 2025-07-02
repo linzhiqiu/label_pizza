@@ -1760,6 +1760,8 @@ def admin_schemas():
                             st.markdown(f"**Instructions URL:** [📖 View Instructions]({instructions_url})")
                         else:
                             st.markdown("**Instructions URL:** ❌ Not set")
+
+                        st.markdown(f"**Custom Display:** {'🎨 Enabled' if has_custom_display else '❌ Disabled'}")
                         
                         if question_groups and question_groups != "No groups":
                             st.markdown("**Question Groups:**")

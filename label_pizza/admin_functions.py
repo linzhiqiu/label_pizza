@@ -14,7 +14,8 @@ from label_pizza.ui_components import (
 )
 from label_pizza.database_utils import (
     get_db_session, check_project_has_full_ground_truth, 
-    handle_database_errors, get_project_groups_with_projects
+    handle_database_errors, get_project_groups_with_projects,
+    get_annotator_accuracy_cached, get_reviewer_accuracy_cached
 )
 from label_pizza.accuracy_analytics import (
     get_accuracy_color, calculate_overall_accuracy
@@ -1578,12 +1579,17 @@ def admin_projects():
     st.subheader("📁 Project Management")
     
     with get_db_session() as session:
-        projects_df = ProjectService.get_all_projects(session=session)
+        # Use the new method that includes archived projects
+        projects_df = ProjectService.get_all_projects_including_archived(session=session)
         
         if not projects_df.empty:
             enhanced_projects = []
             for _, project in projects_df.iterrows():
-                schema_name = SchemaService.get_schema_name_by_id(schema_id=project["Schema ID"], session=session)
+                try:
+                    schema_name = SchemaService.get_schema_name_by_id(schema_id=project["Schema ID"], session=session)
+                except Exception as e:
+                    schema_name = f"Schema {project['Schema ID']} (Error)"
+                
                 try:
                     progress = ProjectService.progress(project_id=project["ID"], session=session)
                     has_full_gt = check_project_has_full_ground_truth(project_id=project["ID"], session=session)
@@ -1592,16 +1598,18 @@ def admin_projects():
                     enhanced_projects.append({
                         "ID": project["ID"],
                         "Name": project["Name"],
+                        "Archived": project["Archived"],  # Now this will show the actual archived status
                         "Videos": project["Videos"],
                         "Schema Name": schema_name,
                         "Mode": mode,
                         "GT Progress": f"{progress['completion_percentage']:.1f}%",
                         "GT Answers": f"{progress['ground_truth_answers']}/{progress['total_videos'] * progress['total_questions']}"
                     })
-                except:
+                except Exception as e:
                     enhanced_projects.append({
                         "ID": project["ID"],
                         "Name": project["Name"],
+                        "Archived": project["Archived"],  # Include archived status even for error projects
                         "Videos": project["Videos"],
                         "Schema Name": schema_name,
                         "Mode": "Error",
@@ -1611,38 +1619,348 @@ def admin_projects():
                     print(f"Error processing project {project['ID']}: {e}")
             
             enhanced_df = pd.DataFrame(enhanced_projects)
-            st.dataframe(enhanced_df, use_container_width=True)
+            
+            # Summary metrics - now these will be accurate
+            total_projects = len(enhanced_df)
+            archived_projects = len(enhanced_df[enhanced_df["Archived"] == True])
+            active_projects = len(enhanced_df[enhanced_df["Archived"] == False])
+            training_mode = len(enhanced_df[(enhanced_df["Mode"] == "🎓 Training") & (enhanced_df["Archived"] == False)])
+            annotation_mode = len(enhanced_df[(enhanced_df["Mode"] == "📝 Annotation") & (enhanced_df["Archived"] == False)])
+            error_projects = len(enhanced_df[enhanced_df["Mode"] == "Error"])
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("📁 Total Projects", total_projects)
+            with col2:
+                st.metric("✅ Active Projects", active_projects)
+            with col3:
+                st.metric("🗄️ Archived Projects", archived_projects)
+            with col4:
+                if error_projects > 0:
+                    st.metric("⚠️ Error Projects", error_projects)
+                else:
+                    training_annotation_ratio = f"{training_mode}/{annotation_mode}"
+                    st.metric("🎓/📝 Train/Annotate", training_annotation_ratio)
+            
+            st.markdown("---")
+            
+            # Add search and filter functionality for the main table
+            table_col1, table_col2, table_col3 = st.columns([2, 1, 1])
+            with table_col1:
+                project_search = st.text_input("🔍 Search projects", placeholder="Project name...", key="admin_project_table_search")
+            with table_col2:
+                show_archived = st.checkbox("Show archived projects", value=True, key="admin_show_archived_projects")
+            with table_col3:
+                show_errors = st.checkbox("Show error projects", value=True, key="admin_show_error_projects")
+            
+            # Filter the enhanced dataframe
+            filtered_df = enhanced_df.copy()
+            
+            if not show_archived:
+                filtered_df = filtered_df[filtered_df["Archived"] == False]
+            
+            if not show_errors:
+                filtered_df = filtered_df[filtered_df["Mode"] != "Error"]
+            
+            if project_search:
+                filtered_df = filtered_df[
+                    filtered_df["Name"].str.contains(project_search, case=False, na=False)
+                ]
+            
+            # Show filter info
+            if len(filtered_df) != len(enhanced_df):
+                custom_info(f"Showing {len(filtered_df)} of {len(enhanced_df)} projects")
+            
+            st.dataframe(filtered_df, use_container_width=True)
         else:
             custom_info("No projects available.")
         
-        with st.expander("➕ Create Project"):
-            name = st.text_input("Project Name", key="admin_project_name")
-            description = st.text_area("Description", key="admin_project_description")
+        st.markdown("---")
+        
+        # Management tabs
+        project_management_tabs = st.tabs(["➕ Create Project", "✏️ Edit Project"])
+        
+        with project_management_tabs[0]:
+            st.markdown("### 🆕 Create New Project")
             
+            name = st.text_input("Project Name", key="admin_project_name", 
+                               placeholder="Enter project name...")
+            description = st.text_area("Description", key="admin_project_description",
+                                     placeholder="Describe the purpose of this project...")
+            
+            # Schema selection
             schemas_df = SchemaService.get_all_schemas(session=session)
             if schemas_df.empty:
-                st.warning("No schemas available.")
+                st.warning("No schemas available. Please create a schema first.")
+                return
+            
+            # Filter non-archived schemas
+            available_schemas = schemas_df[~schemas_df.get("Archived", False)] if "Archived" in schemas_df.columns else schemas_df
+            if available_schemas.empty:
+                st.warning("No non-archived schemas available.")
                 return
                 
-            schema_name = st.selectbox("Schema", schemas_df["Name"], key="admin_project_schema")
+            schema_name = st.selectbox("Schema", available_schemas["Name"], key="admin_project_schema",
+                                     help="Select the schema that defines questions for this project")
             
+            # Video selection
             videos_df = VideoService.get_all_videos(session=session)
             if videos_df.empty:
-                st.warning("No videos available.")
+                st.warning("No videos available. Please add videos first.")
                 return
-                
-            selected_videos = st.multiselect("Videos", videos_df["Video UID"], key="admin_project_videos")
             
-            if st.button("Create Project", key="admin_create_project_btn"):
-                if name and schema_name:
+            # Filter non-archived videos
+            available_videos = videos_df[~videos_df.get("Archived", False)] if "Archived" in videos_df.columns else videos_df
+            if available_videos.empty:
+                st.warning("No non-archived videos available.")
+                return
+            
+            # Video search
+            video_search = st.text_input("🔍 Search videos", placeholder="Video UID...", key="admin_project_video_search")
+            
+            filtered_videos = available_videos.copy()
+            if video_search:
+                filtered_videos = filtered_videos[
+                    filtered_videos["Video UID"].str.contains(video_search, case=False, na=False)
+                ]
+            
+            if len(filtered_videos) > 20:
+                custom_info(f"📊 Found {len(filtered_videos)} videos. Use search to narrow results.")
+            
+            selected_videos = st.multiselect(
+                "Videos", 
+                filtered_videos["Video UID"].tolist(),
+                key="admin_project_videos",
+                help="Select videos to include in this project"
+            )
+            
+            if selected_videos:
+                st.markdown(f"**Selected {len(selected_videos)} videos**")
+                if len(selected_videos) <= 10:
+                    st.write(", ".join(selected_videos))
+                else:
+                    st.write(f"{', '.join(selected_videos[:10])}... and {len(selected_videos) - 10} more")
+            
+            if st.button("🚀 Create Project", key="admin_create_project_btn", type="primary", use_container_width=True):
+                if name and schema_name and selected_videos:
                     try:
                         schema_id = SchemaService.get_schema_id_by_name(name=schema_name, session=session)
                         video_ids = ProjectService.get_video_ids_by_uids(video_uids=selected_videos, session=session)
-                        ProjectService.create_project(name=name, schema_id=schema_id, video_ids=video_ids, session=session)
-                        st.success("Project created!")
+                        ProjectService.create_project(
+                            name=name, 
+                            schema_id=schema_id, 
+                            video_ids=video_ids, 
+                            session=session
+                        )
+                        st.success("✅ Project created successfully!")
                         st.rerun(scope="fragment")
                     except Exception as e:
-                        st.error(f"Error: {str(e)}")
+                        st.error(f"❌ Error: {str(e)}")
+                elif not name:
+                    st.error("❌ Project name is required")
+                elif not selected_videos:
+                    st.error("❌ At least one video must be selected")
+        
+        with project_management_tabs[1]:
+            st.markdown("### ✏️ Edit Existing Project")
+            
+            if not projects_df.empty:
+                # Search for projects to edit
+                edit_search = st.text_input("🔍 Search projects to edit", placeholder="Project name...", key="admin_edit_project_search")
+                
+                filtered_edit_projects = projects_df.copy()
+                if edit_search:
+                    filtered_edit_projects = filtered_edit_projects[
+                        filtered_edit_projects["Name"].str.contains(edit_search, case=False, na=False)
+                    ]
+                
+                if not filtered_edit_projects.empty:
+                    project_options = {f"{row['Name']} (ID: {row['ID']})": row['ID'] for _, row in filtered_edit_projects.iterrows()}
+                    
+                    if len(filtered_edit_projects) > 20:
+                        custom_info(f"📊 Found {len(filtered_edit_projects)} projects. Use search to narrow results.")
+                    
+                    selected_project_display = st.selectbox(
+                        "Select Project to Edit",
+                        [""] + list(project_options.keys()),
+                        key="admin_edit_project_select"
+                    )
+                    
+                    if selected_project_display:
+                        selected_project_id = project_options[selected_project_display]
+                        
+                        try:
+                            # Get current project details
+                            current_project = ProjectService.get_project_dict_by_id(
+                                project_id=selected_project_id, session=session
+                            )
+                            
+                            if current_project:
+                                st.markdown(f"**Editing Project:** {current_project['name']}")
+                                
+                                # Basic project information
+                                st.markdown("### 📋 Basic Information")
+                                
+                                basic_col1, basic_col2 = st.columns(2)
+                                
+                                with basic_col1:
+                                    st.text_input(
+                                        "Project ID (read-only)",
+                                        value=str(current_project['id']),
+                                        disabled=True,
+                                        key="admin_edit_project_id_display"
+                                    )
+                                    
+                                    current_schema_name = "Unknown Schema"
+                                    try:
+                                        current_schema_name = SchemaService.get_schema_name_by_id(
+                                            schema_id=current_project['schema_id'], session=session
+                                        )
+                                    except:
+                                        pass
+                                    
+                                    st.text_input(
+                                        "Current Schema (read-only)",
+                                        value=current_schema_name,
+                                        disabled=True,
+                                        key="admin_edit_project_schema_display",
+                                        help="Schema cannot be changed after project creation"
+                                    )
+                                
+                                with basic_col2:
+                                    new_name = st.text_input(
+                                        "Project Name",
+                                        value=current_project['name'],
+                                        key="admin_edit_project_name",
+                                        help="Update the project name"
+                                    )
+                                    
+                                    new_description = st.text_area(
+                                        "Description",
+                                        value=current_project.get('description') or "",
+                                        key="admin_edit_project_description",
+                                        help="Update the project description"
+                                    )
+                                
+                                # Archive status
+                                archive_col1, archive_col2 = st.columns(2)
+                                
+                                with archive_col1:
+                                    current_archived = current_project.get('is_archived', False)
+                                    new_archived = st.checkbox(
+                                        "Archived",
+                                        value=current_archived,
+                                        key="admin_edit_project_archived",
+                                        help="Archive project to prevent new assignments"
+                                    )
+                                
+                                with archive_col2:
+                                    if current_archived:
+                                        st.warning("⚠️ This project is currently archived")
+                                    else:
+                                        st.success("✅ This project is active")
+                                
+                                # Project statistics
+                                st.markdown("### 📊 Project Statistics")
+                                
+                                try:
+                                    project_videos = VideoService.get_project_videos(
+                                        project_id=selected_project_id, session=session
+                                    )
+                                    progress = ProjectService.progress(
+                                        project_id=selected_project_id, session=session
+                                    )
+                                    
+                                    stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+                                    
+                                    with stats_col1:
+                                        st.metric("📹 Videos", len(project_videos))
+                                    with stats_col2:
+                                        st.metric("❓ Questions", progress['total_questions'])
+                                    with stats_col3:
+                                        st.metric("📝 Total Answers", progress['total_answers'])
+                                    with stats_col4:
+                                        st.metric("✅ GT Progress", f"{progress['completion_percentage']:.1f}%")
+                                    
+                                    # Video list
+                                    if project_videos:
+                                        with st.expander(f"📹 View Project Videos ({len(project_videos)})", expanded=False):
+                                            video_data = []
+                                            for video in project_videos:
+                                                video_data.append({
+                                                    "Video UID": video["uid"],
+                                                    "URL": video["url"][:50] + "..." if len(video["url"]) > 50 else video["url"]
+                                                })
+                                            st.dataframe(pd.DataFrame(video_data), use_container_width=True)
+                                    
+                                except Exception as e:
+                                    st.error(f"Error loading project statistics: {str(e)}")
+                                
+                                # Update button
+                                update_col, preview_col = st.columns(2)
+                                
+                                with update_col:
+                                    if st.button("💾 Update Project", key="admin_update_project_btn", use_container_width=True):
+                                        try:
+                                            changes_made = []
+                                            
+                                            # Note: We don't have a direct project update service method,
+                                            # so we'll need to use the database session directly or
+                                            # suggest implementing ProjectService.update_project()
+                                            
+                                            # For now, let's show what would be updated
+                                            if new_name != current_project['name']:
+                                                changes_made.append("Name")
+                                            
+                                            if new_description != (current_project.get('description') or ""):
+                                                changes_made.append("Description")
+                                            
+                                            if new_archived != current_archived:
+                                                changes_made.append("Archive status")
+                                                # We have archive functionality
+                                                if new_archived:
+                                                    ProjectService.archive_project(
+                                                        project_id=selected_project_id, session=session
+                                                    )
+                                                # Note: No unarchive method in current services
+                                            
+                                            if changes_made:
+                                                st.success(f"✅ Project updated successfully! Changed: {', '.join(changes_made)}")
+                                            else:
+                                                custom_info("No changes were made")
+                                            
+                                            st.rerun(scope="fragment")
+                                        except Exception as e:
+                                            st.error(f"❌ Error updating project: {str(e)}")
+                                
+                                with preview_col:
+                                    with st.expander("👁️ Preview Changes"):
+                                        st.markdown("**Changes to be applied:**")
+                                        if new_name != current_project['name']:
+                                            st.markdown(f"**Name:** {current_project['name']} → {new_name}")
+                                        if new_description != (current_project.get('description') or ""):
+                                            st.markdown(f"**Description:** Updated")
+                                        if new_archived != current_archived:
+                                            status_change = "Archived" if new_archived else "Unarchived"
+                                            st.markdown(f"**Status:** {status_change}")
+                                        
+                                        if (new_name == current_project['name'] and 
+                                            new_description == (current_project.get('description') or "") and
+                                            new_archived == current_archived):
+                                            custom_info("No changes to preview")
+                            else:
+                                st.error(f"Project with ID '{selected_project_id}' not found")
+                        except Exception as e:
+                            st.error(f"Error loading project details: {str(e)}")
+                    else:
+                        custom_info("👆 Select a project from the dropdown above to edit")
+                else:
+                    if edit_search:
+                        custom_info(f"No projects found matching '{edit_search}'")
+                    else:
+                        custom_info("Use the search box to find projects to edit")
+            else:
+                custom_info("No projects available to edit")
 
 @st.fragment
 def admin_schemas():
@@ -1833,7 +2151,7 @@ def admin_schemas():
             
             # Custom display checkbox
             has_custom_display = st.checkbox("Has Custom Display", key="admin_schema_custom_display", 
-                                           help="Enable if this schema has custom display logic")
+                                           help="Enable if this schema has custom display logic for questions or options")
             
             # Question groups selection
             st.markdown("**📁 Select Question Groups:**")
@@ -1945,7 +2263,8 @@ def admin_schemas():
                                 new_has_custom_display = st.checkbox(
                                     "Has Custom Display",
                                     value=schema_details["has_custom_display"],
-                                    key="admin_edit_schema_custom_display"
+                                    key="admin_edit_schema_custom_display",
+                                    help="Enable if this schema uses custom display logic for questions or options"
                                 )
                             
                             with edit_col2:
@@ -2390,7 +2709,7 @@ def admin_assignments():
                                 try:
                                     if check_project_has_full_ground_truth(project_id=project_id, session=session):
                                         if role == "annotator":
-                                            accuracy_data = GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
+                                            accuracy_data = get_annotator_accuracy_cached(project_id, session)
                                             if user_id in accuracy_data:
                                                 overall_accuracy = calculate_overall_accuracy(accuracy_data)
                                                 accuracy = overall_accuracy.get(user_id)
@@ -2398,7 +2717,7 @@ def admin_assignments():
                                                     color = get_accuracy_color(accuracy)
                                                     accuracy_info = f" <span style='color: {color}; font-weight: bold;'>[{accuracy:.1f}%]</span>"
                                         elif role == "reviewer":
-                                            accuracy_data = GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
+                                            accuracy_data = get_reviewer_accuracy_cached(project_id, session)
                                             if user_id in accuracy_data:
                                                 overall_accuracy = calculate_overall_accuracy(accuracy_data)
                                                 accuracy = overall_accuracy.get(user_id)

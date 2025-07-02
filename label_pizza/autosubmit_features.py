@@ -580,9 +580,10 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
                 # Count successful question groups, not individual questions
                 if result["submitted_count"] > 0:
                     total_submitted += 1  # Count as 1 successful question group
-                if result["skipped_count"] > 0:
+                if result["skipped_count"] > 0 and result["submitted_count"] == 0:
                     total_skipped += 1
-                total_threshold_failures += result["threshold_failures"]
+                elif result["threshold_failures"] > 0:
+                    total_threshold_failures += 1
                 
                 if result.get("verification_failed", False):
                     total_verification_failures += 1
@@ -805,7 +806,12 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                         except Exception as e:
                             verification_failures = 1
                     
-                    group_would_submit = (answers_count == total_questions_in_group) and (threshold_failures == 0) and (verification_failures == 0) and (skipped_count == 0)
+                    # CORRECT LOGIC: Total coverage = new answers + existing GT
+                    group_would_submit = (answers_count == total_questions_in_group) and (verification_failures == 0)
+
+                    # Special case: if ALL questions were skipped (already have GT), don't submit anything new
+                    if skipped_count == total_questions_in_group:
+                        group_would_submit = False
                     
                     if group_would_submit:
                         groups_would_submit += 1
@@ -819,19 +825,32 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                     else:
                         groups_would_skip += 1
 
-                        if skipped_count > 0:
-                            failure_reason = f"already completed"
+                        if skipped_count == total_questions_in_group:
+                            failure_reason = "all questions already have GT"
                         elif verification_failures > 0:
-                            failure_reason = f"verification failed"
+                            failure_reason = "verification failed"  
+                        elif threshold_failures > 0:
+                            failure_reason = "threshold failures"
+                        elif answers_count == 0:
+                            failure_reason = "no votes available"
                         else:
-                            failure_parts = []
-                            missing_answers = total_questions_in_group - answers_count - threshold_failures
-                            if missing_answers > 0:
-                                failure_parts.append(f"missing answers")
-                            if threshold_failures > 0:
-                                failure_parts.append(f"threshold failures")
+                            failure_reason = "unknown failure"
                             
                             failure_reason = " + ".join(failure_parts) if failure_parts else "unknown failure"
+
+                        # if skipped_count > 0:
+                        #     failure_reason = f"already completed"
+                        # elif verification_failures > 0:
+                        #     failure_reason = f"verification failed"
+                        # else:
+                        #     failure_parts = []
+                        #     missing_answers = total_questions_in_group - answers_count - threshold_failures
+                        #     if missing_answers > 0:
+                        #         failure_parts.append(f"missing answers")
+                        #     if threshold_failures > 0:
+                        #         failure_parts.append(f"threshold failures")
+                            
+                        #     failure_reason = " + ".join(failure_parts) if failure_parts else "unknown failure"
                         
                         video_results[video_uid]["groups"][group_display_title] = {
                             "would_submit": False,
@@ -1023,14 +1042,13 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
     for group in selected_groups:
         group_id = group["ID"]
         
-        for video in videos:
+        for video_idx, video in enumerate(videos):
             video_id = video["id"]
 
             # Update progress per video
             progress = (video_idx + 1) / len(videos)
             progress_bar.progress(progress)
             status_container.text(f"Processing video {video_idx + 1}/{len(videos)}: {video['uid']}")
-            
             
             try:
                 if role == "reviewer":

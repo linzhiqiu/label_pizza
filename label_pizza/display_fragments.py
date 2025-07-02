@@ -31,7 +31,7 @@ from label_pizza.autosubmit_features import (
     display_manual_auto_submit_controls, run_project_wide_auto_submit_on_entry,
     display_annotator_checkboxes
 )
-from label_pizza.accuracy_analytics import display_user_accuracy_simple
+from label_pizza.accuracy_analytics import display_user_accuracy_simple, display_accuracy_button_for_project
 
 ###############################################################################
 # Video Display Functions
@@ -1520,6 +1520,13 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
                     type="primary"):
             st.session_state[f"sort_config_{project_id}"] = sort_config
             st.session_state[f"sort_applied_{project_id}"] = True
+            
+            # 🔥 FIX: Reset pagination when sorting is applied
+            for role in ["annotator", "reviewer", "meta_reviewer"]:
+                page_key = f"{role}_current_page_{project_id}"
+                if page_key in st.session_state:
+                    st.session_state[page_key] = 0
+            
             st.success("✅ Applied!")
             st.rerun()
     
@@ -1530,10 +1537,16 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
             st.session_state[f"video_sort_by_{project_id}"] = "Default"
             st.session_state[f"sort_config_{project_id}"] = {}
             st.session_state[f"sort_applied_{project_id}"] = False
+            
+            # 🔥 FIX: Reset pagination when sorting is reset
+            for role in ["annotator", "reviewer", "meta_reviewer"]:
+                page_key = f"{role}_current_page_{project_id}"
+                if page_key in st.session_state:
+                    st.session_state[page_key] = 0
+            
             st.success("✅ Reset!")
             st.rerun()
     
-    # with action_col3:
     # Status indicator
     current_sort = st.session_state.get(f"video_sort_by_{project_id}", "Default")
     sort_applied = st.session_state.get(f"sort_applied_{project_id}", False)
@@ -1545,13 +1558,8 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
     else:
         custom_info("Status: Default")
     
-    # st.markdown(f"""
-    # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-    #     💡 <strong>Tip:</strong> Configure your sorting options above, then click "Apply Sorting" to sort the videos accordingly.
-    # </div>
-    # """, unsafe_allow_html=True)
     custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
-
+    
 @st.fragment
 def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
     """Enhanced sort tab for annotators - only relevant options"""
@@ -1649,6 +1657,12 @@ def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
                     type="primary"):
             # Store sort configuration for annotators
             st.session_state[f"annotator_sort_applied_{project_id}"] = True
+            
+            # 🔥 FIX: Reset pagination when sorting is applied
+            page_key = f"annotator_current_page_{project_id}"
+            if page_key in st.session_state:
+                st.session_state[page_key] = 0
+            
             st.success("✅ Applied!")
             st.rerun()
     
@@ -1658,6 +1672,12 @@ def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
                     use_container_width=True):
             st.session_state[f"annotator_video_sort_by_{project_id}"] = "Default"
             st.session_state[f"annotator_sort_applied_{project_id}"] = False
+            
+            # 🔥 FIX: Reset pagination when sorting is reset
+            page_key = f"annotator_current_page_{project_id}"
+            if page_key in st.session_state:
+                st.session_state[page_key] = 0
+            
             st.success("✅ Reset!")
             st.rerun()
     
@@ -1673,7 +1693,6 @@ def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
         custom_info("Status: Default")
     
     custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
-
 @st.fragment
 def display_enhanced_filter_tab(project_id: int, session: Session):
     """Enhanced filter tab with proper ground truth detection and full question text"""
@@ -1750,6 +1769,13 @@ def display_enhanced_filter_tab(project_id: int, session: Session):
                         disabled=not filters_changed,
                         help="Apply the selected filters to videos"):
                 st.session_state[f"video_filters_{project_id}"] = new_filters
+                
+                # 🔥 FIX: Reset pagination when filters are applied
+                for role in ["annotator", "reviewer", "meta_reviewer"]:
+                    page_key = f"{role}_current_page_{project_id}"
+                    if page_key in st.session_state:
+                        st.session_state[page_key] = 0
+                
                 st.rerun()  # This triggers a rerun of the parent page
         
         with apply_col2:
@@ -1758,6 +1784,13 @@ def display_enhanced_filter_tab(project_id: int, session: Session):
                         disabled=not current_filters,
                         help="Remove all active filters"):
                 st.session_state[f"video_filters_{project_id}"] = {}
+                
+                # 🔥 FIX: Reset pagination when filters are cleared
+                for role in ["annotator", "reviewer", "meta_reviewer"]:
+                    page_key = f"{role}_current_page_{project_id}"
+                    if page_key in st.session_state:
+                        st.session_state[page_key] = 0
+                
                 st.rerun()
         
         # Show current active filters if any
@@ -1783,7 +1816,6 @@ def display_enhanced_filter_tab(project_id: int, session: Session):
             st.session_state[f"video_filters_{project_id}"] = {}
     
     custom_info("💡 Filters only work on questions that have ground truth answers. Complete annotation first to see more filter options.")
-
 
 def display_order_tab(project_id: int, role: str, project: Dict, session: Session):
     """Display question group order tab - shared between reviewer and meta-reviewer"""
@@ -2032,7 +2064,7 @@ def display_layout_tab_content(videos: List[Dict], role: str):
 
 @st.fragment
 def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: List[Dict], session: Session):
-    """Display auto-submit interface - different logic for annotator vs reviewer"""
+    """Display auto-submit interface - videos parameter now contains pre-sorted/filtered videos"""
     
     st.markdown("#### ⚡ Auto-Submit Controls")
     
@@ -2075,14 +2107,15 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         # Get ALL project videos for "Entire project" scope
         all_project_videos = get_project_videos(project_id=project_id, session=session)
         
-        # CALCULATE CURRENT PAGE VIDEOS
+        # 🔥 FIXED: Calculate current page videos from the SORTED videos parameter
+        # The videos parameter now contains the same sorted/filtered videos the user sees
         videos_per_page = st.session_state.get(f"{role}_per_page", min(4, len(videos)))
         page_key = f"{role}_current_page_{project_id}"
         current_page = st.session_state.get(page_key, 0)
         
         start_idx = current_page * videos_per_page
         end_idx = min(start_idx + videos_per_page, len(videos))
-        current_page_videos = videos[start_idx:end_idx]
+        current_page_videos = videos[start_idx:end_idx]  # ← NOW USING SORTED VIDEOS!
         
         # Separate auto-submit and manual groups
         auto_submit_groups = []
@@ -2119,7 +2152,19 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         if selected_scope == "Current page of videos":
             target_videos = current_page_videos
             page_info = f" (page {current_page + 1})" if len(videos) > videos_per_page else ""
-            custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
+            
+            # 🔥 ENHANCED: Show which videos are being targeted
+            if current_page_videos:
+                video_uids = [v["uid"] for v in current_page_videos]
+                if len(video_uids) <= 3:
+                    uid_display = ", ".join(video_uids)
+                else:
+                    uid_display = f"{', '.join(video_uids[:3])} + {len(video_uids) - 3} more"
+                
+                custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
+                custom_info(f"🎯 Videos: {uid_display}")
+            else:
+                custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
         else:
             target_videos = all_project_videos
             custom_info(f"📊 Target: {len(target_videos)} videos in entire project")
@@ -2144,10 +2189,10 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
             selected_group_names = st.multiselect(
                 "Select question groups for manual auto-submit:",
                 [group["Display Title"] for group in manual_groups],
-                default=[group["Display Title"] for group in manual_groups],  # ADD THIS LINE
+                default=[group["Display Title"] for group in manual_groups],
                 key=f"manual_groups_{role}_{project_id}",
                 disabled=is_training_mode,
-                help="All groups are preselected. Deselect any you don't want to configure."  # ADD THIS LINE
+                help="All groups are preselected. Deselect any you don't want to configure."
             )
             
             selected_groups = [group for group in manual_groups if group["Display Title"] in selected_group_names]
@@ -2181,14 +2226,14 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         # Get ALL project videos
         all_project_videos = get_project_videos(project_id=project_id, session=session)
         
-        # Calculate current page videos  
+        # 🔥 FIXED: Calculate current page videos from the SORTED videos parameter
         videos_per_page = st.session_state.get(f"{role}_per_page", min(4, len(videos)))
         page_key = f"{role}_current_page_{project_id}"
         current_page = st.session_state.get(page_key, 0)
         
         start_idx = current_page * videos_per_page
         end_idx = min(start_idx + videos_per_page, len(videos))
-        current_page_videos = videos[start_idx:end_idx]
+        current_page_videos = videos[start_idx:end_idx]  # ← NOW USING SORTED VIDEOS!
         
         # Scope selection for reviewers
         st.markdown("### 🎯 Scope Selection")
@@ -2205,7 +2250,19 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         if selected_scope == "Current page of videos":
             target_videos = current_page_videos
             page_info = f" (page {current_page + 1})" if len(videos) > videos_per_page else ""
-            custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
+            
+            # 🔥 ENHANCED: Show which videos are being targeted
+            if current_page_videos:
+                video_uids = [v["uid"] for v in current_page_videos]
+                if len(video_uids) <= 3:
+                    uid_display = ", ".join(video_uids)
+                else:
+                    uid_display = f"{', '.join(video_uids[:3])} + {len(video_uids) - 3} more"
+                
+                custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
+                custom_info(f"🎯 Videos: {uid_display}")
+            else:
+                custom_info(f"📊 Target: {len(target_videos)} videos on current page{page_info}")
         else:
             target_videos = all_project_videos
             custom_info(f"📊 Target: {len(target_videos)} videos in entire project")
@@ -2216,16 +2273,15 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         selected_group_names = st.multiselect(
             "Select question groups for ground truth auto-submit:",
             [group["Display Title"] for group in question_groups],
-            default=[group["Display Title"] for group in question_groups],  # ADD THIS LINE
+            default=[group["Display Title"] for group in question_groups],
             key=f"manual_groups_{role}_{project_id}",
-            help="All groups are preselected. Deselect any you don't want to configure."  # ADD THIS LINE
+            help="All groups are preselected. Deselect any you don't want to configure."
         )
         
         selected_groups = [group for group in question_groups if group["Display Title"] in selected_group_names]
         
         if selected_groups:
             display_manual_auto_submit_controls(selected_groups, target_videos, project_id, user_id, role, session, False)
-
 
 ###############################################################################
 # SMART ANNOTATOR SELECTION
@@ -2969,7 +3025,6 @@ def display_project_view(user_id: int, role: str, session: Session):
                 del st.session_state[key]
 
         clear_custom_display_cache(project_id)
-
         st.rerun()
     
     try:
@@ -2980,17 +3035,14 @@ def display_project_view(user_id: int, role: str, session: Session):
         except Exception as e:
             print(f"Error getting schema details: {e}")
             instructions_url = None
-
     except ValueError as e:
         st.error(f"Error loading project: {str(e)}")
         return
     
-    # 🔥 ADD THE CACHE CLEARING CODE HERE - RIGHT AFTER PROJECT LOADS SUCCESSFULLY
     # Clear cache when entering a new project for fresh data
     if st.session_state.get('last_project_id') != project_id:
         clear_project_cache(project_id)
         st.session_state.last_project_id = project_id
-    
     
     mode = "Training" if check_project_has_full_ground_truth(project_id=project_id, session=session) else "Annotation"
     
@@ -3022,172 +3074,9 @@ def display_project_view(user_id: int, role: str, session: Session):
     if not videos:
         st.error("No videos found in this project.")
         return
-        
-    # Role-specific control panels - NO AUTO-SUBMIT FOR META-REVIEWER
-    if role == "reviewer":
-        if mode == "Training":
-            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
-                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit", "📖 Instructions"
-            ])
-            
-            with analytics_tab:
-                st.markdown("#### 🎯 Performance Insights")
-                
-                st.markdown(f"""
-                <div style="{get_card_style('#B180FF')}text-align: center;">
-                    <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
-                        📈 Access detailed accuracy analytics for all participants in this training project
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
-                
-                # st.markdown(f"""
-                # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['info']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                #     💡 <strong>Tip:</strong> Use analytics to identify patterns in annotator performance and areas for improvement.
-                # </div>
-                # """, unsafe_allow_html=True)
-                custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
-        else:
-            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
-                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit", "📖 Instructions"
-            ])
-        
-        with annotator_tab:
-            st.markdown("#### 👥 Annotator Management")
-            
-            st.markdown(f"""
-            <div style="{get_card_style('#B180FF')}text-align: center;">
-                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
-                    🎯 Select which annotators' responses to display during your review process
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            try:
-                annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
-                display_smart_annotator_selection(annotators=annotators, project_id=project_id)
-            except Exception as e:
-                st.error(f"Error loading annotators: {str(e)}")
-                st.session_state.selected_annotators = []
-            
-            # st.markdown(f"""
-            # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid #9c27b0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-            #     💡 <strong>Tip:</strong> Select annotators whose responses you want to see alongside your review interface.
-            # </div>
-            # """, unsafe_allow_html=True)
-            custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
-        
-        with sort_tab:
-            display_enhanced_sort_tab(project_id=project_id, session=session)
 
-        with filter_tab:
-            display_enhanced_filter_tab(project_id=project_id, session=session)
-        
-        with order_tab:
-            display_order_tab(project_id=project_id, role=role, project=project, session=session)
-        
-        with layout_tab:
-            display_layout_tab_content(videos=videos, role=role)
-        
-        with auto_submit_tab:
-            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
-        
-        with instruction_tab:
-            display_instruction_tab_content(instructions_url=instructions_url)
-    
-    elif role == "meta_reviewer":
-        # st.markdown("---")
-        
-        # NO AUTO-SUBMIT TAB FOR META-REVIEWER
-        if mode == "Training":
-            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
-                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "📖 Instructions"
-            ])
-            
-            with analytics_tab:
-                st.markdown("#### 🎯 Performance Insights")
-                
-                st.markdown(f"""
-                <div style="{get_card_style('#B180FF')}text-align: center;">
-                    <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
-                        📈 Access detailed accuracy analytics for all participants in this training project
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
-                
-                # st.markdown(f"""
-                # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid {COLORS['info']}; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-                #     💡 <strong>Tip:</strong> Use analytics to identify patterns in annotator performance and areas for improvement.
-                # </div>
-                # """, unsafe_allow_html=True)
-                custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
-        else:
-            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
-                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "📖 Instructions"
-            ])
-        
-        with annotator_tab:
-            st.markdown("#### 👥 Annotator Management")
-            
-            st.markdown(f"""
-            <div style="{get_card_style('#B180FF')}text-align: center;">
-                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
-                    🎯 Select which annotators' responses to display during your review process
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            try:
-                annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
-                display_smart_annotator_selection(annotators=annotators, project_id=project_id)
-            except Exception as e:
-                st.error(f"Error loading annotators: {str(e)}")
-                st.session_state.selected_annotators = []
-            
-            # st.markdown(f"""
-            # <div style="background: linear-gradient(135deg, #f0f8ff, #e6f3ff); border-left: 4px solid #9c27b0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.9rem; color: #2c3e50;">
-            #     💡 <strong>Tip:</strong> Select annotators whose responses you want to see alongside your review interface.
-            # </div>
-            # """, unsafe_allow_html=True)
-            custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
-        
-        with sort_tab:
-            display_enhanced_sort_tab(project_id=project_id, session=session)
-
-        with filter_tab:
-            display_enhanced_filter_tab(project_id=project_id, session=session)
-        
-        with order_tab:
-            display_order_tab(project_id=project_id, role=role, project=project, session=session)
-        
-        with layout_tab:
-            display_layout_tab_content(videos=videos, role=role)
-        
-        with instruction_tab:
-            display_instruction_tab_content(instructions_url=instructions_url)
-    
-    else:  # Annotator role
-        # st.markdown("---")
-        
-        instruction_tab, layout_tab, sort_tab, auto_submit_tab = st.tabs(["📖 Instructions", "🎛️ Layout Settings", "🔄 Sort", "⚡ Auto-Submit"])
-        
-        with instruction_tab:
-            display_instruction_tab_content(instructions_url=instructions_url)
-        
-        with layout_tab:
-            display_layout_tab_content(videos=videos, role=role)
-        
-        with sort_tab:
-            display_enhanced_sort_tab_annotator(project_id=project_id, session=session)
-    
-        with auto_submit_tab:
-            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
-    
-    # Apply sorting and filtering to videos
+    # 🔥 CRITICAL FIX: APPLY SORTING AND FILTERING BEFORE TABS ARE CREATED
+    # This ensures auto-submit tabs use the same sorted/filtered videos that users see
     if role in ["reviewer", "meta_reviewer"]:
         sort_by = st.session_state.get(f"video_sort_by_{project_id}", "Default")
         sort_order = st.session_state.get(f"video_sort_order_{project_id}", "Descending")
@@ -3206,11 +3095,152 @@ def display_project_view(user_id: int, role: str, session: Session):
         sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
         sort_applied = st.session_state.get(f"annotator_sort_applied_{project_id}", False)
         
-        if sort_by != "Default" and sort_applied:
+        # 🔥 FIX: Always apply sorting, even for "Default" mode
+        # This makes annotator behavior consistent with reviewer behavior
+        if sort_by == "Default":
+            # For Default sorting, always respect ascending/descending order by video ID
+            reverse = (sort_order == "Descending")
+            videos.sort(key=lambda x: x.get("id", 0), reverse=reverse)
+        elif sort_applied:
+            # For advanced sorting (Completion Rate, Accuracy Rate), only apply if user clicked Apply
             videos = apply_annotator_video_sorting(
                 videos=videos, sort_by=sort_by, sort_order=sort_order,
                 project_id=project_id, user_id=user_id, session=session
             )
+        
+    # Role-specific control panels - NOW USING SORTED VIDEOS
+    if role == "reviewer":
+        if mode == "Training":
+            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
+                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit", "📖 Instructions"
+            ])
+            
+            with analytics_tab:
+                st.markdown("#### 🎯 Performance Insights")
+                st.markdown(f"""
+                <div style="{get_card_style('#B180FF')}text-align: center;">
+                    <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                        📈 Access detailed accuracy analytics for all participants in this training project
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
+                custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
+        else:
+            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
+                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "⚡ Auto-Submit", "📖 Instructions"
+            ])
+        
+        with annotator_tab:
+            st.markdown("#### 👥 Annotator Management")
+            st.markdown(f"""
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                    🎯 Select which annotators' responses to display during your review process
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            try:
+                annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+                display_smart_annotator_selection(annotators=annotators, project_id=project_id)
+            except Exception as e:
+                st.error(f"Error loading annotators: {str(e)}")
+                st.session_state.selected_annotators = []
+            
+            custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
+        
+        with sort_tab:
+            display_enhanced_sort_tab(project_id=project_id, session=session)
+
+        with filter_tab:
+            display_enhanced_filter_tab(project_id=project_id, session=session)
+        
+        with order_tab:
+            display_order_tab(project_id=project_id, role=role, project=project, session=session)
+        
+        with layout_tab:
+            display_layout_tab_content(videos=videos, role=role)
+        
+        with auto_submit_tab:
+            # 🔥 NOW PASSING SORTED VIDEOS TO AUTO-SUBMIT
+            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
+        
+        with instruction_tab:
+            display_instruction_tab_content(instructions_url=instructions_url)
+    
+    elif role == "meta_reviewer":
+        # NO AUTO-SUBMIT TAB FOR META-REVIEWER
+        if mode == "Training":
+            analytics_tab, annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
+                "📊 Analytics", "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "📖 Instructions"
+            ])
+            
+            with analytics_tab:
+                st.markdown("#### 🎯 Performance Insights")
+                st.markdown(f"""
+                <div style="{get_card_style('#B180FF')}text-align: center;">
+                    <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                        📈 Access detailed accuracy analytics for all participants in training project
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
+                custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
+        else:
+            annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
+                "👥 Annotators", "🔄 Sort", "🔍 Filter", "📋 Order", "🎛️ Layout", "📖 Instructions"
+            ])
+        
+        with annotator_tab:
+            st.markdown("#### 👥 Annotator Management")
+            st.markdown(f"""
+            <div style="{get_card_style('#B180FF')}text-align: center;">
+                <div style="color: #5C00BF; font-weight: 500; font-size: 0.95rem;">
+                    🎯 Select which annotators' responses to display during your review process
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            try:
+                annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+                display_smart_annotator_selection(annotators=annotators, project_id=project_id)
+            except Exception as e:
+                st.error(f"Error loading annotators: {str(e)}")
+                st.session_state.selected_annotators = []
+            
+            custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
+        
+        with sort_tab:
+            display_enhanced_sort_tab(project_id=project_id, session=session)
+
+        with filter_tab:
+            display_enhanced_filter_tab(project_id=project_id, session=session)
+        
+        with order_tab:
+            display_order_tab(project_id=project_id, role=role, project=project, session=session)
+        
+        with layout_tab:
+            display_layout_tab_content(videos=videos, role=role)
+        
+        with instruction_tab:
+            display_instruction_tab_content(instructions_url=instructions_url)
+    
+    else:  # Annotator role
+        instruction_tab, layout_tab, sort_tab, auto_submit_tab = st.tabs(["📖 Instructions", "🎛️ Layout Settings", "🔄 Sort", "⚡ Auto-Submit"])
+        
+        with instruction_tab:
+            display_instruction_tab_content(instructions_url=instructions_url)
+        
+        with layout_tab:
+            display_layout_tab_content(videos=videos, role=role)
+        
+        with sort_tab:
+            display_enhanced_sort_tab_annotator(project_id=project_id, session=session)
+    
+        with auto_submit_tab:
+            # 🔥 NOW PASSING SORTED VIDEOS TO AUTO-SUBMIT
+            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
     
     # Get layout settings
     video_pairs_per_row = st.session_state.get(f"{role}_pairs_per_row", 1)
@@ -3218,7 +3248,7 @@ def display_project_view(user_id: int, role: str, session: Session):
     
     st.markdown("---")
     
-    # Show sorting/filtering summary
+    # Show sorting/filtering summary (updated to reflect that sorting is already applied)
     if role in ["reviewer", "meta_reviewer"]:
         sort_by = st.session_state.get(f"video_sort_by_{project_id}", "Default")
         sort_applied = st.session_state.get(f"sort_applied_{project_id}", False)
@@ -3251,7 +3281,8 @@ def display_project_view(user_id: int, role: str, session: Session):
         else:
             sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
             custom_info(f"📋 Default order ({sort_order})")
-    # Calculate pagination
+    
+    # Calculate pagination (now using already-sorted videos)
     total_pages = (len(videos) - 1) // videos_per_page + 1 if videos else 1
     
     page_key = f"{role}_current_page_{project_id}"
@@ -3264,12 +3295,10 @@ def display_project_view(user_id: int, role: str, session: Session):
     end_idx = min(start_idx + videos_per_page, len(videos))
     page_videos = videos[start_idx:end_idx]
     
-    # st.markdown(f"**Showing videos {start_idx + 1}-{end_idx} of {len(videos)}**")
     st.markdown('<div id="video-list-section"></div>', unsafe_allow_html=True)
     video_list_info_str = f"Showing videos {start_idx + 1}-{end_idx} of {len(videos)}"
     display_pagination_controls(current_page, total_pages, page_key, role, project_id, "top", video_list_info_str)
 
-    
     # Display videos
     for i in range(0, len(page_videos), video_pairs_per_row):
         row_videos = page_videos[i:i + video_pairs_per_row]

@@ -240,7 +240,7 @@ def display_improved_video_selection_section(session: Session) -> Optional[Dict[
         "display": selected_video_display
     }
     
-    video_info = get_video_info_by_uid(video_uid=selected_video_uid, session=session)
+    video_info = VideoService.get_video_info_by_uid(video_uid=selected_video_uid, session=session)
     
     if not video_info:
         st.error("❌ Error loading video information")
@@ -266,10 +266,15 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
         project_groups = ProjectGroupService.list_project_groups(session=session)
         
         # Check for unassigned projects
-        all_projects = ProjectService.get_all_projects(session=session)
+        all_projects = ProjectService.get_all_projects_including_archived(session=session)
         unassigned_project_count = 0
+        archived_project_count = 0
+
         if not all_projects.empty:
+            archived_project_count = len(all_projects[all_projects.get("Archived", False) == True])
+
             assigned_project_ids = set()
+            
             for group in project_groups:
                 try:
                     group_info = ProjectGroupService.get_project_group_by_id(group_id=group["id"], session=session)
@@ -280,7 +285,7 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
             unassigned_projects = all_projects[~all_projects["ID"].isin(assigned_project_ids)]
             unassigned_project_count = len(unassigned_projects)
         
-        if not project_groups and unassigned_project_count == 0:
+        if not project_groups and unassigned_project_count == 0 and archived_project_count == 0:
             st.warning("🚫 No project groups or projects found")
             return []
         
@@ -289,10 +294,12 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
             st.session_state.admin_selected_groups = [g["id"] for g in project_groups]
         if "admin_include_unassigned" not in st.session_state:
             st.session_state.admin_include_unassigned = unassigned_project_count > 0
+        if "admin_include_archived" not in st.session_state:
+            st.session_state.admin_include_archived = False
         
         # Quick actions for project groups only
-        action_col1, action_col2, action_col3 = st.columns([1, 1, 2])
-        
+        action_col1, action_col2 = st.columns([1, 1])
+
         with action_col1:
             if st.button("✅ Select All Groups", key="admin_select_all_groups", use_container_width=True):
                 st.session_state.admin_selected_groups = [g["id"] for g in project_groups]
@@ -303,34 +310,134 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                 st.session_state.admin_selected_groups = []
                 st.rerun(scope="fragment")
         
+        # Separate columns for checkboxes
+        action_col3, action_col4 = st.columns([1, 1])
+
         with action_col3:
-            selected_count = len(st.session_state.admin_selected_groups)
-            total_count = len(project_groups)
-            
-            # Include unassigned projects in total if selected
-            total_selected = selected_count
-            if st.session_state.admin_include_unassigned and unassigned_project_count > 0:
-                total_selected += 1
-            
-            st.metric(
-                label="📊 Selected", 
-                value=f"{total_selected}",
-                delta=f"{total_count} groups + {unassigned_project_count} unassigned"
-            )
-        
-        # Unassigned projects checkbox (if any exist)
-        if unassigned_project_count > 0:
-            st.markdown("**📄 Individual Projects:**")
+            # Unassigned projects checkbox (if any exist)
             include_unassigned = st.checkbox(
                 f"Include {unassigned_project_count} unassigned projects",
                 value=st.session_state.admin_include_unassigned,
                 key="admin_unassigned_checkbox",
+                disabled=unassigned_project_count == 0,
                 help="Include projects that are not assigned to any project group"
             )
             if include_unassigned != st.session_state.admin_include_unassigned:
                 st.session_state.admin_include_unassigned = include_unassigned
                 st.rerun(scope="fragment")
         
+        with action_col4:
+            include_archived = st.checkbox(
+                f"Include {archived_project_count} archived projects",
+                value=st.session_state.admin_include_archived,
+                key="admin_include_archived_projects",
+                disabled=archived_project_count == 0,
+                help="Include projects that have been archived"
+            )
+            if include_archived != st.session_state.admin_include_archived:
+                st.session_state.admin_include_archived = include_archived
+                st.rerun(scope="fragment")
+        
+        selected_video = st.session_state.get("search_portal_selected_video")
+        if selected_video:
+            video_uid = selected_video["uid"]
+            
+            # Count projects that contain this video
+            active_grouped_projects = 0
+            archived_grouped_projects = 0
+            active_unassigned_projects = 0
+            archived_unassigned_projects = 0
+            
+            # Count projects in selected groups that contain this video
+            for group_id in st.session_state.admin_selected_groups:
+                try:
+                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
+                    for project in group_info["projects"]:
+                        project_id = int(project["id"])
+                        
+                        # Check if this project contains the video
+                        project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
+                        if any(v["uid"] == video_uid for v in project_videos):
+                            if project.get("archived", False):
+                                archived_grouped_projects += 1
+                            else:
+                                active_grouped_projects += 1
+                except:
+                    continue
+            
+            # Count unassigned projects that contain this video
+            if st.session_state.admin_include_unassigned:
+                for _, project_row in unassigned_projects.iterrows():
+                    project_id = project_row["ID"]
+                    
+                    # Check if this project contains the video
+                    project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
+                    if any(v["uid"] == video_uid for v in project_videos):
+                        if project_row.get("Archived", False):
+                            archived_unassigned_projects += 1
+                        else:
+                            active_unassigned_projects += 1
+            
+            # Calculate totals based on checkbox setting
+            if st.session_state.admin_include_archived:
+                total_projects = active_grouped_projects + archived_grouped_projects + active_unassigned_projects + archived_unassigned_projects
+                total_grouped = active_grouped_projects + archived_grouped_projects
+                total_unassigned = active_unassigned_projects + archived_unassigned_projects
+                total_archived = archived_grouped_projects + archived_unassigned_projects
+            else:
+                total_projects = active_grouped_projects + active_unassigned_projects
+                total_grouped = active_grouped_projects
+                total_unassigned = active_unassigned_projects
+                total_archived = 0
+            
+            # Display metrics
+            if total_projects > 0:
+                if st.session_state.admin_include_archived and total_archived > 0:
+                    # Show 4 columns including archived count
+                    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+                    
+                    with metric_col1:
+                        st.metric("📁 Total Projects", total_projects)
+                    with metric_col2:
+                        st.metric("📋 From Groups", total_grouped)
+                    with metric_col3:
+                        st.metric("📄 Unassigned", total_unassigned)
+                    with metric_col4:
+                        st.metric("🗄️ Archived", total_archived)
+                else:
+                    # Show 3 columns without archived count
+                    metric_col1, metric_col2, metric_col3 = st.columns(3)
+                    
+                    with metric_col1:
+                        st.metric("📁 Total Projects", total_projects)
+                    with metric_col2:
+                        st.metric("📋 From Groups", total_grouped)
+                    with metric_col3:
+                        st.metric("📄 Unassigned", total_unassigned)
+                
+                st.success(f"✅ Found **{total_projects} projects** containing video '{video_uid}'")
+            else:
+                st.warning(f"⚠️ No projects found containing video '{video_uid}' with current filter settings")
+        else:
+            # No video selected yet - show general counts
+            metric_col1, metric_col2, metric_col3 = st.columns(3)
+            
+            with metric_col1:
+                selected_groups_count = len(st.session_state.admin_selected_groups)
+                total_groups_count = len(project_groups)
+                st.metric("🗂️ Groups Selected", f"{selected_groups_count}/{total_groups_count}")
+            
+            with metric_col2:
+                unassigned_status = "✅ Included" if st.session_state.admin_include_unassigned else "❌ Excluded"
+                st.metric("📄 Unassigned", unassigned_status)
+            
+            with metric_col3:
+                archived_status = "✅ Included" if st.session_state.admin_include_archived else "❌ Excluded"
+                st.metric("📦 Archived", archived_status)
+            
+            custom_info("💡 Select a video above to see how many projects contain it")
+
+        # Rest of the function remains the same...
         # Project groups selection
         if project_groups:
             st.markdown("**📋 Select Project Groups:**")
@@ -349,7 +456,7 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                     except:
                         project_count = 0
                     
-                    is_selected = group.id in st.session_state.admin_selected_groups
+                    is_selected = group["id"] in st.session_state.admin_selected_groups
                     
                     checkbox_value = st.checkbox(
                         f"**{group['name']}**",
@@ -876,9 +983,14 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
 
     # Handle unassigned projects if checkbox is selected
     include_unassigned = st.session_state.get("admin_include_unassigned", False)
+    include_archived = st.session_state.get("admin_include_archived", False)
     if include_unassigned:
         # Get all projects and find unassigned ones
-        all_projects = ProjectService.get_all_projects(session=session)
+        all_projects = ProjectService.get_all_projects_including_archived(session=session)
+
+        if not include_archived and not all_projects.empty:
+            all_projects = all_projects[all_projects.get("Archived", False) != True]
+        
         if not all_projects.empty:
             assigned_project_ids = set()
             for group_id in selected_group_ids:
@@ -925,6 +1037,9 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
             group_results = {"group_name": group_name, "projects": {}}
             
             for project in projects:
+                if not include_archived and project.get("archived", False): 
+                    continue  # Skip archived projects
+                
                 # Check if video is in this project
                 project_videos = VideoService.get_project_videos(project_id=int(project["id"]), session=session)
                 video_in_project = any(v["id"] == video_id for v in project_videos)
@@ -973,15 +1088,22 @@ def get_project_ground_truth_for_video(video_id: int, project_id: int, session: 
             group_title = group["Title"]
             
             # Get questions in this group
-            questions = QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
+            # questions = QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
+            questions = get_questions_with_custom_display_if_enabled(
+                group_id=group_id, 
+                project_id=project_id, 
+                video_id=video_id, 
+                session=session
+            )
             
             group_data = {
                 "title": group_title,
                 "description": group["Description"],
                 "questions": {}
             }
-            
-            has_group_data = False
+
+            if not questions:
+                continue
             
             for question in questions:
                 question_id = question["id"]
@@ -1015,19 +1137,15 @@ def get_project_ground_truth_for_video(video_id: int, project_id: int, session: 
                                 "created_at": gt_data["Created At"],
                                 "modified_at": gt_data["Modified At"]
                             }
-                            has_group_data = True
                 except Exception as e:
                     print(f"Error getting ground truth: {e}")
                     pass
                 
                 # Always include question even if no GT yet (for editing)
                 group_data["questions"][question_id] = question_data
-                if not has_group_data and len(questions) > 0:
-                    has_group_data = True  # Include groups that have questions even without GT
             
-            if has_group_data:
-                project_results["question_groups"][group_id] = group_data
-                project_results["has_data"] = True
+            project_results["question_groups"][group_id] = group_data
+            project_results["has_data"] = True
         
         return project_results
         
@@ -1062,12 +1180,36 @@ def ground_truth_criteria_search(session: Session):
     st.markdown("### 🎯 Search by Ground Truth Answers")
     
     # Project selection
-    projects_df = ProjectService.get_all_projects(session=session)
-    if projects_df.empty:
+    all_projects_df = ProjectService.get_all_projects_including_archived(session=session)
+    if all_projects_df.empty:
         st.warning("🚫 No projects available")
         return
     
-    st.markdown("**Step 1: Select Projects to Search**")
+    # ADD ARCHIVE FILTERING
+    archived_count = len(all_projects_df[all_projects_df.get("Archived", False) == True]) if not all_projects_df.empty else 0
+    
+    project_filter_col1, project_filter_col2 = st.columns([2, 1])
+    
+    with project_filter_col1:
+        st.markdown("**Step 1: Select Projects to Search**")
+        
+    with project_filter_col2:
+        if archived_count > 0:
+            include_archived = st.checkbox(
+                f"Include {archived_count} archived projects",
+                value=False,  # Default to hide archived
+                key="criteria_include_archived",
+                help="Include archived projects in search"
+            )
+        else:
+            include_archived = False
+    
+    # FILTER PROJECTS BASED ON ARCHIVE SETTING
+    if include_archived:
+        projects_df = all_projects_df
+    else:
+        projects_df = all_projects_df[all_projects_df.get("Archived", False) != True]
+    
     selected_projects = st.multiselect(
         "Projects",
         projects_df["ID"].tolist(),
@@ -1379,8 +1521,14 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
                 )
                 
                 for group in question_groups:
-                    group_questions = QuestionService.get_questions_by_group_id(
-                        group_id=group["ID"], session=session
+                    # group_questions = QuestionService.get_questions_by_group_id(
+                    #     group_id=group["ID"], session=session
+                    # )
+                    group_questions = get_questions_with_custom_display_if_enabled(
+                        group_id=group["ID"], 
+                        project_id=project_id, 
+                        video_id=video_info["id"], 
+                        session=session
                     )
                     
                     if any(q["id"] == question_id for q in group_questions):
@@ -1604,44 +1752,99 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
 
 
 def completion_status_search(session: Session):
-    """Search videos by completion status with editing interface"""
+    """Search videos by completion status with improved UI layout matching criteria search"""
     
     st.markdown("### 📈 Search by Completion Status")
     
-    # Search interface
-    search_col1, search_col2, search_col3 = st.columns(3)
+    # Step 1: Project Selection Section (matching ground truth criteria layout)
+    all_projects_df = ProjectService.get_all_projects_including_archived(session=session)
+    if all_projects_df.empty:
+        st.warning("🚫 No projects available")
+        return
     
-    with search_col1:
-        projects_df = ProjectService.get_all_projects(session=session)
-        if projects_df.empty:
-            st.warning("No projects available")
-            return
+    # Archive filtering with improved layout
+    archived_count = len(all_projects_df[all_projects_df.get("Archived", False) == True]) if not all_projects_df.empty else 0
+    
+    project_filter_col1, project_filter_col2 = st.columns([2, 1])
+    
+    with project_filter_col1:
+        st.markdown("**Step 1: Select Projects to Search**")
         
-        selected_projects_status = st.multiselect(
-            "Select Projects",
-            projects_df["ID"].tolist(),
-            format_func=lambda x: projects_df[projects_df["ID"]==x]["Name"].iloc[0],
-            key="status_search_projects"
-        )
+    with project_filter_col2:
+        if archived_count > 0:
+            include_archived = st.checkbox(
+                f"Include {archived_count} archived projects",
+                value=False,  # Default to hide archived
+                key="status_include_archived",
+                help="Include archived projects in search"
+            )
+        else:
+            include_archived = False
     
-    with search_col2:
+    # Filter projects based on archive setting
+    if include_archived:
+        projects_df = all_projects_df
+    else:
+        projects_df = all_projects_df[all_projects_df.get("Archived", False) != True]
+    
+    selected_projects_status = st.multiselect(
+        "Projects",
+        projects_df["ID"].tolist(),
+        format_func=lambda x: projects_df[projects_df["ID"]==x]["Name"].iloc[0],
+        key="status_search_projects",
+        help="Choose which projects to include in the search"
+    )
+    
+    if not selected_projects_status:
+        st.info("👆 Please select one or more projects to continue")
+        return
+    
+    st.markdown("---")
+    
+    # Step 2: Completion Filter Section
+    st.markdown("**Step 2: Configure Completion Filter**")
+    
+    filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 2])
+    
+    with filter_col1:
         completion_filter = st.selectbox(
             "Completion Status",
             ["All videos", "Complete ground truth", "Missing ground truth", "Partial ground truth"],
-            key="status_completion_filter"
+            key="status_completion_filter",
+            help="Filter videos based on their ground truth completion status"
         )
     
-    with search_col3:
-        if selected_projects_status:
-            if st.button("🔍 Search", key="execute_status_search", type="primary", use_container_width=True):
-                results = execute_project_based_search(selected_projects_status, completion_filter, session)
-                st.session_state.status_search_results = results
+    with filter_col2:
+        # Show project count
+        total_projects = len(selected_projects_status)
+        if include_archived and archived_count > 0:
+            active_projects = len([p for p in selected_projects_status if not projects_df[projects_df["ID"]==p]["Archived"].iloc[0]])
+            archived_projects = total_projects - active_projects
+            st.metric("📁 Selected Projects", f"{total_projects} ({active_projects} active + {archived_projects} archived)")
+        else:
+            st.metric("📁 Selected Projects", total_projects)
+    
+    with filter_col3:
+        # Search execution
+        if st.button("🔍 Search Videos", key="execute_status_search", type="primary", use_container_width=True):
+            results = execute_project_based_search(selected_projects_status, completion_filter, session)
+            st.session_state.status_search_results = results
+            st.rerun(scope="fragment")
+    
+    # Step 3: Clear previous results option
+    if "status_search_results" in st.session_state:
+        st.markdown("---")
+        clear_col1, clear_col2, clear_col3 = st.columns([1, 1, 1])
+        
+        with clear_col2:
+            if st.button("🧹 Clear Results", key="clear_status_results", use_container_width=True):
+                if "status_search_results" in st.session_state:
+                    del st.session_state.status_search_results
                 st.rerun(scope="fragment")
     
     # Display results with editing interface
     if "status_search_results" in st.session_state:
         display_completion_status_results_interface(st.session_state.status_search_results, session)
-
 
 def display_completion_status_results_interface(results: List[Dict], session: Session):
     """Display completion status results with video editing interface"""
@@ -1817,7 +2020,13 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
     """Display question group editor for completion status search (same as criteria search)"""
     
     try:
-        questions = QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
+        # questions = QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
+        questions = get_questions_with_custom_display_if_enabled(
+            group_id=group_id, 
+            project_id=project_id, 
+            video_id=video_info["id"], 
+            session=session
+        )
         
         if not questions:
             st.info("No questions in this group.")
@@ -1977,160 +2186,73 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
 # HELPER FUNCTIONS (REUSED AND OPTIMIZED)
 ###############################################################################
 
-def get_video_info_by_uid(video_uid: str, session: Session) -> Optional[Dict[str, Any]]:
-    """Get video information as a dictionary by UID"""
-    try:
-        video = VideoService.get_video_by_uid(video_uid=video_uid, session=session)
-        if not video:
-            return None
-        
-        return {
-            "id": video.id,
-            "uid": video.video_uid,
-            "url": video.url,
-            "metadata": video.video_metadata or {},
-            "created_at": video.created_at,
-            "is_archived": video.is_archived
-        }
-    except Exception:
-        return None
-
 def execute_ground_truth_search(criteria: List[Dict], match_all: bool, session: Session) -> List[Dict]:
-    """Execute ground truth search with given criteria"""
+    """Execute ground truth search with given criteria and progress tracking"""
     
     if not criteria:
         return []
     
-    # Get all videos that could potentially match
-    all_videos = VideoService.get_all_videos(session=session)
-    all_videos = all_videos[~all_videos["Archived"]]  # Only non-archived videos
+    # Show progress tracking interface
+    st.markdown("### 🔍 Searching Videos...")
+    st.caption(f"Searching for videos matching {len(criteria)} criteria")
     
-    matching_videos = []
+    progress_bar = st.progress(0)
+    status_container = st.empty()
     
-    for _, video_row in all_videos.iterrows():
-        video_uid = video_row["Video UID"]
-        video_info = get_video_info_by_uid(video_uid=video_uid, session=session)
+    try:
+        # Use optimized search function
+        matching_videos = GroundTruthService.search_videos_by_criteria_optimized(
+            criteria=criteria, 
+            match_all=match_all, 
+            session=session,
+            progress_callback=lambda current, total, message: (
+                progress_bar.progress(min(current / total, 1.0)),
+                status_container.text(f"Step {current}/{total}: {message}")
+            )
+        )
         
-        if not video_info:
-            continue
+        # Clear progress interface
+        progress_bar.empty()
+        status_container.empty()
         
-        # Check criteria
-        matches = []
+        return matching_videos
         
-        for criterion in criteria:
-            project_id = criterion["project_id"]
-            question_id = criterion["question_id"]
-            required_answer = criterion["required_answer"]
-            
-            # Check if video is in this project
-            project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
-            video_in_project = any(v["id"] == video_info["id"] for v in project_videos)
-            
-            if not video_in_project:
-                matches.append(False)
-                continue
-            
-            # Check ground truth
-            try:
-                gt_df = GroundTruthService.get_ground_truth(video_id=video_info["id"], project_id=project_id, session=session)
-                
-                if gt_df.empty:
-                    matches.append(False)
-                    continue
-                
-                question_gt = gt_df[gt_df["Question ID"] == question_id]
-                
-                if question_gt.empty:
-                    matches.append(False)
-                    continue
-                
-                actual_answer = question_gt.iloc[0]["Answer Value"]
-                matches.append(str(actual_answer) == str(required_answer))
-                
-            except:
-                matches.append(False)
-        
-        # Apply match logic
-        if match_all and all(matches):
-            # Video matches all criteria
-            matching_videos.append({
-                "video_info": video_info,
-                "matches": matches,
-                "criteria": criteria
-            })
-        elif not match_all and any(matches):
-            # Video matches at least one criterion
-            matching_videos.append({
-                "video_info": video_info,
-                "matches": matches,
-                "criteria": criteria
-            })
-    
-    return matching_videos
-
+    except Exception as e:
+        progress_bar.empty()
+        status_container.empty()
+        st.error(f"Search failed: {str(e)}")
+        return []
 
 def execute_project_based_search(project_ids: List[int], completion_filter: str, session: Session) -> List[Dict]:
-    """Execute project-based search and ensure unique video-project combinations"""
+    """Execute project-based search with progress tracking"""
     
-    results = []
-    seen_combinations = set()  # Track (video_id, project_id) to avoid duplicates
+    # Show progress tracking interface
+    st.markdown("### 🔍 Searching Videos by Completion Status...")
+    st.caption(f"Searching {len(project_ids)} projects for {completion_filter.lower()}")
     
-    for project_id in project_ids:
-        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
-        project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
+    progress_bar = st.progress(0)
+    status_container = st.empty()
+    
+    try:
+        # Use optimized search function
+        results = GroundTruthService.search_projects_by_completion_optimized(
+            project_ids=project_ids,
+            completion_filter=completion_filter,
+            session=session,
+            progress_callback=lambda current, total, message: (
+                progress_bar.progress(min(current / total, 1.0)),
+                status_container.text(f"Step {current}/{total}: {message}")
+            )
+        )
         
-        for video_info in project_videos:
-            video_id = video_info["id"]
-            video_uid = video_info["uid"]
-            
-            # Skip if we've already processed this video-project combination
-            combination_key = (video_id, project_id)
-            if combination_key in seen_combinations:
-                continue
-            seen_combinations.add(combination_key)
-            
-            # Get completion status
-            try:
-                gt_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
-                questions = ProjectService.get_project_questions(project_id=project_id, session=session)
-                
-                total_questions = len(questions)
-                completed_questions = len(gt_df) if not gt_df.empty else 0
-                
-                if total_questions == 0:
-                    completion_status = "no_questions"
-                elif completed_questions == 0:
-                    completion_status = "missing"
-                elif completed_questions == total_questions:
-                    completion_status = "complete"
-                else:
-                    completion_status = "partial"
-                
-            except:
-                completion_status = "error"
-            
-            # Apply filter
-            include_video = False
-            
-            if completion_filter == "All videos":
-                include_video = True
-            elif completion_filter == "Complete ground truth" and completion_status == "complete":
-                include_video = True
-            elif completion_filter == "Missing ground truth" and completion_status == "missing":
-                include_video = True
-            elif completion_filter == "Partial ground truth" and completion_status == "partial":
-                include_video = True
-            
-            if include_video:
-                results.append({
-                    "video_id": video_id,
-                    "video_uid": video_uid,
-                    "video_url": video_info["url"],
-                    "project_id": project_id,
-                    "project_name": project["name"],
-                    "completion_status": completion_status,
-                    "completed_questions": completed_questions if completion_status != "error" else 0,
-                    "total_questions": total_questions if completion_status != "error" else 0
-                })
-    
-    return results
+        # Clear progress interface
+        progress_bar.empty()
+        status_container.empty()
+        
+        return results
+        
+    except Exception as e:
+        progress_bar.empty()
+        status_container.empty()
+        st.error(f"Search failed: {str(e)}")
+        return []

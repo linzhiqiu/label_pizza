@@ -429,6 +429,35 @@ def clear_custom_display_cache(project_id: int):
     if cache_key in st.session_state:
         del st.session_state[cache_key]
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour - ground truth state changes infrequently
+def get_cached_project_has_full_ground_truth(project_id: int, session_id: str) -> bool:
+    """Cache project full ground truth check - changes infrequently"""
+    with SessionLocal() as session:  # Use SessionLocal directly
+        try:
+            return ProjectService.check_project_has_full_ground_truth(project_id=project_id, session=session)
+        except Exception as e:
+            print(f"Error in get_cached_project_has_full_ground_truth: {e}")
+            return False
+
+@st.cache_data(ttl=1800)  # Cache for 30 minutes - accuracy data changes infrequently  
+def get_cached_annotator_accuracy(project_id: int, session_id: str) -> Dict[int, Dict[int, Dict[str, int]]]:
+    """Cache annotator accuracy data - changes infrequently"""
+    with SessionLocal() as session:  # Use SessionLocal directly
+        try:
+            return GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
+        except Exception as e:
+            print(f"Error in get_cached_annotator_accuracy: {e}")
+            return {}
+
+@st.cache_data(ttl=1800)  # Cache for 30 minutes - reviewer accuracy data changes infrequently
+def get_cached_reviewer_accuracy(project_id: int, session_id: str) -> Dict[int, Dict[int, Dict[str, int]]]:
+    """Cache reviewer accuracy data - changes infrequently"""
+    with SessionLocal() as session:  # Use SessionLocal directly
+        try:
+            return GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
+        except Exception as e:
+            print(f"Error in get_cached_reviewer_accuracy: {e}")
+            return {}
 
 
 ###############################################################################
@@ -451,6 +480,20 @@ def get_optimized_annotator_user_ids(display_names: List[str], project_id: int, 
     
     return user_ids
 
+def get_project_has_full_ground_truth_cached(project_id: int, session: Session) -> bool:
+    """Get project full ground truth status with caching"""
+    session_id = get_session_cache_key()
+    return get_cached_project_has_full_ground_truth(project_id, session_id)
+
+def get_annotator_accuracy_cached(project_id: int, session: Session) -> Dict[int, Dict[int, Dict[str, int]]]:
+    """Get annotator accuracy data with caching"""
+    session_id = get_session_cache_key()
+    return get_cached_annotator_accuracy(project_id, session_id)
+
+def get_reviewer_accuracy_cached(project_id: int, session: Session) -> Dict[int, Dict[int, Dict[str, int]]]:
+    """Get reviewer accuracy data with caching"""
+    session_id = get_session_cache_key()
+    return get_cached_reviewer_accuracy(project_id, session_id)
 
 
 def calculate_user_overall_progress(user_id: int, project_id: int, session: Session) -> float:
@@ -537,6 +580,30 @@ def get_user_assignment_dates(user_id: int, session: Session) -> Dict[int, Dict[
 # Cache Management Functions
 ###############################################################################
 
+def clear_accuracy_cache_for_project(project_id: int):
+    """Clear accuracy cache for a specific project"""
+    session_id = get_session_cache_key()
+    
+    # Try to clear each function individually
+    try:
+        get_cached_project_has_full_ground_truth.clear(project_id, session_id)
+    except Exception:
+        print(f"Error clearing project has full ground truth cache: {e}")
+        pass  # Function may not have been called yet
+    
+    try:
+        get_cached_annotator_accuracy.clear(project_id, session_id)
+    except Exception:
+        print(f"Error clearing annotator accuracy cache: {e}")
+        pass  # Function may not have been called yet
+    
+    try:
+        get_cached_reviewer_accuracy.clear(project_id, session_id)
+    except Exception:
+        print(f"Error clearing reviewer accuracy cache: {e}")
+        pass  # Function may not have been called yet
+
+# Update the existing clear_project_cache function
 def clear_project_cache(project_id: int):
     """Clear all cached data for a specific project"""
     cache_keys_to_clear = []
@@ -550,6 +617,9 @@ def clear_project_cache(project_id: int):
     
     for key in cache_keys_to_clear:
         del st.session_state[key]
+    
+    # Clear accuracy cache for this project
+    clear_accuracy_cache_for_project(project_id)
 
 def get_session_cache_key():
     """Generate a session-based cache key that changes when user logs in/out"""
@@ -563,15 +633,16 @@ def get_session_cache_key():
 def check_project_has_full_ground_truth(project_id: int, session: Session) -> bool:
     """Check if project has complete ground truth for ALL questions and videos"""
     try:
-        return ProjectService.check_project_has_full_ground_truth(project_id=project_id, session=session)
-    except ValueError as e:
-        st.error(f"Error checking ground truth status: {str(e)}")
+        return get_project_has_full_ground_truth_cached(project_id, session)
+    except Exception as e:
+        print(f"Error checking project has full ground truth: {e}")
         return False
 
 def check_all_questions_have_ground_truth(video_id: int, project_id: int, question_group_id: int, session: Session) -> bool:
     try:
-        return GroundTruthService.check_all_questions_have_ground_truth_for_group(video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session)
-    except:
+        return GroundTruthService.check_all_questions_have_ground_truth_for_group(video_id, project_id, question_group_id, session)
+    except Exception as e:
+        print(f"Error checking all questions have ground truth: {e}")
         return False
 
 def check_ground_truth_exists_for_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> bool:
@@ -585,5 +656,6 @@ def check_ground_truth_exists_for_group(video_id: int, project_id: int, question
             if GroundTruthService.check_ground_truth_exists_for_question(video_id=video_id, project_id=project_id, question_id=question["id"], session=session):
                 return True
         return False
-    except:
+    except Exception as e:
+        print(f"Error checking ground truth exists for group: {e}")
         return False

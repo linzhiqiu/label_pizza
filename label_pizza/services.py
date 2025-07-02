@@ -41,6 +41,28 @@ class VideoService:
             Video object if found, None otherwise
         """
         return session.scalar(select(Video).where(Video.video_uid == video_uid))
+    
+    def get_video_info_by_uid(video_uid: str, session: Session) -> Dict[str, Any]:
+        """Get video info by UID.
+        
+        Args:
+            video_uid: The UID of the video
+            session: Database session   
+            
+        Returns:
+            Video object if found, None otherwise
+        """
+        video = VideoService.get_video_by_uid(video_uid=video_uid, session=session)
+        if not video:
+            raise ValueError(f"Video with UID '{video_uid}' not found")
+        return {
+            "id": video.id,
+            "uid": video.video_uid,
+            "url": video.url,
+            "metadata": video.video_metadata or {},
+            "created_at": video.created_at,
+            "is_archived": video.is_archived
+        }
 
     @staticmethod
     def get_video_url(video_id: int, session: Session) -> str:
@@ -425,6 +447,9 @@ class ProjectService:
             Project.id,
             Project.name,
             Project.schema_id,
+            Project.is_archived,
+            Project.created_at,
+            Project.updated_at,
             # Count videos in project
             func.coalesce(
                 select(func.count(ProjectVideo.video_id))
@@ -467,58 +492,77 @@ class ProjectService:
             rows.append({
                 "ID": row.id,
                 "Name": row.name,
+                "Archived": row.is_archived,
                 "Videos": row.video_count,
                 "Schema ID": row.schema_id,
+                "Created At": row.created_at,
+                "Updated At": row.updated_at,
                 "GT %": gt_percentage
             })
         
         return pd.DataFrame(rows)
 
     @staticmethod
-    def get_all_projects_old(session: Session) -> pd.DataFrame:
-        """Get all non-archived projects with their video counts and ground truth percentages."""
-        rows = []
-        for p in session.scalars(select(Project).where(Project.is_archived == False)).all():
-            # Get schema
-            schema = session.get(Schema, p.schema_id)
-            if schema.is_archived:
-                continue
-            
+    def get_all_projects_including_archived(session: Session) -> pd.DataFrame:
+        """Get ALL projects (including archived) with their video counts and ground truth percentages - for admin use."""
+        
+        # Single optimized query using subqueries and joins - NO archive filter
+        query = select(
+            Project.id,
+            Project.name,
+            Project.schema_id,
+            Project.is_archived,
+            Project.created_at,
+            Project.updated_at,
             # Count videos in project
-            video_count = session.scalar(
-                select(func.count())
+            func.coalesce(
+                select(func.count(ProjectVideo.video_id))
                 .select_from(ProjectVideo)
-                .where(ProjectVideo.project_id == p.id)
-            )
-            
-            # Get total questions in schema
-            total_questions = session.scalar(
-                select(func.count())
+                .where(ProjectVideo.project_id == Project.id)
+                .scalar_subquery(), 0
+            ).label('video_count'),
+            # Count total questions in schema
+            func.coalesce(
+                select(func.count(Question.id))
                 .select_from(Question)
                 .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
                 .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
-                .where(SchemaQuestionGroup.schema_id == p.schema_id)
-            )
-            
-            # Get ground truth answers
-            gt_answers = session.scalar(
-                select(func.count())
+                .where(SchemaQuestionGroup.schema_id == Project.schema_id)
+                .scalar_subquery(), 0
+            ).label('total_questions'),
+            # Count ground truth answers
+            func.coalesce(
+                select(func.count(ReviewerGroundTruth.project_id))
                 .select_from(ReviewerGroundTruth)
-                .where(
-                    ReviewerGroundTruth.project_id == p.id
-                )
-            )
-            
-            # Calculate percentage
-            gt_percentage = (gt_answers / total_questions * 100) if total_questions > 0 else 0.0
+                .where(ReviewerGroundTruth.project_id == Project.id)
+                .scalar_subquery(), 0
+            ).label('gt_answers')
+        ).select_from(
+            Project
+        ).join(
+            Schema, Project.schema_id == Schema.id
+        )
+        # NOTE: No archive filter here - we want ALL projects for admin view
+        
+        result = session.execute(query).all()
+        
+        rows = []
+        for row in result:
+            # Calculate GT percentage
+            total_possible = row.video_count * row.total_questions
+            gt_percentage = (row.gt_answers / total_possible * 100) if total_possible > 0 else 0.0
             
             rows.append({
-                "ID": p.id,
-                "Name": p.name,
-                "Videos": video_count,
-                "Schema ID": p.schema_id,
+                "ID": row.id,
+                "Name": row.name,
+                "Archived": row.is_archived,
+                "Videos": row.video_count,
+                "Schema ID": row.schema_id,
+                "Created At": row.created_at,
+                "Updated At": row.updated_at,
                 "GT %": gt_percentage
             })
+        
         return pd.DataFrame(rows)
 
     @staticmethod
@@ -4838,6 +4882,44 @@ class GroundTruthService(BaseAnswerService):
     #     ) > 0
 
     @staticmethod
+    def check_all_questions_have_ground_truth_for_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> bool:
+        """Check if all questions in a question group have ground truth for a specific video.
+        
+        Args:
+            video_id: The ID of the video
+            project_id: The ID of the project
+            question_group_id: The ID of the question group
+            session: Database session
+            
+        Returns:
+            True if all questions in the group have ground truth, False otherwise
+        """
+        try:
+            # Get all questions in the group
+            questions = QuestionService.get_questions_by_group_id(group_id=question_group_id, session=session)
+            if not questions:
+                return False
+            
+            question_ids = [q["id"] for q in questions]
+            
+            # Count how many of these questions have ground truth
+            gt_count = session.scalar(
+                select(func.count(ReviewerGroundTruth.question_id))
+                .where(
+                    ReviewerGroundTruth.video_id == video_id,
+                    ReviewerGroundTruth.project_id == project_id,
+                    ReviewerGroundTruth.question_id.in_(question_ids)
+                )
+            )
+            
+            # Return True if all questions have ground truth
+            return gt_count == len(question_ids)
+            
+        except Exception as e:
+            print(f"Error in check_all_questions_have_ground_truth_for_group: {e}")
+            return False
+
+    @staticmethod
     def get_ground_truth_for_question(video_id: int, project_id: int, question_id: int, session: Session) -> Optional[Dict]:
         """Get ground truth answer for a specific question on a video.
         
@@ -5430,6 +5512,373 @@ class GroundTruthService(BaseAnswerService):
                 result[question.text] = gt.answer_value
         
         return result
+    
+    @staticmethod
+    def search_videos_by_criteria_optimized(
+        criteria: List[Dict], 
+        match_all: bool, 
+        session: Session,
+        progress_callback=None
+    ) -> List[Dict]:
+        """Optimized search for videos matching ground truth criteria with progress tracking"""
+        
+        if not criteria:
+            return []
+        
+        try:
+            # Step 1: Get all relevant project-video mappings in batch
+            if progress_callback:
+                progress_callback(1, 5, "Loading project-video mappings...")
+            
+            project_ids = list(set(c["project_id"] for c in criteria))
+            project_video_map = GroundTruthService._get_project_video_mappings(project_ids, session)
+            
+            # Step 2: Get all relevant ground truth data in batch  
+            if progress_callback:
+                progress_callback(2, 5, "Loading ground truth data...")
+            
+            question_ids = list(set(c["question_id"] for c in criteria))
+            ground_truth_map = GroundTruthService._get_ground_truth_mappings(
+                project_ids, question_ids, session
+            )
+            
+            # Step 3: Get all video info
+            if progress_callback:
+                progress_callback(3, 5, "Loading video information...")
+            
+            all_video_ids = set()
+            for project_videos in project_video_map.values():
+                all_video_ids.update(project_videos)
+            
+            video_info_map = GroundTruthService._get_video_info_mappings(all_video_ids, session)
+            
+            # Step 4: Process matches
+            if progress_callback:
+                progress_callback(4, 5, "Processing criteria matches...")
+            
+            matching_videos = []
+            processed_videos = set()
+            
+            total_combinations = len(all_video_ids)
+            current_combination = 0
+            
+            for video_id in all_video_ids:
+                current_combination += 1
+                
+                if progress_callback and current_combination % 10 == 0:
+                    progress_callback(
+                        4, 5, 
+                        f"Processing video {current_combination}/{total_combinations}: {video_info_map.get(video_id, {}).get('uid', 'Unknown')}"
+                    )
+                
+                if video_id in processed_videos:
+                    continue
+                processed_videos.add(video_id)
+                
+                video_info = video_info_map.get(video_id)
+                if not video_info:
+                    continue
+                
+                # Check all criteria for this video
+                matches = []
+                
+                for criterion in criteria:
+                    project_id = criterion["project_id"]
+                    question_id = criterion["question_id"]
+                    required_answer = criterion["required_answer"]
+                    
+                    # Check if video is in this project
+                    if video_id not in project_video_map.get(project_id, set()):
+                        matches.append(False)
+                        continue
+                    
+                    # Check ground truth
+                    gt_key = (video_id, project_id, question_id)
+                    if gt_key in ground_truth_map:
+                        actual_answer = ground_truth_map[gt_key]
+                        matches.append(str(actual_answer) == str(required_answer))
+                    else:
+                        matches.append(False)
+                
+                # Apply match logic
+                if match_all and all(matches):
+                    matching_videos.append({
+                        "video_info": video_info,
+                        "matches": matches,
+                        "criteria": criteria
+                    })
+                elif not match_all and any(matches):
+                    matching_videos.append({
+                        "video_info": video_info,
+                        "matches": matches,
+                        "criteria": criteria
+                    })
+            
+            # Step 5: Complete
+            if progress_callback:
+                progress_callback(5, 5, f"Search complete! Found {len(matching_videos)} matching videos.")
+            
+            return matching_videos
+            
+        except Exception as e:
+            raise ValueError(f"Error in optimized ground truth search: {str(e)}")
+    
+    @staticmethod
+    def _get_project_video_mappings(project_ids: List[int], session: Session) -> Dict[int, set]:
+        """Get all project-video mappings in batch"""
+        
+        project_video_map = {}
+        
+        # Single query to get all project-video relationships
+        query = select(
+            ProjectVideo.project_id,
+            ProjectVideo.video_id
+        ).select_from(
+            ProjectVideo
+        ).join(
+            Video, ProjectVideo.video_id == Video.id
+        ).where(
+            ProjectVideo.project_id.in_(project_ids),
+            Video.is_archived == False
+        )
+        
+        result = session.execute(query).all()
+        
+        for row in result:
+            project_id = row.project_id
+            video_id = row.video_id
+            
+            if project_id not in project_video_map:
+                project_video_map[project_id] = set()
+            project_video_map[project_id].add(video_id)
+        
+        return project_video_map
+    
+    @staticmethod
+    def _get_ground_truth_mappings(
+        project_ids: List[int], 
+        question_ids: List[int], 
+        session: Session
+    ) -> Dict[Tuple[int, int, int], str]:
+        """Get all relevant ground truth data in batch"""
+        
+        ground_truth_map = {}
+        
+        # Single query to get all relevant ground truth answers
+        query = select(
+            ReviewerGroundTruth.video_id,
+            ReviewerGroundTruth.project_id,
+            ReviewerGroundTruth.question_id,
+            ReviewerGroundTruth.answer_value
+        ).where(
+            ReviewerGroundTruth.project_id.in_(project_ids),
+            ReviewerGroundTruth.question_id.in_(question_ids)
+        )
+        
+        result = session.execute(query).all()
+        
+        for row in result:
+            key = (row.video_id, row.project_id, row.question_id)
+            ground_truth_map[key] = row.answer_value
+        
+        return ground_truth_map
+    
+    @staticmethod
+    def _get_video_info_mappings(video_ids: set, session: Session) -> Dict[int, Dict]:
+        """Get video info for all videos in batch"""
+        
+        video_info_map = {}
+        
+        if not video_ids:
+            return video_info_map
+        
+        # Single query to get all video info
+        query = select(
+            Video.id,
+            Video.video_uid,
+            Video.url,
+            Video.video_metadata,
+            Video.created_at,
+            Video.is_archived
+        ).where(
+            Video.id.in_(video_ids),
+            Video.is_archived == False
+        )
+        
+        result = session.execute(query).all()
+        
+        for row in result:
+            video_info_map[row.id] = {
+                "id": row.id,
+                "uid": row.video_uid,
+                "url": row.url,
+                "metadata": row.video_metadata or {},
+                "created_at": row.created_at,
+                "is_archived": row.is_archived
+            }
+        
+        return video_info_map
+
+    @staticmethod
+    def search_projects_by_completion_optimized(
+        project_ids: List[int],
+        completion_filter: str,
+        session: Session,
+        progress_callback=None
+    ) -> List[Dict]:
+        """Optimized search for projects by completion status with progress tracking"""
+        
+        try:
+            results = []
+            
+            if progress_callback:
+                progress_callback(1, 4, "Loading project data...")
+            
+            # Get all project info in batch
+            projects = session.execute(
+                select(Project.id, Project.name)
+                .where(Project.id.in_(project_ids))
+            ).all()
+            
+            project_map = {p.id: p.name for p in projects}
+            
+            if progress_callback:
+                progress_callback(2, 4, "Loading project videos and questions...")
+            
+            # Get all project videos and questions in batch
+            project_video_map = {}
+            project_question_counts = {}
+            
+            # Get videos for all projects
+            video_query = select(
+                ProjectVideo.project_id,
+                ProjectVideo.video_id,
+                Video.video_uid,
+                Video.url
+            ).select_from(
+                ProjectVideo
+            ).join(
+                Video, ProjectVideo.video_id == Video.id
+            ).where(
+                ProjectVideo.project_id.in_(project_ids),
+                Video.is_archived == False
+            )
+            
+            video_results = session.execute(video_query).all()
+            
+            for row in video_results:
+                project_id = row.project_id
+                if project_id not in project_video_map:
+                    project_video_map[project_id] = []
+                
+                project_video_map[project_id].append({
+                    "id": row.video_id,
+                    "uid": row.video_uid,
+                    "url": row.url
+                })
+            
+            # Get question counts for all projects
+            for project_id in project_ids:
+                project = session.get(Project, project_id)
+                if project:
+                    question_count = session.scalar(
+                        select(func.count())
+                        .select_from(Question)
+                        .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+                        .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
+                        .where(
+                            SchemaQuestionGroup.schema_id == project.schema_id,
+                            Question.is_archived == False
+                        )
+                    )
+                    project_question_counts[project_id] = question_count
+            
+            if progress_callback:
+                progress_callback(3, 4, "Loading ground truth data...")
+            
+            # Get all ground truth data in batch
+            gt_query = select(
+                ReviewerGroundTruth.video_id,
+                ReviewerGroundTruth.project_id,
+                func.count().label('gt_count')
+            ).where(
+                ReviewerGroundTruth.project_id.in_(project_ids)
+            ).group_by(
+                ReviewerGroundTruth.video_id,
+                ReviewerGroundTruth.project_id
+            )
+            
+            gt_results = session.execute(gt_query).all()
+            gt_map = {}  # (video_id, project_id) -> count
+            
+            for row in gt_results:
+                key = (row.video_id, row.project_id)
+                gt_map[key] = row.gt_count
+            
+            if progress_callback:
+                progress_callback(4, 4, "Processing completion status...")
+            
+            # Process each project-video combination
+            total_combinations = sum(len(videos) for videos in project_video_map.values())
+            current_combination = 0
+            
+            for project_id in project_ids:
+                project_name = project_map.get(project_id, f"Project {project_id}")
+                videos = project_video_map.get(project_id, [])
+                total_questions = project_question_counts.get(project_id, 0)
+                
+                for video in videos:
+                    current_combination += 1
+                    
+                    if progress_callback and current_combination % 20 == 0:
+                        progress_callback(
+                            4, 4,
+                            f"Processing {current_combination}/{total_combinations}: {video['uid']}"
+                        )
+                    
+                    video_id = video["id"]
+                    
+                    # Get completion status
+                    gt_count = gt_map.get((video_id, project_id), 0)
+                    
+                    if total_questions == 0:
+                        completion_status = "no_questions"
+                    elif gt_count == 0:
+                        completion_status = "missing"
+                    elif gt_count == total_questions:
+                        completion_status = "complete"
+                    else:
+                        completion_status = "partial"
+                    
+                    # Apply filter
+                    include_video = False
+                    
+                    if completion_filter == "All videos":
+                        include_video = True
+                    elif completion_filter == "Complete ground truth" and completion_status == "complete":
+                        include_video = True
+                    elif completion_filter == "Missing ground truth" and completion_status == "missing":
+                        include_video = True
+                    elif completion_filter == "Partial ground truth" and completion_status == "partial":
+                        include_video = True
+                    
+                    if include_video:
+                        results.append({
+                            "video_id": video_id,
+                            "video_uid": video["uid"],
+                            "video_url": video["url"],
+                            "project_id": project_id,
+                            "project_name": project_name,
+                            "completion_status": completion_status,
+                            "completed_questions": gt_count,
+                            "total_questions": total_questions
+                        })
+            
+            return results
+            
+        except Exception as e:
+            raise ValueError(f"Error in optimized completion search: {str(e)}")
+
 
 class ProjectGroupService:
     @staticmethod
@@ -5950,6 +6399,7 @@ class AutoSubmitService:
 
 
 class ReviewerAutoSubmitService:
+
     @staticmethod
     def auto_submit_ground_truth_group_with_custom_weights(
         video_id: int,
@@ -5963,7 +6413,7 @@ class ReviewerAutoSubmitService:
         user_weights: Dict[int, float] = None,
         custom_option_weights: Dict[int, Dict[str, float]] = None
     ) -> Dict[str, Any]:
-        """Auto-submit ground truth using weighted voting with custom option weights"""
+        """Auto-submit ground truth using weighted voting with custom option weights - FIXED LOGIC"""
         try:
             # Calculate what would be submitted
             calculation_results = ReviewerAutoSubmitService.calculate_auto_submit_ground_truth_with_custom_weights(
@@ -5974,18 +6424,43 @@ class ReviewerAutoSubmitService:
             )
             
             answers = calculation_results["answers"]
+            skipped = calculation_results["skipped"]
+            threshold_failures = calculation_results["threshold_failures"]
             
-            if not answers:
+            # CASE 1: All questions already have GT (entire group skipped)
+            if skipped and not answers:
                 return {
                     "success": True,
                     "submitted_count": 0,
-                    "skipped_count": len(calculation_results["skipped"]),
-                    "threshold_failures": len(calculation_results["threshold_failures"]),
+                    "skipped_count": len(skipped),  # Number of questions that were skipped
+                    "threshold_failures": 0,
                     "verification_failed": False,
                     "details": calculation_results
                 }
             
-            # Run verification (unchanged)
+            # CASE 2: Any threshold failures (don't submit anything)
+            if threshold_failures:
+                return {
+                    "success": True,  # Not an error, just didn't meet criteria
+                    "submitted_count": 0,
+                    "skipped_count": 0,
+                    "threshold_failures": len(threshold_failures),  # Number of questions that failed
+                    "verification_failed": False,
+                    "details": calculation_results
+                }
+            
+            # CASE 3: No answers ready to submit (edge case)
+            if not answers:
+                return {
+                    "success": True,
+                    "submitted_count": 0,
+                    "skipped_count": len(skipped),
+                    "threshold_failures": len(threshold_failures),
+                    "verification_failed": False,
+                    "details": calculation_results
+                }
+            
+            # CASE 4: We have answers to submit - run verification
             try:
                 group_details = QuestionGroupService.get_group_details_with_verification(
                     group_id=question_group_id, session=session
@@ -6005,14 +6480,14 @@ class ReviewerAutoSubmitService:
                 return {
                     "success": False,
                     "submitted_count": 0,
-                    "skipped_count": len(calculation_results["skipped"]),
-                    "threshold_failures": len(calculation_results["threshold_failures"]),
+                    "skipped_count": len(skipped),
+                    "threshold_failures": len(threshold_failures),
                     "verification_failed": True,
                     "verification_error": str(verification_error),
                     "details": calculation_results
                 }
             
-            # Submit ground truth (unchanged)
+            # CASE 5: Submit the answers
             GroundTruthService.submit_ground_truth_to_question_group(
                 video_id=video_id, project_id=project_id, reviewer_id=reviewer_id,
                 question_group_id=question_group_id, answers=answers, session=session
@@ -6020,15 +6495,22 @@ class ReviewerAutoSubmitService:
             
             return {
                 "success": True,
-                "submitted_count": len(answers),
-                "skipped_count": len(calculation_results["skipped"]),
-                "threshold_failures": len(calculation_results["threshold_failures"]),
+                "submitted_count": len(answers),  # Number of questions actually submitted
+                "skipped_count": len(skipped),   # Number of questions that already had GT
+                "threshold_failures": len(threshold_failures),  # Should be 0 if we got here
                 "verification_failed": False,
                 "details": calculation_results
             }
             
         except Exception as e:
-            raise ValueError(f"Error in reviewer auto-submit: {str(e)}")
+            return {
+                "success": False,
+                "submitted_count": 0,
+                "error": f"Error in reviewer auto-submit: {str(e)}",
+                "skipped_count": 0,
+                "threshold_failures": 0,
+                "verification_failed": False
+            }
 
     @staticmethod
     def calculate_auto_submit_ground_truth_with_custom_weights(
@@ -6042,7 +6524,7 @@ class ReviewerAutoSubmitService:
         user_weights: Dict[int, float] = None,
         custom_option_weights: Dict[int, Dict[str, float]] = None
     ) -> Dict[str, Any]:
-        """Calculate ground truth with custom option weights"""
+        """Calculate ground truth with custom option weights - FIXED LOGIC"""
         try:
             questions = QuestionService.get_questions_by_group_id(group_id=question_group_id, session=session)
             results = {
@@ -6053,7 +6535,7 @@ class ReviewerAutoSubmitService:
                 "voting_summary": {}
             }
             
-            # Check existing GROUND TRUTH answers
+            # Get existing GROUND TRUTH answers for entire group
             existing_answers = {}
             try:
                 existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
@@ -6063,42 +6545,45 @@ class ReviewerAutoSubmitService:
             except:
                 pass
             
+            # BEHAVIOR 1: Check if ALL questions already have GT → skip entire group
+            total_questions = len(questions)
+            questions_with_gt = len([q for q in questions if q["text"] in existing_answers and existing_answers[q["text"]]])
+            
+            if questions_with_gt == total_questions:
+                # All questions have GT - skip entire group
+                results["skipped"] = [q["text"] for q in questions]
+                return results
+            
+            # BEHAVIOR 2: Process questions - use existing GT where available
+            any_threshold_failure = False
+            
             for question in questions:
                 question_id = question["id"]
                 question_text = question["text"]
                 question_type = question["type"]
                 
-                # Skip if GROUND TRUTH answer already exists
+                # If question already has GT, use it directly (ignore thresholds/virtual responses)
                 if question_text in existing_answers and existing_answers[question_text]:
-                    results["skipped"].append(question_text)
+                    results["answers"][question_text] = existing_answers[question_text]
+                    # Don't add to skipped - we're using the existing value
                     continue
                 
+                # Question needs new GT - apply normal calculation logic
                 virtual_responses = virtual_responses_by_question.get(question_id, [])
 
-                # ✅ NEW LOGIC: Handle description questions differently
+                # Handle description questions with virtual responses
                 if question_type == "description":
                     if virtual_responses:
-                        # FIXED: For description questions with virtual responses (specific annotator selected),
-                        # use the virtual response directly without weighted voting or threshold checking
                         if len(virtual_responses) > 1:
                             raise ValueError(f"Description question {question_id} has multiple virtual responses")
                         selected_answer = virtual_responses[0]["answer"]
                         results["answers"][question_text] = selected_answer
-                        
-                        # Add to vote details for transparency (show it was from virtual response)
                         results["vote_details"][question_text] = {
                             selected_answer: virtual_responses[0]["user_weight"]
                         }
-                        
-                        # print(f"✅ Description question {question_id}: Using selected annotator's answer directly: {selected_answer[:50]}...")
                         continue
-                    # else:
-                        # EXISTING LOGIC: No virtual response, use weighted voting for "Auto" mode
-                        # print(f"🔍 Description question {question_id}: No virtual response, using weighted voting")
-                        # Fall through to normal weighted voting logic below
                 
-                
-                # MINIMAL CHANGE: Use custom option weights for this question
+                # Calculate weighted votes for this question
                 question_custom_weights = None
                 if custom_option_weights and question_id in custom_option_weights:
                     question_custom_weights = custom_option_weights[question_id]
@@ -6113,10 +6598,23 @@ class ReviewerAutoSubmitService:
                 results["vote_details"][question_text] = vote_weights
                 
                 if not vote_weights:
+                    # No votes available - this counts as threshold failure
+                    any_threshold_failure = True
+                    results["threshold_failures"].append({
+                        "question": question_text,
+                        "percentage": 0.0,
+                        "threshold": thresholds.get(question_id, 100.0)
+                    })
                     continue
                 
                 total_weight = sum(vote_weights.values())
                 if total_weight == 0:
+                    any_threshold_failure = True
+                    results["threshold_failures"].append({
+                        "question": question_text,
+                        "percentage": 0.0,
+                        "threshold": thresholds.get(question_id, 100.0)
+                    })
                     continue
                 
                 winning_option = max(vote_weights.keys(), key=lambda k: vote_weights[k])
@@ -6128,11 +6626,16 @@ class ReviewerAutoSubmitService:
                 if winning_percentage >= threshold:
                     results["answers"][question_text] = winning_option
                 else:
+                    any_threshold_failure = True
                     results["threshold_failures"].append({
                         "question": question_text,
                         "percentage": winning_percentage,
                         "threshold": threshold
                     })
+            
+            # BEHAVIOR 3: If ANY question failed threshold, clear answers (skip entire group)
+            if any_threshold_failure:
+                results["answers"] = {}  # Clear all answers - don't submit anything
             
             return results
             

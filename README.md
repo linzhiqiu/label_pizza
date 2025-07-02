@@ -72,11 +72,11 @@ Label Pizza includes powerful features typically locked behind expensive enterpr
 
 | #     | Feature                         | Highlights                                                                                    |
 | ----- | ------------------------------- | --------------------------------------------------------------------------------------------- |
-| **1** | **Dual-Mode Projects**          | Automatic switch between *Training* and *Annotation* based on ground-truth completeness.      |
-| **2** | **Weighted Majority Voting**   | Reviewers can auto-submit answers based on weighted votes—trust scores give more influence to expert annotators or high-stake options when answers conflict.          |
-| **3** | **Accuracy Analytics** | One-click access to annotator leaderboards and per-question performance breakdowns. |
-| **4** | **Question-Group Verification** | Simple rules block impossible combinations (e.g. Choosing “Other” requires a non-empty description).             |
-| **5** | **Search & Filter**    | See a clip’s answers across all projects, or find every video matching a label pattern.       |
+| **1** | **Auto-Training Mode**          | Projects automatically switch from *annotation* to *training mode* once ground truth is complete by a reviewer, giving new annotators instant feedback to speed up learning.      |
+| **2** | **Auto-Submit Features**   | Reviewers can auto-submit answers based on weighted consensus, prioritizing expert annotators, model predictions, or high-stake options when there’s disagreement.    |
+| **3** | **Performance Leaderboard** | One-click access to human and model leaderboards and per-question performance breakdowns. |
+| **4** | **Answer Validation Rules** | Custom Python rules prevent invalid answers—for example, selecting “Other (to describe)” requires a non-empty description.  |
+| **5** | **Search & Filter**    | Search for any video by answer pattern or view how a video was labeled across all projects.  |
 
 
 ---

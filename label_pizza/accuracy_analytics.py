@@ -12,7 +12,10 @@ from label_pizza.ui_components import (
 )
 from label_pizza.database_utils import (
     calculate_user_overall_progress,
-    check_project_has_full_ground_truth
+    check_project_has_full_ground_truth,
+    get_annotator_accuracy_cached,
+    get_reviewer_accuracy_cached,
+    clear_accuracy_cache_for_project
 )
 
 ###############################################################################
@@ -41,7 +44,7 @@ def format_accuracy_badge(accuracy: Optional[float], total_questions: int = 0) -
 def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Session):
     """Show detailed personal accuracy report for a single annotator"""
     try:
-        accuracy_data = GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
+        accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
         if user_id not in accuracy_data:
             st.warning("No accuracy data available for your account.")
             return
@@ -125,7 +128,7 @@ def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Ses
 def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Session):
     """Show detailed personal accuracy report for a single reviewer"""
     try:
-        accuracy_data = GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
+        accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
         if user_id not in accuracy_data:
             st.warning("No reviewer accuracy data available for your account.")
             return
@@ -217,7 +220,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
             if overall_progress < 100:
                 return False
             
-            accuracy_data = GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
+            accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
             if user_id not in accuracy_data:
                 return False
             
@@ -238,7 +241,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
                 return True
         
         elif role == "reviewer":
-            accuracy_data = GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
+            accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
             if user_id not in accuracy_data:
                 return False
             
@@ -276,7 +279,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
 def show_annotator_accuracy_detailed(project_id: int, session: Session):
     """Show detailed annotator accuracy analytics in a modal dialog"""
     try:
-        accuracy_data = GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
+        accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
         if not accuracy_data:
             st.warning("No annotator accuracy data available for this project.")
             return
@@ -432,7 +435,7 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
 def show_reviewer_accuracy_detailed(project_id: int, session: Session):
     """Show detailed reviewer accuracy analytics in a modal dialog"""
     try:
-        accuracy_data = GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
+        accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
         if not accuracy_data:
             st.warning("No reviewer accuracy data available for this project.")
             return
@@ -549,7 +552,7 @@ def display_accuracy_button_for_project(project_id: int, role: str, session: Ses
     
     try:
         if role in ["reviewer", "meta_reviewer"]:
-            accuracy_data = GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
+            accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
             if accuracy_data:
                 annotator_count = len(accuracy_data)
                 if st.button(f"📊 Annotator Analytics ({annotator_count})", 
@@ -559,7 +562,7 @@ def display_accuracy_button_for_project(project_id: int, role: str, session: Ses
                     show_annotator_accuracy_detailed(project_id=project_id, session=session)
                 return True
             
-            reviewer_accuracy_data = GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
+            reviewer_accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
             if reviewer_accuracy_data:
                 reviewer_count = len(reviewer_accuracy_data)
                 if st.button(f"📊 Reviewer Analytics ({reviewer_count})", 

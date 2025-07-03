@@ -13,6 +13,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 import json
 import atexit
+from wfork_streamlit_profiler import Profiler
 import argparse
     
 parser = argparse.ArgumentParser(add_help=False)
@@ -988,4 +989,5 @@ def main():
         st.error(f"Unknown portal: {selected_portal}")
 
 if __name__ == "__main__":
-    main()
+    with Profiler():
+        main()

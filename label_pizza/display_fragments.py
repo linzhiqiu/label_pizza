@@ -25,7 +25,7 @@ from label_pizza.database_utils import (
     get_project_groups_with_projects, calculate_user_overall_progress,
     get_cached_user_completion_progress, get_optimized_all_project_annotators,
     get_project_custom_display_data, get_questions_by_group_with_custom_display_cached,
-    clear_custom_display_cache
+    clear_custom_display_cache, get_project_metadata_cached, get_project_questions_cached
 )
 from label_pizza.autosubmit_features import (
     display_manual_auto_submit_controls, run_project_wide_auto_submit_on_entry,
@@ -41,7 +41,7 @@ from label_pizza.accuracy_analytics import display_user_accuracy_simple, display
 def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: str, mode: str, session: Session):
     """Display a single video-answer pair in side-by-side layout with tabs"""
     try:
-        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id, session=session)
         
         # Add transaction recovery for question groups
         try:
@@ -1307,7 +1307,7 @@ def load_existing_answer_reviews(video_id: int, project_id: int, question_id: in
 ###############################################################################
 
 @st.fragment
-def display_enhanced_sort_tab(project_id: int, session: Session):
+def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
     """Enhanced sort tab with improved UI/UX and proper validation"""
     st.markdown("#### 🔄 Video Sorting Options")
     
@@ -1509,43 +1509,56 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
             else:
                 custom_info(msg)
     
-    # Action buttons in a compact row
-    action_col1, action_col2 = st.columns([1, 1])
+    # # Action buttons in a compact row
+    # action_col1, action_col2 = st.columns([1, 1])
     
-    with action_col1:
-        if st.button("🔄 Apply", 
-                    key=f"apply_sort_{project_id}", 
-                    disabled=not config_valid,
-                    use_container_width=True,
-                    type="primary"):
-            st.session_state[f"sort_config_{project_id}"] = sort_config
-            st.session_state[f"sort_applied_{project_id}"] = True
+    # with action_col1:
+    if st.button("🔄 Apply", 
+                key=f"apply_sort_{project_id}", 
+                disabled=not config_valid,
+                use_container_width=True,
+                type="primary"):
+        st.session_state[f"sort_config_{project_id}"] = sort_config
+        st.session_state[f"sort_applied_{project_id}"] = True
+        
+        apply_and_cache_sort_and_filter(project_id, role, session)
+        
+        st.success("✅ Applied!")
+        st.rerun()
+
+    # with action_col2:
+    #     if st.button("🔄 Reset", 
+    #                 key=f"reset_sort_{project_id}",
+    #                 use_container_width=True):
+    #         # Reset ONLY sorting UI state (keep filters)
+    #         st.session_state[f"video_sort_by_{project_id}"] = "Default"
+    #         st.session_state[f"video_sort_order_{project_id}"] = "Descending"
+    #         st.session_state[f"sort_config_{project_id}"] = {}
+    #         st.session_state[f"sort_applied_{project_id}"] = False
             
-            # 🔥 FIX: Reset pagination when sorting is applied
-            for role in ["annotator", "reviewer", "meta_reviewer"]:
-                page_key = f"{role}_current_page_{project_id}"
-                if page_key in st.session_state:
-                    st.session_state[page_key] = 0
+    #         # Re-apply current filters with default sorting
+    #         current_filters = st.session_state.get(f"video_filters_{project_id}", {})
+    #         base_videos = get_project_videos(project_id=project_id, session=session)
             
-            st.success("✅ Applied!")
-            st.rerun()
-    
-    with action_col2:
-        if st.button("🔄 Reset", 
-                    key=f"reset_sort_{project_id}",
-                    use_container_width=True):
-            st.session_state[f"video_sort_by_{project_id}"] = "Default"
-            st.session_state[f"sort_config_{project_id}"] = {}
-            st.session_state[f"sort_applied_{project_id}"] = False
+    #         if current_filters:
+    #             # Apply filters with default sorting (no advanced sorting)
+    #             filtered_videos = apply_video_filtering_only(base_videos, current_filters, project_id, session)
+                
+    #             # Update cache with filtered + default sorted videos
+    #             set_cached_sorted_and_filtered_videos(filtered_videos, project_id, role)
+    #         else:
+    #             # No filters, just clear cache (will fall back to default behavior)
+    #             cache_key = f"applied_sorted_and_filtered_videos_{project_id}_{role}"
+    #             if cache_key in st.session_state:
+    #                 del st.session_state[cache_key]
             
-            # 🔥 FIX: Reset pagination when sorting is reset
-            for role in ["annotator", "reviewer", "meta_reviewer"]:
-                page_key = f"{role}_current_page_{project_id}"
-                if page_key in st.session_state:
-                    st.session_state[page_key] = 0
+    #         # Reset pagination
+    #         page_key = f"{role}_current_page_{project_id}"
+    #         if page_key in st.session_state:
+    #             st.session_state[page_key] = 0
             
-            st.success("✅ Reset!")
-            st.rerun()
+    #         st.success("✅ Reset!")
+    #         st.rerun()
     
     # Status indicator
     current_sort = st.session_state.get(f"video_sort_by_{project_id}", "Default")
@@ -1559,9 +1572,19 @@ def display_enhanced_sort_tab(project_id: int, session: Session):
         custom_info("Status: Default")
     
     custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
-    
+
+def get_cached_sorted_and_filtered_videos(project_id: int, role: str) -> List[Dict]:
+    """Get cached sorted and filtered videos if Apply was clicked"""
+    cache_key = f"applied_sorted_and_filtered_videos_{project_id}_{role}"
+    return st.session_state.get(cache_key, None)
+
+def set_cached_sorted_and_filtered_videos(videos: List[Dict], project_id: int, role: str):
+    """Cache sorted and filtered videos after Apply is clicked"""
+    cache_key = f"applied_sorted_and_filtered_videos_{project_id}_{role}"
+    st.session_state[cache_key] = videos
+
 @st.fragment
-def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
+def display_enhanced_sort_tab_annotator(project_id: int, user_id: int, session: Session):
     """Enhanced sort tab for annotators - only relevant options"""
     st.markdown("#### 🔄 Video Sorting Options")
     
@@ -1617,8 +1640,8 @@ def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
         st.markdown("**Configuration:**")
         
         if sort_by in ["Completion Rate", "Accuracy Rate"]:
-            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
-            single_choice_questions = [q for q in questions if q["type"] == "single"]
+            questions = get_project_questions_cached(project_id=project_id, session=session)
+            single_choice_questions = [q for q in questions if q.get("type") == "single"]
             
             if not single_choice_questions:
                 config_messages.append(("error", "No single-choice questions available."))
@@ -1646,40 +1669,43 @@ def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
             else:
                 custom_info(msg)
     
-    # Action buttons
-    action_col1, action_col2 = st.columns([1, 1])
+    # # Action buttons
+    # action_col1, action_col2 = st.columns([1, 1])
     
-    with action_col1:
-        if st.button("🔄 Apply", 
-                    key=f"apply_annotator_sort_{project_id}", 
-                    disabled=not config_valid,
-                    use_container_width=True,
-                    type="primary"):
-            # Store sort configuration for annotators
-            st.session_state[f"annotator_sort_applied_{project_id}"] = True
-            
-            # 🔥 FIX: Reset pagination when sorting is applied
-            page_key = f"annotator_current_page_{project_id}"
-            if page_key in st.session_state:
-                st.session_state[page_key] = 0
-            
-            st.success("✅ Applied!")
-            st.rerun()
+    # with action_col1:
+    if st.button("🔄 Apply", 
+                key=f"apply_annotator_sort_{project_id}", 
+                disabled=not config_valid,
+                use_container_width=True,
+                type="primary"):
+        st.session_state[f"annotator_sort_applied_{project_id}"] = True
+        
+        apply_and_cache_sort_and_filter(project_id, "annotator", session)
+        
+        st.success("✅ Applied!")
+        st.rerun()
     
-    with action_col2:
-        if st.button("🔄 Reset", 
-                    key=f"reset_annotator_sort_{project_id}",
-                    use_container_width=True):
-            st.session_state[f"annotator_video_sort_by_{project_id}"] = "Default"
-            st.session_state[f"annotator_sort_applied_{project_id}"] = False
+    # with action_col2:
+    #     if st.button("🔄 Reset", 
+    #                 key=f"reset_annotator_sort_{project_id}",
+    #                 use_container_width=True):
+    #         # Reset ONLY annotator sorting UI state
+    #         st.session_state[f"annotator_video_sort_by_{project_id}"] = "Default"
+    #         st.session_state[f"annotator_video_sort_order_{project_id}"] = "Ascending"
+    #         st.session_state[f"annotator_sort_applied_{project_id}"] = False
             
-            # 🔥 FIX: Reset pagination when sorting is reset
-            page_key = f"annotator_current_page_{project_id}"
-            if page_key in st.session_state:
-                st.session_state[page_key] = 0
+    #         # Clear annotator cached results (will fall back to default sorting in display_project_view)
+    #         cache_key = f"applied_sorted_and_filtered_videos_{project_id}_annotator"
+    #         if cache_key in st.session_state:
+    #             del st.session_state[cache_key]
             
-            st.success("✅ Reset!")
-            st.rerun()
+    #         # Reset pagination
+    #         page_key = f"annotator_current_page_{project_id}"
+    #         if page_key in st.session_state:
+    #             st.session_state[page_key] = 0
+            
+    #         st.success("✅ Reset!")
+    #         st.rerun()
     
     # Status indicator
     current_sort = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default")
@@ -1693,8 +1719,73 @@ def display_enhanced_sort_tab_annotator(project_id: int, session: Session):
         custom_info("Status: Default")
     
     custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
+
+
+def apply_and_cache_sort_and_filter(project_id: int, role: str, session: Session, 
+                                   override_filters: Dict = None) -> List[Dict]:
+    """Apply current sorting and filtering settings, cache results, and reset pagination
+    
+    Args:
+        project_id: Project ID
+        role: User role
+        session: Database session  
+        override_filters: If provided, use these filters instead of current ones
+    
+    Returns:
+        List of sorted and filtered videos (also cached in session state)
+    """
+    # Get base videos
+    base_videos = get_project_videos(project_id=project_id, session=session)
+    
+    if role == "annotator":
+        # Annotator logic
+        sort_by = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default")
+        sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
+        
+        if sort_by == "Default":
+            reverse = (sort_order == "Descending")
+            base_videos.sort(key=lambda x: x.get("id", 0), reverse=reverse)
+            result_videos = base_videos
+        else:
+            # Get user_id from session state
+            user_id = st.session_state.get('user', {}).get('id')
+            result_videos = apply_annotator_video_sorting(
+                videos=base_videos, sort_by=sort_by, sort_order=sort_order,
+                project_id=project_id, user_id=user_id, session=session
+            )
+    
+    else:  # reviewer, meta_reviewer
+        # Get current settings
+        sort_by = st.session_state.get(f"video_sort_by_{project_id}", "Default")
+        sort_order = st.session_state.get(f"video_sort_order_{project_id}", "Descending")
+        sort_config = st.session_state.get(f"sort_config_{project_id}", {})
+        selected_annotators = st.session_state.get("selected_annotators", [])
+        
+        # Use override filters if provided, otherwise get current filters
+        if override_filters is not None:
+            filter_by_gt = override_filters
+        else:
+            filter_by_gt = st.session_state.get(f"video_filters_{project_id}", {})
+        
+        result_videos = apply_video_sorting_and_filtering_enhanced(
+            videos=base_videos, sort_by=sort_by, sort_order=sort_order,
+            filter_by_gt=filter_by_gt, project_id=project_id,
+            selected_annotators=selected_annotators, session=session,
+            sort_config=sort_config
+        )
+    
+    # Cache the results
+    set_cached_sorted_and_filtered_videos(result_videos, project_id, role)
+    
+    # Reset pagination for all roles
+    page_key = f"{role}_current_page_{project_id}"
+    if page_key in st.session_state:
+        st.session_state[page_key] = 0
+    
+    return result_videos
+
 @st.fragment
-def display_enhanced_filter_tab(project_id: int, session: Session):
+def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
     """Enhanced filter tab with proper ground truth detection and full question text"""
     st.markdown("#### 🔍 Video Filtering Options")
     
@@ -1706,116 +1797,205 @@ def display_enhanced_filter_tab(project_id: int, session: Session):
     </div>
     """, unsafe_allow_html=True)
     
-    # Get available ground truth options using enhanced function
-    gt_options = get_ground_truth_option_filters_enhanced(project_id=project_id, session=session)
+    # # Get available ground truth options using enhanced function
+    # gt_options = get_ground_truth_option_filters_enhanced(project_id=project_id, session=session)
+
+    # Get questions efficiently using cached data
+    questions = get_project_questions_cached(project_id=project_id, session=session)
+    single_choice_questions = [q for q in questions if q.get("type") == "single"]
     
-    if gt_options:
-        st.markdown("**Filter by Ground Truth Answers:**")
+    if not single_choice_questions:
+        custom_info("No single-choice questions available for filtering.")
+        return
+    
+    # Get current filters
+    current_filters = st.session_state.get(f"video_filters_{project_id}", {})
+    new_filters = {}
+    
+    # if gt_options:
+    st.markdown("**Filter by Question Answers:**")
+    
+    # question_lookup = {q["id"]: q["text"] for q in single_choice_questions}
+    for question in single_choice_questions:
+        question_id = question["id"]
         
-        questions = ProjectService.get_project_questions(project_id=project_id, session=session)
-        question_lookup = {q["id"]: q["text"] for q in questions}
+        # Use display_text if available, otherwise fall back to text
+        question_display = question.get("display_text", question["text"])
         
-        # Get current filters to show current state
-        current_filters = st.session_state.get(f"video_filters_{project_id}", {})
-        
-        # Collect new filter selections (don't store in session state yet)
-        new_filters = {}
-        
-        for question_id, available_answers in gt_options.items():
-            question_text = question_lookup.get(question_id, f"Question {question_id}")
-            display_question = question_text
-            
-            # Get current selection for this question
-            current_selection = current_filters.get(question_id, "Any")
-            
-            # Make sure current selection is still valid
-            if current_selection not in ["Any"] + available_answers:
-                current_selection = "Any"
-            
-            filter_key = f"video_filter_q_{question_id}_{project_id}"
-            selected_answer = st.selectbox(
-                f"**{display_question}**",
-                ["Any"] + sorted(available_answers),
-                index=(["Any"] + sorted(available_answers)).index(current_selection) if current_selection in ["Any"] + sorted(available_answers) else 0,
-                key=filter_key,
-                help=f"Filter videos where this question has the selected ground truth answer"
-            )
-            
-            if selected_answer != "Any":
-                new_filters[question_id] = selected_answer
-        
-        # Show what filters would be applied
-        if new_filters:
-            filter_summary = []
-            for q_id, answer in new_filters.items():
-                q_text = question_lookup.get(q_id, f"Q{q_id}")
-                display_text = q_text[:80] + "..." if len(q_text) > 80 else q_text
-                filter_summary.append(f"{display_text} = {answer}")
-            
-            custom_info(f"🔍 **Ready to apply:** {' | '.join(filter_summary)}")
+        # Get options - handle both old and new format
+        if "options" in question and question["options"]:
+            original_options = question["options"]
+            display_values = question.get("display_values", original_options)
         else:
-            custom_info("ℹ️ No filters selected - will show all videos")
+            st.error(f"Question {question_id} is 'single' but does not have options")
+            raise ValueError(f"Question {question_id} is 'single' but does not have options")
         
-        # Check if filters have changed
-        filters_changed = new_filters != current_filters
+        # Current selection for this question
+        current_selection = current_filters.get(question_id, "Any")
         
-        # Apply button
-        apply_col1, apply_col2 = st.columns([1, 1])
+        # Build options list: ["Any"] + display_values
+        filter_options = ["Any"] + display_values
         
-        with apply_col1:
-            if st.button("🔍 Apply Filters", 
-                        type="primary", 
-                        use_container_width=True,
-                        disabled=not filters_changed,
-                        help="Apply the selected filters to videos"):
-                st.session_state[f"video_filters_{project_id}"] = new_filters
-                
-                # 🔥 FIX: Reset pagination when filters are applied
-                for role in ["annotator", "reviewer", "meta_reviewer"]:
-                    page_key = f"{role}_current_page_{project_id}"
-                    if page_key in st.session_state:
-                        st.session_state[page_key] = 0
-                
-                st.rerun()  # This triggers a rerun of the parent page
+        # Make sure current selection is valid
+        if current_selection not in ["Any"] + original_options:
+            current_selection = "Any"
         
-        with apply_col2:
-            if st.button("🗑️ Clear All Filters", 
-                        use_container_width=True,
-                        disabled=not current_filters,
-                        help="Remove all active filters"):
-                st.session_state[f"video_filters_{project_id}"] = {}
-                
-                # 🔥 FIX: Reset pagination when filters are cleared
-                for role in ["annotator", "reviewer", "meta_reviewer"]:
-                    page_key = f"{role}_current_page_{project_id}"
-                    if page_key in st.session_state:
-                        st.session_state[page_key] = 0
-                
-                st.rerun()
         
-        # Show current active filters if any
-        if current_filters:
-            st.markdown("**Currently Active Filters:**")
-            active_summary = []
-            for q_id, answer in current_filters.items():
-                q_text = question_lookup.get(q_id, f"Q{q_id}")
-                display_text = q_text[:60] + "..." if len(q_text) > 60 else q_text
-                active_summary.append(f"• {display_text} = **{answer}**")
-            
-            st.markdown("\n".join(active_summary))
-            
-            if filters_changed:
-                st.warning("⚠️ **Filters have been modified** - click 'Apply Filters' to update the video list")
-            else:
-                st.success("✅ **Filters are active** - video list is filtered")
+        # Map current selection to display value
+        if current_selection == "Any":
+            display_selection = "Any"
+        else:
+            try:
+                option_index = original_options.index(current_selection)
+                display_selection = display_values[option_index] if option_index < len(display_values) else current_selection
+            except (ValueError, IndexError):
+                print(f"Error mapping current selection to display value for question {question_id}")
+                display_selection = "Any"
         
-    else:
-        custom_info("No ground truth data available for filtering yet. Complete ground truth annotation to enable filtering.")
-        # Still ensure the session state key exists
-        if f"video_filters_{project_id}" not in st.session_state:
-            st.session_state[f"video_filters_{project_id}"] = {}
+        
+        filter_key = f"video_filter_q_{question_id}_{project_id}"
+        selected_display = st.selectbox(
+            f"**{question_display}**",
+            filter_options,
+            index=filter_options.index(display_selection) if display_selection in filter_options else 0,
+            key=filter_key,
+            help=f"Filter videos by this question's answer"
+        )
+
+        # Map back to original value
+        if selected_display != "Any":
+            try:
+                display_index = display_values.index(selected_display)
+                new_filters[question_id] = original_options[display_index]
+            except (ValueError, IndexError):
+                # Fallback: use display value as original value
+                print(f"Error mapping display value to original value for question {question_id}")
+                new_filters[question_id] = selected_display
+
     
-    custom_info("💡 Filters only work on questions that have ground truth answers. Complete annotation first to see more filter options.")
+    # Show filter summary
+    if new_filters:
+        filter_summary = []
+        for q_id, answer in new_filters.items():
+            q_obj = next((q for q in single_choice_questions if q["id"] == q_id), None)
+            if q_obj:
+                q_text = q_obj.get("display_text", q_obj["text"])
+                display_text = q_text[:60] + "..." if len(q_text) > 60 else q_text
+                filter_summary.append(f"{display_text} = {answer}")
+        
+        custom_info(f"🔍 **Ready to apply:** {' | '.join(filter_summary)}")
+    else:
+        custom_info("ℹ️ No filters selected - will show all videos")
+    
+    # Check if filters changed
+    filters_changed = new_filters != current_filters
+    
+    # Apply/Clear buttons
+    # apply_col1, apply_col2 = st.columns([1, 1])
+    
+    # with apply_col1:
+    if st.button("🔍 Apply Filters", 
+                type="primary", 
+                use_container_width=True,
+                disabled=not filters_changed):
+        st.session_state[f"video_filters_{project_id}"] = new_filters
+        
+        apply_and_cache_sort_and_filter(project_id, role, session, override_filters=new_filters)
+        # # Apply filtering to current videos
+        # current_videos = get_cached_sorted_and_filtered_videos(project_id, role)
+        # if current_videos is None:
+        #     current_videos = get_project_videos(project_id=project_id, session=session)
+        
+        # filtered_videos = apply_video_filtering_only(current_videos, new_filters, project_id, session)
+        # set_cached_sorted_and_filtered_videos(filtered_videos, project_id, role)
+        
+        # Reset pagination
+        page_key = f"{role}_current_page_{project_id}"
+        if page_key in st.session_state:
+            st.session_state[page_key] = 0
+        
+        st.rerun()
+    
+    
+    # with apply_col2:
+    #     if st.button("🗑️ Clear All Filters", 
+    #                 use_container_width=True,
+    #                 disabled=not current_filters):
+    #         st.session_state[f"video_filters_{project_id}"] = {}
+            
+    #         # Remove filtering but keep sorting
+    #         # Reset to sorted but unfiltered videos
+    #         videos = get_project_videos(project_id=project_id, session=session)
+    #         # Re-apply only sorting if it was applied
+    #         sort_applied = st.session_state.get(f"sort_applied_{project_id}", False)
+    #         if sort_applied:
+    #             # Re-run sorting without filtering
+    #             sort_by = st.session_state.get(f"video_sort_by_{project_id}", "Default")
+    #             sort_order = st.session_state.get(f"video_sort_order_{project_id}", "Descending")
+    #             selected_annotators = st.session_state.get("selected_annotators", [])
+    #             sort_config = st.session_state.get(f"sort_config_{project_id}", {})
+                
+    #             videos = apply_video_sorting_and_filtering_enhanced(
+    #                 videos=videos, sort_by=sort_by, sort_order=sort_order,
+    #                 filter_by_gt={}, project_id=project_id,
+    #                 selected_annotators=selected_annotators, session=session,
+    #                 sort_config=sort_config
+    #             )
+            
+    #         set_cached_sorted_and_filtered_videos(videos, project_id, role)
+            
+    #         # Reset pagination
+    #         page_key = f"{role}_current_page_{project_id}"
+    #         if page_key in st.session_state:
+    #             st.session_state[page_key] = 0
+            
+    #         st.rerun()
+    
+    # Show current active filters
+    if current_filters:
+        st.markdown("**Currently Active Filters:**")
+        active_summary = []
+        for q_id, answer in current_filters.items():
+            q_obj = next((q for q in single_choice_questions if q["id"] == q_id), None)
+            if q_obj:
+                q_text = q_obj.get("display_text", q_obj["text"])
+                display_text = q_text[:50] + "..." if len(q_text) > 50 else q_text
+                active_summary.append(f"• {display_text} = **{answer}**")
+        
+        st.markdown("\n".join(active_summary))
+        
+        if filters_changed:
+            st.warning("⚠️ **Filters have been modified** - click 'Apply Filters' to update")
+        else:
+            st.success("✅ **Filters are active**")
+
+# def apply_video_filtering_only(videos: List[Dict], filter_by_gt: Dict[int, str], project_id: int, session: Session) -> List[Dict]:
+#     """Apply only filtering without sorting (for filter tab)"""
+#     if not filter_by_gt:
+#         return videos
+    
+#     filtered_videos = []
+#     for video in videos:
+#         video_id = video["id"]
+#         include_video = True
+        
+#         try:
+#             gt_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
+#             if gt_df.empty:
+#                 include_video = False
+#             else:
+#                 for question_id, required_answer in filter_by_gt.items():
+#                     question_gt = gt_df[gt_df["Question ID"] == question_id]
+#                     if question_gt.empty or question_gt.iloc[0]["Answer Value"] != required_answer:
+#                         include_video = False
+#                         break
+#         except:
+#             include_video = False
+        
+#         if include_video:
+#             filtered_videos.append(video)
+    
+#     return filtered_videos
 
 def display_order_tab(project_id: int, role: str, project: Dict, session: Session):
     """Display question group order tab - shared between reviewer and meta-reviewer"""
@@ -2094,7 +2274,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         
         # Get project details
         try:
-            project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+            project = get_project_metadata_cached(project_id=project_id, session=session)
             question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         except Exception as e:
             st.error(f"Error loading project details: {str(e)}")
@@ -2213,7 +2393,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         
         # Get project details
         try:
-            project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+            project = get_project_metadata_cached(project_id=project_id, session=session)
             question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         except Exception as e:
             st.error(f"Error loading project details: {str(e)}")
@@ -2506,17 +2686,13 @@ def check_question_group_completion(video_id: int, project_id: int, user_id: int
                 question_group_id=question_group_id, session=session
             )
         elif role == "meta_reviewer":
-            return (GroundTruthService.check_all_questions_modified_by_admin(
+            return check_all_questions_have_ground_truth(
                 video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-            ) or check_all_questions_have_ground_truth(
-                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-            ))
+            )
         else:  # reviewer
-            return (GroundTruthService.check_all_questions_modified_by_admin(
+            return check_all_questions_have_ground_truth(
                 video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-            ) or check_all_questions_have_ground_truth(
-                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-            ))
+            )
     except:
         return False
 
@@ -3019,16 +3195,13 @@ def display_project_view(user_id: int, role: str, session: Session):
         st.session_state.selected_project_id = None
         if "selected_annotators" in st.session_state:
             del st.session_state.selected_annotators
-        # Clear any sorting/filtering state
-        for key in list(st.session_state.keys()):
-            if key.startswith(f"video_sort_") or key.startswith(f"video_filter_") or key.startswith(f"question_order_"):
-                del st.session_state[key]
-
-        clear_custom_display_cache(project_id)
+        
+        # Use existing clear project cache function
+        clear_project_cache(project_id)
         st.rerun()
     
     try:
-        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id, session=session)
         try:
             schema_details = SchemaService.get_schema_details(schema_id=project["schema_id"], session=session)
             instructions_url = schema_details.get("instructions_url")
@@ -3075,38 +3248,26 @@ def display_project_view(user_id: int, role: str, session: Session):
         st.error("No videos found in this project.")
         return
 
-    # 🔥 CRITICAL FIX: APPLY SORTING AND FILTERING BEFORE TABS ARE CREATED
-    # This ensures auto-submit tabs use the same sorted/filtered videos that users see
-    if role in ["reviewer", "meta_reviewer"]:
-        sort_by = st.session_state.get(f"video_sort_by_{project_id}", "Default")
-        sort_order = st.session_state.get(f"video_sort_order_{project_id}", "Descending")
-        filter_by_gt = st.session_state.get(f"video_filters_{project_id}", {})
-        selected_annotators = st.session_state.get("selected_annotators", [])
-        sort_config = st.session_state.get(f"sort_config_{project_id}", {})
-        
-        videos = apply_video_sorting_and_filtering_enhanced(
-            videos=videos, sort_by=sort_by, sort_order=sort_order,
-            filter_by_gt=filter_by_gt, project_id=project_id,
-            selected_annotators=selected_annotators, session=session,
-            sort_config=sort_config
-        )
-    elif role == "annotator":
-        sort_by = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default")
-        sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
-        sort_applied = st.session_state.get(f"annotator_sort_applied_{project_id}", False)
-        
-        # 🔥 FIX: Always apply sorting, even for "Default" mode
-        # This makes annotator behavior consistent with reviewer behavior
-        if sort_by == "Default":
-            # For Default sorting, always respect ascending/descending order by video ID
+    # 🚀 OPTIMIZED SORTING/FILTERING LOGIC
+    cached_videos = get_cached_sorted_and_filtered_videos(project_id, role)
+
+    if cached_videos is not None:
+        # Use cached sorted/filtered videos (user clicked Apply in any tab)
+        videos = cached_videos
+    else:
+        # No cache - apply default behavior based on role
+        if role == "annotator":
+            # Annotator default: always apply basic sorting (fast operation)
+            sort_by = st.session_state.get(f"annotator_video_sort_by_{project_id}", "Default") 
+            sort_order = st.session_state.get(f"annotator_video_sort_order_{project_id}", "Ascending")
+            
+            # Always apply default sorting for annotators (it's fast)
             reverse = (sort_order == "Descending")
             videos.sort(key=lambda x: x.get("id", 0), reverse=reverse)
-        elif sort_applied:
-            # For advanced sorting (Completion Rate, Accuracy Rate), only apply if user clicked Apply
-            videos = apply_annotator_video_sorting(
-                videos=videos, sort_by=sort_by, sort_order=sort_order,
-                project_id=project_id, user_id=user_id, session=session
-            )
+            
+        elif role in ["reviewer", "meta_reviewer"]:
+            # Reviewer/Meta-reviewer default: show unsorted videos until Apply is clicked
+            pass  # Keep videos as-is (original order from get_project_videos)
         
     # Role-specific control panels - NOW USING SORTED VIDEOS
     if role == "reviewer":
@@ -3151,10 +3312,10 @@ def display_project_view(user_id: int, role: str, session: Session):
             custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
         
         with sort_tab:
-            display_enhanced_sort_tab(project_id=project_id, session=session)
+            display_enhanced_sort_tab(project_id=project_id, role=role, session=session)
 
         with filter_tab:
-            display_enhanced_filter_tab(project_id=project_id, session=session)
+            display_enhanced_filter_tab(project_id=project_id, role=role, session=session)
         
         with order_tab:
             display_order_tab(project_id=project_id, role=role, project=project, session=session)
@@ -3212,10 +3373,10 @@ def display_project_view(user_id: int, role: str, session: Session):
             custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
         
         with sort_tab:
-            display_enhanced_sort_tab(project_id=project_id, session=session)
+            display_enhanced_sort_tab(project_id=project_id, role=role, session=session)
 
         with filter_tab:
-            display_enhanced_filter_tab(project_id=project_id, session=session)
+            display_enhanced_filter_tab(project_id=project_id, role=role, session=session)
         
         with order_tab:
             display_order_tab(project_id=project_id, role=role, project=project, session=session)
@@ -3236,7 +3397,7 @@ def display_project_view(user_id: int, role: str, session: Session):
             display_layout_tab_content(videos=videos, role=role)
         
         with sort_tab:
-            display_enhanced_sort_tab_annotator(project_id=project_id, session=session)
+            display_enhanced_sort_tab_annotator(project_id=project_id, user_id=user_id, session=session)
     
         with auto_submit_tab:
             # 🔥 NOW PASSING SORTED VIDEOS TO AUTO-SUBMIT
@@ -3265,7 +3426,15 @@ def display_project_view(user_id: int, role: str, session: Session):
             summary_parts.append(f"📋 Default order ({sort_order})")
         
         if filter_by_gt:
-            summary_parts.append(f"🔍 {len(filter_by_gt)} filter(s)")
+            # Get original video count for comparison
+            original_videos = get_project_videos(project_id=project_id, session=session)
+            filtered_count = len(videos)
+            original_count = len(original_videos)
+            
+            filter_count = len(filter_by_gt)
+            filter_text = "filter" if filter_count == 1 else "filters"
+            summary_parts.append(f"🔍 {filter_count} {filter_text} ({filtered_count}/{original_count} videos)")
+    
         
         if summary_parts:
             custom_info(" • ".join(summary_parts))

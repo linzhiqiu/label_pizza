@@ -15,7 +15,8 @@ from label_pizza.ui_components import (
 from label_pizza.database_utils import (
     get_db_session, check_project_has_full_ground_truth, 
     handle_database_errors, get_project_groups_with_projects,
-    get_annotator_accuracy_cached, get_reviewer_accuracy_cached
+    get_annotator_accuracy_cached, get_reviewer_accuracy_cached,
+    get_project_metadata_cached
 )
 from label_pizza.accuracy_analytics import (
     get_accuracy_color, calculate_overall_accuracy
@@ -1791,7 +1792,7 @@ def admin_projects():
                         
                         try:
                             # Get current project details
-                            current_project = ProjectService.get_project_dict_by_id(
+                            current_project = get_project_metadata_cached(
                                 project_id=selected_project_id, session=session
                             )
                             

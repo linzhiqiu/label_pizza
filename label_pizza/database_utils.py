@@ -96,6 +96,11 @@ def get_cached_project_questions(project_id: int, session_id: str) -> List[Dict]
             print(f"Error in get_cached_project_questions: {e}")
             return []
 
+def get_project_questions_cached(project_id: int, session: Session) -> List[Dict]:
+    """Get project questions with caching"""
+    session_id = get_session_cache_key()
+    return get_cached_project_questions(project_id, session_id)
+
 @st.cache_data(ttl=1800)  # Cache for 30 minutes
 def get_cached_question_answers(project_id: int, session_id: str) -> pd.DataFrame:
     """Cache ALL annotator answers for a project - annotator answers rarely change"""
@@ -283,6 +288,21 @@ def get_questions_by_group_cached(group_id: int, session: Session) -> List[Dict]
     session_id = get_session_cache_key()
     return get_cached_questions_by_group(group_id, session_id)
 
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_cached_project_metadata(project_id: int, session_id: str) -> Dict:
+    """Cache project metadata - changes infrequently"""
+    with SessionLocal() as session:
+        try:
+            return ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        except Exception as e:
+            print(f"Error in get_cached_project_metadata: {e}")
+            return {}
+
+def get_project_metadata_cached(project_id: int, session: Session) -> Dict:
+    """Get project metadata with caching"""
+    session_id = get_session_cache_key()
+    return get_cached_project_metadata(project_id, session_id)
 
 def get_cached_user_completion_progress(project_id: int, session: Session) -> Dict[int, float]:
     """Cache completion progress for all users in a project"""
@@ -603,23 +623,63 @@ def clear_accuracy_cache_for_project(project_id: int):
         print(f"Error clearing reviewer accuracy cache: {e}")
         pass  # Function may not have been called yet
 
-# Update the existing clear_project_cache function
+# # Update the existing clear_project_cache function
+# def clear_project_cache(project_id: int):
+#     """Clear all cached data for a specific project"""
+#     cache_keys_to_clear = []
+#     for key in st.session_state.keys():
+#         if (f"cache_project_{project_id}" in key or 
+#             f"cached_annotators_{project_id}" in key or
+#             f"completion_progress_{project_id}" in key or
+#             f"question_groups_{project_id}" in key or
+#             f"custom_display_data_{project_id}" in key):
+#             cache_keys_to_clear.append(key)
+    
+#     for key in cache_keys_to_clear:
+#         del st.session_state[key]
+    
+#     # Clear accuracy cache for this project
+#     clear_accuracy_cache_for_project(project_id)
+
 def clear_project_cache(project_id: int):
     """Clear all cached data for a specific project"""
     cache_keys_to_clear = []
     for key in st.session_state.keys():
-        if (f"cache_project_{project_id}" in key or 
-            f"cached_annotators_{project_id}" in key or
-            f"completion_progress_{project_id}" in key or
-            f"question_groups_{project_id}" in key or
-            f"custom_display_data_{project_id}" in key):
+        if any(pattern in key for pattern in [
+            f"cache_project_{project_id}",
+            f"cached_annotators_{project_id}",
+            f"completion_progress_{project_id}",
+            f"question_groups_{project_id}",
+            f"custom_display_data_{project_id}",
+            # Sorting/filtering state (no role)
+            f"video_sort_by_{project_id}",
+            f"video_sort_order_{project_id}",
+            f"sort_config_{project_id}",
+            f"sort_applied_{project_id}",
+            f"video_filters_{project_id}",
+            # Cached results (has role suffix)
+            f"applied_sorted_and_filtered_videos_{project_id}_",  # Will match all roles
+            # Annotator-specific sorting
+            f"annotator_video_sort_by_{project_id}",
+            f"annotator_video_sort_order_{project_id}",
+            f"annotator_sort_applied_{project_id}",
+            # Pagination (has role)
+            f"_current_page_{project_id}",  # Will match annotator_current_page_X, reviewer_current_page_X
+        ]):
             cache_keys_to_clear.append(key)
     
     for key in cache_keys_to_clear:
         del st.session_state[key]
     
-    # Clear accuracy cache for this project
+    # Clear accuracy cache
     clear_accuracy_cache_for_project(project_id)
+    
+    # Clear streamlit cache for this project
+    session_id = get_session_cache_key()
+    try:
+        get_cached_project_metadata.clear(project_id, session_id)
+    except:
+        pass
 
 def get_session_cache_key():
     """Generate a session-based cache key that changes when user logs in/out"""

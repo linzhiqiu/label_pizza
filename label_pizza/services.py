@@ -701,7 +701,7 @@ class ProjectService:
             session: Database session
             
         Returns:
-            List of question dictionaries containing: id, text, type
+            List of question dictionaries containing: id, text, type, display_text, options, display_values, option_weights, default_option
             
         Raises:
             ValueError: If project not found
@@ -725,7 +725,12 @@ class ProjectService:
         return [{
             'id': q.id,
             'text': q.text,
-            'type': q.type
+            'type': q.type,
+            'display_text': q.display_text,
+            'options': q.options,
+            'display_values': q.display_values,
+            'option_weights': q.option_weights,
+            'default_option': q.default_option
         } for q in questions]
     
 

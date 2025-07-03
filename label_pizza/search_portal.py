@@ -9,14 +9,15 @@ from label_pizza.ui_components import (
     get_card_style, COLORS, custom_info
 )
 from label_pizza.database_utils import (
-    get_db_session, handle_database_errors, clear_project_cache,
+    get_db_session, handle_database_errors,
     check_project_has_full_ground_truth, get_user_assignment_dates,
     get_project_groups_with_projects, calculate_user_overall_progress,
     get_schema_question_groups
 )
 from label_pizza.display_fragments import (
     display_single_choice_question, display_description_question, display_question_status,
-    submit_answer_reviews, load_existing_answer_reviews, get_questions_with_custom_display_if_enabled
+    submit_answer_reviews, load_existing_answer_reviews, get_questions_with_custom_display_if_enabled,
+    get_project_metadata_cached
 )
 # Import services
 from label_pizza.services import (
@@ -1071,7 +1072,7 @@ def get_project_ground_truth_for_video(video_id: int, project_id: int, session: 
     
     try:
         # Get project info
-        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id, session=session)
         
         # Get schema question groups
         question_groups = SchemaService.get_schema_question_groups_list(
@@ -1503,7 +1504,7 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
     """Display and edit questions for a specific project in criteria search"""
     
     try:
-        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id, session=session)
         
         # Get the question groups that contain our criteria questions
         question_ids = [q["question_id"] for q in criteria_questions]
@@ -1982,7 +1983,7 @@ def display_completion_status_video_result(result: Dict, user_id: int, autoplay:
     with question_col:
         # Show ALL question groups for this project (like reviewer/meta-reviewer portal)
         try:
-            project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+            project = get_project_metadata_cached(project_id=project_id, session=session)
             question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
             
             if not question_groups:

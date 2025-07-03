@@ -15,7 +15,8 @@ from label_pizza.database_utils import (
     get_db_session, get_questions_by_group_cached, get_project_videos,
     get_session_cached_project_annotators, get_optimized_annotator_user_ids,
     get_cached_video_reviewer_data, get_session_cache_key,
-    get_cached_user_completion_progress, get_schema_question_groups
+    get_cached_user_completion_progress, get_schema_question_groups,
+    get_project_metadata_cached
 )
 
 ###############################################################################
@@ -1515,7 +1516,7 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
     
     try:
         # Get all data in fewer queries
-        project = ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id, session=session)
         question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
         videos = get_project_videos(project_id=project_id, session=session)
         

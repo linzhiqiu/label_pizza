@@ -40,7 +40,7 @@ def search_portal():
     query_params = st.query_params
     if "video_uid" in query_params:
         video_uid_from_url = query_params["video_uid"]
-        custom_info(f"🔗 **Shared link loaded** - Searching for video: `{video_uid_from_url}`")
+        custom_info(f"🔗 Shared link loaded - Searching for video: {video_uid_from_url}")
         # Auto-populate the search
         if "auto_search_video_uid" not in st.session_state:
             st.session_state.auto_search_video_uid = video_uid_from_url
@@ -1375,21 +1375,31 @@ def display_criteria_search_results_interface(results: List[Dict], session: Sess
             help="Automatically start playing videos when they load"
         )
     
-    # Pagination
-    total_pages = (len(results) - 1) // videos_per_page + 1 if results else 1
+    # FIXED PAGINATION SECTION - Always show selectbox
+    total_pages = max(1, (len(results) - 1) // videos_per_page + 1)
     
+    # Always show pagination selectbox for consistent UI
+    st.markdown("**📄 Navigation**")
+    page_selection_key = f"criteria_search_page_{videos_per_page}_{len(results)}"
+    
+    page_col1, page_col2, page_col3 = st.columns([1, 2, 1])
+    with page_col2:
+        current_page = st.selectbox(
+            "Select Page",
+            options=list(range(1, total_pages + 1)),
+            key=page_selection_key,
+            help=f"Navigate through {total_pages} page{'s' if total_pages > 1 else ''}",
+            index=0,  # Always start at page 1 when key changes
+            disabled=(total_pages == 1)  # Disable but still show when only one page
+        ) - 1
+    
+    # Show page info
     if total_pages > 1:
-        page_col1, page_col2, page_col3 = st.columns([1, 2, 1])
-        with page_col2:
-            current_page = st.selectbox(
-                "Page",
-                range(1, total_pages + 1),
-                key="criteria_search_page",
-                help=f"Navigate through {total_pages} pages"
-            ) - 1
+        st.caption(f"📊 Page {current_page + 1} of {total_pages} • {len(results)} total videos")
     else:
-        current_page = 0
+        st.caption(f"📊 Showing all {len(results)} videos on one page")
     
+    # Calculate page bounds
     start_idx = current_page * videos_per_page
     end_idx = min(start_idx + videos_per_page, len(results))
     page_results = results[start_idx:end_idx]
@@ -1403,7 +1413,6 @@ def display_criteria_search_results_interface(results: List[Dict], session: Sess
     for result in page_results:
         display_criteria_search_video_result(result, user_id, autoplay, session)
         st.markdown("---")
-
 
 def display_criteria_search_video_result(result: Dict, user_id: int, autoplay: bool, session: Session):
     """Display a single video result with editing interface"""
@@ -1803,30 +1812,34 @@ def completion_status_search(session: Session):
     st.markdown("---")
     
     # Step 2: Completion Filter Section
-    st.markdown("**Step 2: Configure Completion Filter**")
+    completion_filter = st.selectbox(
+        "📊 Completion Status Filter",
+        ["All videos", "Complete ground truth", "Missing ground truth", "Partial ground truth"],
+        key="status_completion_filter",
+        help="Filter videos based on their ground truth completion status"
+    )
     
-    filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 2])
+    # Row 2: Project Summary
+    total_projects = len(selected_projects_status)
+    if include_archived and archived_count > 0:
+        active_projects = len([p for p in selected_projects_status if not projects_df[projects_df["ID"]==p]["Archived"].iloc[0]])
+        archived_projects = total_projects - active_projects
+        
+        summary_col1, summary_col2, summary_col3 = st.columns(3)
+        with summary_col1:
+            st.metric("📁 Total Projects", total_projects)
+        with summary_col2:
+            st.metric("✅ Active", active_projects)
+        with summary_col3:
+            st.metric("📦 Archived", archived_projects)
+    else:
+        st.metric("📁 Selected Projects", total_projects)
     
-    with filter_col1:
-        completion_filter = st.selectbox(
-            "Completion Status",
-            ["All videos", "Complete ground truth", "Missing ground truth", "Partial ground truth"],
-            key="status_completion_filter",
-            help="Filter videos based on their ground truth completion status"
-        )
+    # Row 3: Search Execution
+    st.markdown("**Execute Search:**")
+    search_col1, search_col2, search_col3 = st.columns([2, 2, 2])
     
-    with filter_col2:
-        # Show project count
-        total_projects = len(selected_projects_status)
-        if include_archived and archived_count > 0:
-            active_projects = len([p for p in selected_projects_status if not projects_df[projects_df["ID"]==p]["Archived"].iloc[0]])
-            archived_projects = total_projects - active_projects
-            st.metric("📁 Selected Projects", f"{total_projects} ({active_projects} active + {archived_projects} archived)")
-        else:
-            st.metric("📁 Selected Projects", total_projects)
-    
-    with filter_col3:
-        # Search execution
+    with search_col2:  # Center the button
         if st.button("🔍 Search Videos", key="execute_status_search", type="primary", use_container_width=True):
             results = execute_project_based_search(selected_projects_status, completion_filter, session)
             st.session_state.status_search_results = results
@@ -1877,14 +1890,13 @@ def display_completion_status_results_interface(results: List[Dict], session: Se
             help="Automatically start playing videos when they load"
         )
     
-    # Status summary
+    # Status summary - FIXED: Dynamic columns based on actual status count
     status_counts = {}
     for result in results:
         status = result["completion_status"]
         status_counts[status] = status_counts.get(status, 0) + 1
     
-    # Display summary
-    summary_cols = st.columns(4)
+    # Display summary with dynamic column count
     status_styles = {
         "complete": ("✅", "Complete", "#4caf50"),
         "partial": ("⚠️", "Partial", "#ff9800"),
@@ -1892,29 +1904,43 @@ def display_completion_status_results_interface(results: List[Dict], session: Se
         "no_questions": ("❓", "No Questions", "#9e9e9e")
     }
     
-    col_idx = 0
-    for status, count in status_counts.items():
-        if status in status_styles and col_idx < len(summary_cols):
+    # Create columns based on actual status count (no empty columns)
+    valid_statuses = [(status, count) for status, count in status_counts.items() if status in status_styles]
+    
+    if valid_statuses:
+        num_cols = len(valid_statuses)
+        summary_cols = st.columns(num_cols)
+        
+        for i, (status, count) in enumerate(valid_statuses):
             emoji, label, color = status_styles[status]
-            with summary_cols[col_idx]:
+            with summary_cols[i]:
                 st.metric(f"{emoji} {label}", count)
-            col_idx += 1
     
-    # Pagination
-    total_pages = (len(results) - 1) // videos_per_page + 1 if results else 1
+    # FIXED PAGINATION SECTION - Always show selectbox
+    total_pages = max(1, (len(results) - 1) // videos_per_page + 1)
     
+    # Always show pagination selectbox for consistent UI
+    st.markdown("**📄 Navigation**")
+    page_selection_key = f"completion_search_page_{videos_per_page}_{len(results)}"
+    
+    page_col1, page_col2, page_col3 = st.columns([1, 2, 1])
+    with page_col2:
+        current_page = st.selectbox(
+            "Select Page",
+            options=list(range(1, total_pages + 1)),
+            key=page_selection_key,
+            help=f"Navigate through {total_pages} page{'s' if total_pages > 1 else ''}",
+            index=0,  # Always start at page 1 when key changes
+            disabled=(total_pages == 1)  # Disable but still show when only one page
+        ) - 1
+    
+    # Show page info
     if total_pages > 1:
-        page_col1, page_col2, page_col3 = st.columns([1, 2, 1])
-        with page_col2:
-            current_page = st.selectbox(
-                "Page",
-                range(1, total_pages + 1),
-                key="completion_search_page",
-                help=f"Navigate through {total_pages} pages"
-            ) - 1
+        st.caption(f"📊 Page {current_page + 1} of {total_pages} • {len(results)} total videos")
     else:
-        current_page = 0
+        st.caption(f"📊 Showing all {len(results)} videos on one page")
     
+    # Calculate page bounds
     start_idx = current_page * videos_per_page
     end_idx = min(start_idx + videos_per_page, len(results))
     page_results = results[start_idx:end_idx]
@@ -1928,8 +1954,7 @@ def display_completion_status_results_interface(results: List[Dict], session: Se
     for result in page_results:
         display_completion_status_video_result(result, user_id, autoplay, session)
         st.markdown("---")
-
-
+        
 def display_completion_status_video_result(result: Dict, user_id: int, autoplay: bool, session: Session):
     """Display a single video result for completion status search with editing interface"""
     

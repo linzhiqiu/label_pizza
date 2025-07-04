@@ -203,7 +203,8 @@ def get_cached_video_reviewer_data(video_id: int, project_id: int, annotator_use
                 "user_info": {},
                 "confidence_scores": {},
                 "text_answers": {},
-                "user_weights": {}  # ADD THIS
+                "user_weights": {},
+                "display_name_to_user_id": {}
             }
             
             # Get all questions for the project
@@ -235,12 +236,26 @@ def get_cached_video_reviewer_data(video_id: int, project_id: int, annotator_use
             # Cache user information
             users_df = AuthService.get_all_users(session=session)
             for _, user_row in users_df.iterrows():
+                # if user_row["ID"] in annotator_user_ids:
+                #     cache_data["user_info"][user_row["ID"]] = {
+                #         "name": user_row["User ID"],
+                #         "email": user_row["Email"],
+                #         "role": user_row["Role"]
+                #     }
                 if user_row["ID"] in annotator_user_ids:
-                    cache_data["user_info"][user_row["ID"]] = {
-                        "name": user_row["User ID"],
+                    user_id = user_row["ID"]
+                    user_name = user_row["User ID"]
+                    
+                    cache_data["user_info"][user_id] = {
+                        "name": user_name,
                         "email": user_row["Email"],
                         "role": user_row["Role"]
                     }
+                    
+                    # ADD: Create display name mapping
+                    display_name, _ = AuthService.get_user_display_name_with_initials(user_name)
+                    cache_data["display_name_to_user_id"][display_name] = user_id
+            
             
             # OPTIMIZED: Get user weights using service layer
             try:

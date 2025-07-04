@@ -282,6 +282,7 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
         accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
         if not accuracy_data:
             st.warning("No annotator accuracy data available for this project.")
+            st.info("💡 Make sure annotators have completed their work and there is ground truth data available.")
             return
         
         overall_accuracy = calculate_overall_accuracy(accuracy_data)
@@ -438,6 +439,7 @@ def show_reviewer_accuracy_detailed(project_id: int, session: Session):
         accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
         if not accuracy_data:
             st.warning("No reviewer accuracy data available for this project.")
+            st.info("💡 Make sure reviewers have submitted ground truth and there are admin overrides to measure against.")
             return
         
         overall_accuracy = calculate_overall_accuracy(accuracy_data)
@@ -547,36 +549,66 @@ def show_reviewer_accuracy_detailed(project_id: int, session: Session):
 
 def display_accuracy_button_for_project(project_id: int, role: str, session: Session):
     """Display an elegant accuracy analytics button for training mode projects"""
-    if not check_project_has_full_ground_truth(project_id=project_id, session=session):
-        return False
+#     if not check_project_has_full_ground_truth(project_id=project_id, session=session):
+#         return False
     
-    try:
-        if role in ["reviewer", "meta_reviewer"]:
-            accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
-            if accuracy_data:
-                annotator_count = len(accuracy_data)
-                if st.button(f"📊 Annotator Analytics ({annotator_count})", 
-                           key=f"accuracy_btn_{project_id}_{role}",
-                           help=f"View detailed accuracy analytics for {annotator_count} annotators",
-                           use_container_width=True):
-                    show_annotator_accuracy_detailed(project_id=project_id, session=session)
-                return True
+#     try:
+#         if role in ["reviewer", "meta_reviewer"]:
+#             accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
+#             if accuracy_data:
+#                 annotator_count = len(accuracy_data)
+#                 if st.button(f"📊 Annotator Analytics ({annotator_count})", 
+#                            key=f"accuracy_btn_{project_id}_{role}",
+#                            help=f"View detailed accuracy analytics for {annotator_count} annotators",
+#                            use_container_width=True):
+#                     show_annotator_accuracy_detailed(project_id=project_id, session=session)
+#                 return True
             
-            reviewer_accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
-            if reviewer_accuracy_data:
-                reviewer_count = len(reviewer_accuracy_data)
-                if st.button(f"📊 Reviewer Analytics ({reviewer_count})", 
-                           key=f"reviewer_accuracy_btn_{project_id}_{role}",
-                           help=f"View detailed accuracy analytics for {reviewer_count} reviewers",
-                           use_container_width=True):
-                    show_reviewer_accuracy_detailed(project_id=project_id, session=session)
-                return True
-    except Exception as e:
-        print(f"Error displaying user accuracy: {e}")
-        pass
+#             reviewer_accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
+#             if reviewer_accuracy_data:
+#                 reviewer_count = len(reviewer_accuracy_data)
+#                 if st.button(f"📊 Reviewer Analytics ({reviewer_count})", 
+#                            key=f"reviewer_accuracy_btn_{project_id}_{role}",
+#                            help=f"View detailed accuracy analytics for {reviewer_count} reviewers",
+#                            use_container_width=True):
+#                     show_reviewer_accuracy_detailed(project_id=project_id, session=session)
+#                 return True
+#     except Exception as e:
+#         print(f"Error displaying user accuracy: {e}")
+#         pass
     
-    return False
+#     return False
 
+# def display_lazy_accuracy_buttons(project_id: int, role: str, session: Session):
+    # """Display analytics buttons without pre-loading any data"""
+    if not check_project_has_full_ground_truth(project_id=project_id, session=session):
+        custom_info("📝 Analytics are only available for training mode projects with ground truth.")
+        return
+    
+    if role in ["reviewer", "meta_reviewer"]:
+        # Show both annotator and reviewer analytics buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("📊 Annotator Analytics", 
+                        key=f"lazy_annotator_analytics_{project_id}_{role}",
+                        help="View detailed accuracy analytics for annotators",
+                        use_container_width=True):
+                show_annotator_accuracy_detailed(project_id=project_id, session=session)
+        
+        with col2:
+            if st.button("📊 Reviewer Analytics", 
+                        key=f"lazy_reviewer_analytics_{project_id}_{role}",
+                        help="View detailed accuracy analytics for reviewers", 
+                        use_container_width=True):
+                show_reviewer_accuracy_detailed(project_id=project_id, session=session)
+    
+    else:  # annotator role
+        if st.button("📊 View Analytics", 
+                    key=f"lazy_analytics_{project_id}_{role}",
+                    help="View detailed accuracy analytics",
+                    use_container_width=True):
+            show_annotator_accuracy_detailed(project_id=project_id, session=session)
 
 ###############################################################################
 # Accuracy Calculation Functions

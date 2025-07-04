@@ -1242,25 +1242,26 @@ def submit_answer_reviews(answer_reviews: Dict, video_id: int, project_id: int, 
                     continue
 
 def load_existing_answer_reviews(video_id: int, project_id: int, question_id: int, session: Session, cache_data: Dict = None) -> Dict[str, Dict]:
-    """OPTIMIZED: Load existing answer reviews for a description question from the database"""
+    """Load existing answer reviews for a description question"""
     reviews = {}
     
     try:
         selected_annotators = st.session_state.get("selected_annotators", [])
-        if cache_data and selected_annotators:
-            # Use cached user info instead of querying
+        
+        if cache_data and selected_annotators and "display_name_to_user_id" in cache_data:
+            # Use the clean mapping from cache
             annotator_user_ids = []
-            for annotator_name in selected_annotators:
-                for user_id, user_info in cache_data.get("user_info", {}).items():
-                    if user_info.get("name") == annotator_name:
-                        annotator_user_ids.append(user_id)
-                        break
+            for display_name in selected_annotators:
+                user_id = cache_data["display_name_to_user_id"].get(display_name)
+                if user_id:
+                    annotator_user_ids.append(user_id)
         else:
-            # Fallback to original method
+            # Use the existing optimized function (already handles display names correctly)
             annotator_user_ids = get_optimized_annotator_user_ids(
                 display_names=selected_annotators, project_id=project_id, session=session
             )
         
+        # Rest of function unchanged - load reviews for each user_id
         for user_id in annotator_user_ids:
             answers_df = AnnotatorService.get_answers(video_id=video_id, project_id=project_id, session=session)
             
@@ -1275,9 +1276,7 @@ def load_existing_answer_reviews(video_id: int, project_id: int, question_id: in
                     existing_review = GroundTruthService.get_answer_review(answer_id=answer_id, session=session)
                     
                     user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
-                    name_parts = user_info["user_id_str"].split()
-                    initials = f"{name_parts[0][0]}{name_parts[-1][0]}".upper() if len(name_parts) >= 2 else user_info["user_id_str"][:2].upper()
-                    display_name = f"{user_info['user_id_str']} ({initials})"
+                    display_name, _ = AuthService.get_user_display_name_with_initials(user_info["user_id_str"])
                     
                     if existing_review:
                         reviews[display_name] = {
@@ -1300,7 +1299,6 @@ def load_existing_answer_reviews(video_id: int, project_id: int, question_id: in
         print(f"Error loading answer reviews: {e}")
     
     return reviews
-
 
 ###############################################################################
 # TAB DISPLAY FUNCTIONS

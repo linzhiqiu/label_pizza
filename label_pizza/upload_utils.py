@@ -23,28 +23,16 @@ def apply_simple_video_configs(config_file_path: str = None, configs_data: list[
     """
     Apply video configurations with proper verification and synchronization.
     
+    Handles two formats:
+    1. Simple: "videos": ["video1.mp4", "video2.mp4"] - removes ALL custom displays
+    2. Detailed: "videos": [{"video_uid": "video1.mp4", "questions": [...]}] - syncs custom displays
+    
     This function:
     1. Validates all configurations before making changes
     2. Synchronizes custom displays between JSON and database
     3. Removes custom displays that exist in DB but not in JSON
     4. Updates custom displays that differ between JSON and DB
     5. Skips custom displays that are identical in JSON and DB
-    
-    Expected structure:
-    [
-        {
-            "project_name": "Project Name",
-            "videos": {
-                "video_uid": [
-                    {
-                        "question_text": "Question 1",
-                        "display_text": "Display text",
-                        "option_map": {"1": "Option 1"}
-                    }
-                ]
-            }
-        }
-    ]
     """
     import json
     
@@ -63,6 +51,43 @@ def apply_simple_video_configs(config_file_path: str = None, configs_data: list[
         raise ValueError("Config data must be a non-empty list")
     
     print(f"📋 Processing {len(configs_data)} configurations...")
+    
+    # Helper function to normalize video data
+    def normalize_video_data(videos):
+        """
+        Convert different video formats to a normalized dictionary:
+        - ["video1.mp4"] -> {"video1.mp4": []}
+        - [{"video_uid": "video1.mp4", "questions": [...]}] -> {"video1.mp4": [...]}
+        """
+        normalized = {}
+        
+        if isinstance(videos, list):
+            for video in videos:
+                if isinstance(video, str):
+                    # Simple format: no custom displays
+                    normalized[video] = []
+                elif isinstance(video, dict) and 'video_uid' in video:
+                    # Detailed format: extract questions
+                    video_uid = video['video_uid']
+                    questions = video.get('questions', [])
+                    
+                    # Convert question format
+                    normalized_questions = []
+                    for q in questions:
+                        normalized_q = {
+                            "question_text": q.get("question_text"),
+                            "display_text": q.get("display_text") or q.get("custom_question"),
+                            "option_map": q.get("custom_option") or q.get("option_map")
+                        }
+                        normalized_questions.append(normalized_q)
+                    
+                    normalized[video_uid] = normalized_questions
+                else:
+                    raise ValueError(f"Invalid video format: {video}")
+        else:
+            raise ValueError(f"Videos must be a list, got {type(videos)}")
+        
+        return normalized
     
     # Phase 1: Validation
     validation_errors = []
@@ -98,10 +123,12 @@ def apply_simple_video_configs(config_file_path: str = None, configs_data: list[
                 validation_errors.append(f"Project '{project_name}': {str(e)}")
                 continue
             
-            # Validate video configs
-            video_configs = config_data.get("videos", {})
-            if not isinstance(video_configs, dict):
-                validation_errors.append(f"Project '{project_name}': 'videos' must be a dictionary")
+            # Normalize video configs
+            try:
+                videos_raw = config_data.get("videos", [])
+                video_configs = normalize_video_data(videos_raw)
+            except Exception as e:
+                validation_errors.append(f"Project '{project_name}': {str(e)}")
                 continue
             
             # Get all project questions for validation
@@ -112,6 +139,7 @@ def apply_simple_video_configs(config_file_path: str = None, configs_data: list[
                 validation_errors.append(f"Project '{project_name}': Failed to get project questions: {str(e)}")
                 continue
             
+            # Validate each video and its questions
             for video_uid, question_list in video_configs.items():
                 # Check video exists
                 try:
@@ -130,18 +158,8 @@ def apply_simple_video_configs(config_file_path: str = None, configs_data: list[
                     validation_errors.append(f"Project '{project_name}': Video '{video_uid}': {str(e)}")
                     continue
                 
-                # Validate question list
-                if not isinstance(question_list, list):
-                    validation_errors.append(f"Project '{project_name}': Video '{video_uid}': Questions must be a list")
-                    continue
-                
+                # Validate questions if any
                 for j, question_config in enumerate(question_list):
-                    if not isinstance(question_config, dict):
-                        validation_errors.append(
-                            f"Project '{project_name}': Video '{video_uid}': Question #{j+1}: Invalid structure"
-                        )
-                        continue
-                    
                     # Check required fields
                     question_text = question_config.get("question_text")
                     if not question_text:
@@ -205,96 +223,126 @@ def apply_simple_video_configs(config_file_path: str = None, configs_data: list[
                 project = ProjectService.get_project_by_name(project_name, session)
                 project_id = project.id
                 
-                video_configs = config_data.get("videos", {})
+                # Normalize video configs
+                videos_raw = config_data.get("videos", [])
+                video_configs = normalize_video_data(videos_raw)
                 
                 # Get all project questions
                 project_questions = ProjectService.get_project_questions(project_id, session)
                 
-                # Process each video in the project
+                # Get all videos in the project (not just configured ones)
                 project_videos = VideoService.get_project_videos(project_id, session)
                 
                 for video in project_videos:
                     video_id = video["id"]
                     video_uid = video["uid"]
                     
-                    # Get questions configured for this video in JSON
-                    json_questions = video_configs.get(video_uid, [])
-                    json_question_map = {
-                        q["question_text"]: q 
-                        for q in json_questions
-                    }
-                    
-                    # Process each question in the schema
-                    for question in project_questions:
-                        question_id = question["id"]
-                        question_text = question["text"]
+                    # Check if video is in config
+                    if video_uid in video_configs:
+                        # Get questions configured for this video
+                        json_questions = video_configs[video_uid]
+                        json_question_map = {
+                            q["question_text"]: q 
+                            for q in json_questions
+                        }
                         
-                        # Check if JSON has custom display for this question
-                        json_has_display = question_text in json_question_map
-                        
-                        # Check if DB has custom display for this question
-                        try:
-                            existing_display = CustomDisplayService.get_custom_display(
-                                project_id=project_id,
-                                video_id=video_id,
-                                question_id=question_id,
-                                session=session
-                            )
-                            db_has_display = existing_display is not None
-                        except:
-                            db_has_display = False
-                            existing_display = None
-                        
-                        # Synchronization logic
-                        if db_has_display and not json_has_display:
-                            # Remove custom display from DB
-                            CustomDisplayService.remove_custom_display(
-                                project_id=project_id,
-                                video_id=video_id,
-                                question_id=question_id,
-                                session=session
-                            )
-                            print(f"   ✗ Removed custom display for '{question_text}' from video {video_uid}")
-                            total_removed += 1
-                            
-                        elif json_has_display:
-                            json_config = json_question_map[question_text]
-                            new_display_text = json_config.get("display_text")
-                            new_option_map = json_config.get("option_map")
-                            
-                            if db_has_display:
-                                # Check if they're the same
-                                same_display_text = existing_display.get("custom_display_text") == new_display_text
-                                same_option_map = existing_display.get("custom_option_display_map") == new_option_map
+                        # If video was listed as string (empty question list), remove ALL custom displays
+                        if not json_questions:
+                            # Remove all custom displays for this video
+                            for question in project_questions:
+                                question_id = question["id"]
+                                question_text = question["text"]
                                 
-                                if same_display_text and same_option_map:
-                                    # Skip - no changes needed
-                                    print(f"   ≈ Skipped '{question_text}' for video {video_uid} (no changes)")
-                                    total_skipped += 1
-                                else:
-                                    # Update custom display
-                                    CustomDisplayService.set_custom_display(
+                                try:
+                                    existing_display = CustomDisplayService.get_custom_display(
                                         project_id=project_id,
                                         video_id=video_id,
                                         question_id=question_id,
-                                        custom_display_text=new_display_text,
-                                        custom_option_display_map=new_option_map,
                                         session=session
                                     )
-                                    print(f"   ↻ Updated custom display for '{question_text}' on video {video_uid}")
-                                    total_updated += 1
-                            else:
-                                # Create new custom display
-                                CustomDisplayService.set_custom_display(
-                                    project_id=project_id,
-                                    video_id=video_id,
-                                    question_id=question_id,
-                                    custom_display_text=new_display_text,
-                                    custom_option_display_map=new_option_map,
-                                    session=session
-                                )
-                                print(f"   ✓ Created custom display for '{question_text}' on video {video_uid}")
-                                total_created += 1
+                                    if existing_display:
+                                        CustomDisplayService.remove_custom_display(
+                                            project_id=project_id,
+                                            video_id=video_id,
+                                            question_id=question_id,
+                                            session=session
+                                        )
+                                        print(f"   ✗ Removed custom display for '{question_text}' from video {video_uid}")
+                                        total_removed += 1
+                                except:
+                                    pass
+                        else:
+                            # Sync custom displays for each question
+                            for question in project_questions:
+                                question_id = question["id"]
+                                question_text = question["text"]
+                                
+                                # Check if JSON has custom display for this question
+                                json_has_display = question_text in json_question_map
+                                
+                                # Check if DB has custom display for this question
+                                try:
+                                    existing_display = CustomDisplayService.get_custom_display(
+                                        project_id=project_id,
+                                        video_id=video_id,
+                                        question_id=question_id,
+                                        session=session
+                                    )
+                                    db_has_display = existing_display is not None
+                                except:
+                                    db_has_display = False
+                                    existing_display = None
+                                
+                                # Synchronization logic
+                                if db_has_display and not json_has_display:
+                                    # Remove custom display from DB
+                                    CustomDisplayService.remove_custom_display(
+                                        project_id=project_id,
+                                        video_id=video_id,
+                                        question_id=question_id,
+                                        session=session
+                                    )
+                                    print(f"   ✗ Removed custom display for '{question_text}' from video {video_uid}")
+                                    total_removed += 1
+                                    
+                                elif json_has_display:
+                                    json_config = json_question_map[question_text]
+                                    new_display_text = json_config.get("display_text")
+                                    new_option_map = json_config.get("option_map")
+                                    
+                                    if db_has_display:
+                                        # Check if they're the same
+                                        same_display_text = existing_display.get("custom_display_text") == new_display_text
+                                        same_option_map = existing_display.get("custom_option_display_map") == new_option_map
+                                        
+                                        if same_display_text and same_option_map:
+                                            # Skip - no changes needed
+                                            print(f"   ≈ Skipped '{question_text}' for video {video_uid} (no changes)")
+                                            total_skipped += 1
+                                        else:
+                                            # Update custom display
+                                            CustomDisplayService.set_custom_display(
+                                                project_id=project_id,
+                                                video_id=video_id,
+                                                question_id=question_id,
+                                                custom_display_text=new_display_text,
+                                                custom_option_display_map=new_option_map,
+                                                session=session
+                                            )
+                                            print(f"   ↻ Updated custom display for '{question_text}' on video {video_uid}")
+                                            total_updated += 1
+                                    else:
+                                        # Create new custom display
+                                        CustomDisplayService.set_custom_display(
+                                            project_id=project_id,
+                                            video_id=video_id,
+                                            question_id=question_id,
+                                            custom_display_text=new_display_text,
+                                            custom_option_display_map=new_option_map,
+                                            session=session
+                                        )
+                                        print(f"   ✓ Created custom display for '{question_text}' on video {video_uid}")
+                                        total_created += 1
                 
                 print(f"✅ Completed project '{project_name}'")
             
@@ -398,7 +446,7 @@ def update_videos(videos_data: list[dict]) -> None:
     JSON format for each video:
         {
             "video_uid": "video123",
-            "url": "https://example.com/updated-video.mp4",
+            "url": "https://updated-example.com/video.mp4",
             "metadata": {
                 "title": "Updated Video Title",
                 "description": "Updated description"
@@ -680,7 +728,7 @@ def edit_schemas(schemas_data: list[dict]) -> None:
     JSON format for each schema:
         {
             "schema_name": "Video Classification Schema",
-            "question_group_names": [group_1, group_2, group_3],
+            "question_group_names": [group_1, group_2, group_3] (This must be the same as the question groups in the project),
             "instructions_url": "https://example.com/instructions"  (optional),
             "is_archived": false (optional),
             "has_custom_display": false (optional)
@@ -786,8 +834,9 @@ def upload_schemas(schemas_path: str = None, schemas_data: list[dict] = None) ->
             {
                 "name": "Video Classification Schema",
                 "question_group_ids": [1, 2, 3],
-                "instructions_url": "https://example.com/instructions",
-                "has_custom_display": false
+                "instructions_url": "https://example.com/instructions" (optional),
+                "has_custom_display": true (optional),
+                "is_archived": false (optional)
             }
         ]
         
@@ -795,10 +844,10 @@ def upload_schemas(schemas_path: str = None, schemas_data: list[dict] = None) ->
         [
             {
                 "schema_name": "Existing Schema Name",
-                "new_name": "Updated Name",
-                "instructions_url": "https://example.com/new-instructions",
-                "has_custom_display": true,
-                "is_archived": false
+                "question_group_ids": [1, 2, 3],
+                "instructions_url": "https://example.com/new-instructions" (optional),
+                "has_custom_display": true (optional),
+                "is_archived": false (optional)
             }
         ]
         
@@ -1550,6 +1599,7 @@ def _collect_existing_uids(ndjson_path: str | Path, session: Session) -> List[st
 # ──────────────────────────────────────────────────────────────────────
 # 3. Create projects from extracted annotations JSON
 # ──────────────────────────────────────────────────────────────────────
+
 def create_projects(
     projects_path: str = None,
     projects_data: list[dict] = None,
@@ -1557,6 +1607,10 @@ def create_projects(
     """
     Create projects from JSON file or data list.
     Verifies ALL projects before creating ANY of them.
+    
+    Supports two JSON formats:
+    1. Simple: {"videos": ["video1.mp4", "video2.mp4"]}
+    2. Detailed: {"videos": [{"video_uid": "video1.mp4", "questions": [...]}]}
     """
     import json
     
@@ -1570,6 +1624,29 @@ def create_projects(
     
     print(f"📁 Verifying {len(projects_data)} projects...")
     
+    # Helper function to extract video UIDs
+    def extract_video_uids(videos):
+        """Extract video UIDs from different video data formats"""
+        video_uids = []
+        
+        if isinstance(videos, list):
+            for video in videos:
+                if isinstance(video, str):
+                    # Simple format: just a string UID
+                    video_uids.append(video)
+                elif isinstance(video, dict) and 'video_uid' in video:
+                    # Detailed format: dict with video_uid key
+                    video_uids.append(video['video_uid'])
+                else:
+                    raise ValueError(f"Invalid video format: {video}")
+        elif isinstance(videos, dict):
+            # Dictionary format (if needed for backward compatibility)
+            video_uids = list(videos.keys())
+        else:
+            raise ValueError(f"Invalid videos format: {type(videos)}")
+        
+        return video_uids
+    
     # VERIFY ALL PROJECTS FIRST
     with SessionLocal() as session:
         for project_data in projects_data:
@@ -1577,11 +1654,8 @@ def create_projects(
             schema_name = project_data['schema_name']
             videos = project_data['videos']
             
-            # Extract video UIDs (handle both list and dict formats)
-            if isinstance(videos, dict):
-                video_uids = list(videos.keys())
-            else:
-                video_uids = videos
+            # Extract video UIDs
+            video_uids = extract_video_uids(videos)
             
             # Get schema ID
             schema_id = SchemaService.get_schema_id_by_name(schema_name, session)
@@ -1609,11 +1683,8 @@ def create_projects(
                 schema_name = project_data['schema_name']
                 videos = project_data['videos']
                 
-                # Extract video UIDs (handle both list and dict formats)
-                if isinstance(videos, dict):
-                    video_uids = list(videos.keys())
-                else:
-                    video_uids = videos
+                # Extract video UIDs
+                video_uids = extract_video_uids(videos)
                 
                 # Get schema ID
                 schema_id = SchemaService.get_schema_id_by_name(schema_name, session)
@@ -1795,47 +1866,6 @@ def _resolve_ids(
 
     project_id = ProjectService.get_project_by_name(project_name, session).id
     return video_id, project_id, user_id, group_id
-
-
-def _verification_passes(
-    *,
-    session: Session,
-    video_id: int,
-    project_id: int,
-    user_id: int,
-    group_id: int,
-    answers: Dict[str, str],
-) -> None:
-    """
-    Validate one label *without* writing to DB.
-    Missing answers are tolerated for questions where `is_required` is False.
-    """
-    # 1. project & user existence / role checks
-    AnnotatorService._validate_project_and_user(project_id, user_id, session)
-    AnnotatorService._validate_user_role(user_id, project_id, "annotator", session)
-
-    # 2. fetch group + questions
-    group, questions = AnnotatorService._validate_question_group(group_id, session)
-
-    # 3. build helper sets - only check required questions
-    required_q_texts = {q.text for q in questions if getattr(q, "required", True)}
-    provided_q_texts = set(answers)
-    missing = required_q_texts - provided_q_texts
-    extra = provided_q_texts - {q.text for q in questions}
-
-    if missing or extra:
-        raise ValueError(
-            f"Answers do not match questions in group. "
-            f"Missing: {missing}. Extra: {extra}"
-        )
-
-    # 4. run optional verification hook
-    AnnotatorService._run_verification(group, answers)
-
-    # 5. validate each answer value (check if it's in options for single-choice)
-    q_lookup = {q.text: q for q in questions}
-    for q_text in provided_q_texts:
-        AnnotatorService._validate_answer_value(q_lookup[q_text], answers[q_text])
 
 
 def upload_annotations(rows: List[Dict[str, Any]]) -> None:

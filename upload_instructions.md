@@ -48,6 +48,7 @@ Contains one entry per video.
 ```json
 [
   {
+    "video_uid": "human.mp4" (optional, just for updating video),
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
@@ -55,6 +56,7 @@ Contains one entry per video.
     }
   },
   {
+    "video_uid": "pizza.mp4" (optional, just for updating video),
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
@@ -310,11 +312,14 @@ upload_videos(videos_path="./example/videos.json")
 Load the question groups and schemas from the `question_groups/` folder and `schemas.json`.
 
 ```python
-from label_pizza.upload_utils import create_schemas
+from label_pizza.upload_utils import upload_question_groups, upload_schemas
 
-create_schemas(
-    schemas_path="./example/schemas.json",
+upload_question_groups(
     question_groups_folder="./example/question_groups"
+)
+
+upload_schemas(
+    schemas_path="./example/schemas.json"
 )
 ```
 
@@ -355,6 +360,201 @@ Finally, upload any pre‑existing annotations and reviewer ground truth.
 ```python
 from label_pizza.upload_utils import upload_annotations, upload_reviews
 
-upload_annotations(annotations_folder="./example/annotations")
-upload_reviews(reviews_folder="./example/reviews")
+batch_upload_annotations(annotations_folder="./example/annotations")
+batch_upload_reviews(reviews_folder="./example/reviews")
 ```
+
+
+
+
+
+# Custom Display Text for Video Annotations
+
+## Overview
+
+Label Pizza allows you to customize how questions and options appear to annotators on a per-video basis within a project. This is useful when the same underlying question needs different wording depending on the video content.
+
+## Quick Setup
+
+For a quick start, use the single command-line tool:
+
+bash
+
+```bash
+# Ensure your database is configured in .env
+python upload_projects_from_folder.py --folder-path ./example_custom_questions/ --database-url-name DBURL_2
+```
+
+This command imports everything from the folder — videos, users, question groups, schemas, projects, custom displays, and sample annotations — giving you a fully-working demo in seconds.
+
+## Folder Structure
+
+```
+example_custom_question/
+├── videos.json          # Video metadata
+├── question_groups/     # Question definitions
+│   ├── humans.json
+│   ├── pizzas.json
+│   └── nsfw.json
+├── schemas.json         # Schema definitions (must have has_custom_display: true)
+├── users.json          # User accounts
+├── projects.json       # Project configurations with custom displays
+├── assignments.json    # User-project role assignments
+├── annotations/        # Sample annotations (optional)
+│   ├── humans.json
+│   ├── pizzas.json
+│   └── nsfw.json
+└── reviews/           # Sample reviews (optional)
+    ├── humans.json
+    ├── pizzas.json
+    └── nsfw.json
+```
+
+
+
+## Custom Display Configuration
+
+### File Structure
+
+The `projects.json` file supports two formats for video lists:
+
+json
+
+```json
+[
+  {
+    "project_name": "Human Test Simple",
+    "schema_name": "Questions about Humans Custom",
+    "videos": ["human.mp4", "pizza.mp4"]  // Simple format: No custom displays
+  },
+  {
+    "project_name": "Pizza Test Custom",
+    "schema_name": "Questions about Pizzas Custom",
+    "videos": [
+      {
+        "video_uid": "human.mp4",
+        "questions": [
+          {
+            "question_text": "Pick one option",        // Original question text (required)
+            "custom_question": "Is there a pizza?",    // Custom display text
+            "custom_option": {                         // Custom option labels
+              "Option A": "No",
+              "Option B": "Yes, there is one"
+            }
+          },
+          {
+            "question_text": "Describe the object",
+            "display_text": "If no pizza is shown, describe what you see instead."
+          }
+        ]
+      },
+      {
+        "video_uid": "pizza.mp4",
+        "questions": [
+          {
+            "question_text": "Pick one option",
+            "custom_question": "What type of pizza is shown?",
+            "custom_option": {
+              "Option A": "Pepperoni",
+              "Option B": "Veggie"
+            }
+          },
+          {
+            "question_text": "Describe the object",
+            "display_text": "Describe the pizza toppings in detail."
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+### Field Definitions
+
+- **`question_text`** (required): The original question text as defined in the question group
+- **`custom_question`** or **`display_text`**: The custom text to display for this question
+- **`custom_option`** or **`option_map`**: Custom labels for multiple-choice options (key = original option, value = custom label)
+
+### Synchronization Logic
+
+When processing custom displays, the system follows these rules:
+
+1. Simple Format
+
+    (
+
+   ```
+   "videos": ["video1.mp4"]
+   ```
+
+   ):
+
+   - Removes ALL custom displays for these videos
+   - Used to reset videos to default question text
+
+2. Detailed Format
+
+    (with questions array):
+
+   - **Creates** custom displays for questions specified in JSON but not in database
+   - **Updates** custom displays when JSON differs from database
+   - **Skips** custom displays when JSON matches database (no changes)
+   - **Removes** custom displays that exist in database but not in JSON
+
+### Requirements
+
+- The schema must have `has_custom_display: true` enabled
+- Question text must match exactly with the original question definition
+- All videos must exist in the system
+- Users must have appropriate permissions
+
+### Processing Report
+
+After running the configuration, you'll see a summary:
+
+```
+📊 Summary:
+   • Created: 4
+   • Updated: 2
+   • Removed: 1
+   • Skipped: 3
+   • Total processed: 10
+```
+
+## Example Use Cases
+
+### 1. Context-Specific Questions
+
+When annotating different types of videos with the same schema:
+
+- Original: "Pick one option"
+- For food videos: "What type of food is shown?"
+- For animal videos: "What animal do you see?"
+
+### 2. Instruction Variations
+
+Providing different instructions based on expected content:
+
+- Original: "Describe the object"
+- For expected content: "Describe the pizza toppings"
+- For unexpected content: "If no pizza is shown, describe what you see"
+
+### 3. Language Adaptations
+
+Adjusting terminology for different annotator groups while maintaining the same underlying data structure.
+
+## Best Practices
+
+1. **Test First**: Use a small subset of videos to verify custom displays work as expected
+2. **Keep Backups**: Export your configuration before making bulk changes
+3. **Use Clear Naming**: Make custom text clearly different from original to avoid confusion
+4. **Document Changes**: Keep track of why certain customizations were made
+5. **Validate JSON**: Ensure your JSON is valid before running imports
+
+## Troubleshooting
+
+- **"Schema does not have custom display enabled"**: Enable `has_custom_display` in the schema
+- **"Question not in project schema"**: Ensure question_text matches exactly
+- **"Video not found"**: Verify video UIDs match uploaded videos
+- **Changes not appearing**: Check if displays were skipped (already identical)

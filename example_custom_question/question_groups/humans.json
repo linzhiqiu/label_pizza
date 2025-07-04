@@ -1,0 +1,38 @@
+{
+    "title": "Human Custom",
+    "description": "Detect and describe all humans in the video.",
+    "is_reusable": false,
+    "is_auto_submit": false,
+    "verification_function": "check_human_description",
+    "questions": [
+        {
+            "qtype": "single",
+            "text": "Number of people?",
+            "display_text": "Number of people?",
+            "options": [
+                "0",
+                "1",
+                "2",
+                "3 or more"
+            ],
+            "display_values": [
+                "0",
+                "1",
+                "2",
+                "3 or more"
+            ],
+            "option_weights": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            ],
+            "default_option": "0"
+        },
+        {
+            "qtype": "description",
+            "text": "If there are people, describe them.",
+            "display_text": "If there are people, describe them."
+        }
+    ]
+}

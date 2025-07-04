@@ -1,6 +1,6 @@
 [
   {
-    "project_name": "Human Test 2",
+    "project_name": "Human Test 0",
     "schema_name": "Questions about Humans",
     "videos": [
       "human.mp4",
@@ -8,47 +8,11 @@
     ]
   },
   {
-    "project_name": "Pizza Test 2",
+    "project_name": "Pizza Test 0",
     "schema_name": "Questions about Pizzas",
     "videos": [
-      {
-        "video_uid": "human.mp4",
-        "questions": [
-          {
-            "question_text": "Number of pizzas?",
-            "custom_question": "Is there a pizza in the video?",
-            "custom_option": {
-              "0": "No",
-              "1": "Yes, there is one",
-              "2": "Yes, there are two",
-              "3 or more": "Yes, there are three or more"
-            }
-          },
-          {
-            "question_text": "If there are pizzas, describe them.",
-            "display_text": "If no pizza is shown, describe what is present instead."
-          }
-        ]
-      },
-      {
-        "video_uid": "pizza.mp4",
-        "questions": [
-          {
-            "question_text": "Number of pizzas?",
-            "custom_question": "What type of pizza is shown?",
-            "custom_option": {
-                "0": "No pizza",
-                "1": "Veggie",
-                "2": "Pepperoni",
-                "3 or more": "Cheese"
-            }
-          },
-          {
-            "question_text": "If there are pizzas, describe them.",
-            "display_text": "If no pizza is shown, describe what is present instead."
-          }
-        ]
-      }
+      "human.mp4",
+      "pizza.mp4"
     ]
   }
 ]

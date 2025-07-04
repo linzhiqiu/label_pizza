@@ -1,0 +1,24 @@
+[
+  {
+    "question_group_title": "Human Custom",
+    "project_name": "Human Test 0",
+    "user_name": "Admin 1",
+    "video_uid": "human.mp4",
+    "answers": {
+      "Number of people?": "1",
+      "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Human Custom",
+    "project_name": "Human Test 0",
+    "user_name": "Admin 1",
+    "video_uid": "pizza.mp4",
+    "answers": {
+      "Number of people?": "0",
+      "If there are people, describe them.": ""
+    },
+    "is_ground_truth": true
+  }
+]

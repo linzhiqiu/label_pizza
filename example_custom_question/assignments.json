@@ -1,0 +1,17 @@
+[
+  {
+    "user_name": "User 1",
+    "project_name": "Pizza Test 0 Custom",
+    "role": "annotator"
+  },
+  {
+    "user_name": "User 1",
+    "project_name": "Human Test 0 Custom",
+    "role": "annotator"
+  },
+  {
+    "user_name": "Robot 1",
+    "project_name": "Human Test 0 Custom",
+    "role": "model"
+  }
+]

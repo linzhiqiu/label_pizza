@@ -3403,7 +3403,7 @@ class AuthService:
             )
         ).all()
         
-        projects = {"annotator": [], "reviewer": [], "admin": []}
+        projects = {"annotator": [], "reviewer": [], "admin": [], "model": []}
         for assignment in assignments:
             project = session.get(Project, assignment.project_id)
             if project and not project.is_archived:

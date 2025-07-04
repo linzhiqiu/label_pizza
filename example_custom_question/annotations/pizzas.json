@@ -1,0 +1,24 @@
+[
+  {
+    "question_group_title": "Pizza",
+    "project_name": "Pizza Test 0",
+    "user_name": "User 1",
+    "video_uid": "human.mp4",
+    "answers": {
+      "Pick one option": "Option A",
+      "Describe the object": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Pizza",
+    "project_name": "Pizza Test 0",
+    "user_name": "User 1",
+    "video_uid": "pizza.mp4",
+    "answers": {
+      "Pick one option": "Option B",
+      "Describe the object": "The huge pizza looks delicious."
+    },
+    "is_ground_truth": false
+  }
+]

@@ -12,6 +12,7 @@
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
+      "description": "A video of a pizza being made.",
       "license": "Standard YouTube License"
     }
   }

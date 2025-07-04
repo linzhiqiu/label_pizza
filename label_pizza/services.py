@@ -566,8 +566,8 @@ class ProjectService:
         return pd.DataFrame(rows)
 
     @staticmethod
-    def create_project(name: str, schema_id: int, video_ids: List[int], session: Session) -> None:
-        """Create a new project and assign all admin users to it.
+    def verify_create_project(name: str, schema_id: int, video_ids: List[int], session: Session) -> None:
+        """Verify parameters for creating a new project.
         
         Args:
             name: Project name
@@ -576,7 +576,7 @@ class ProjectService:
             session: Database session
             
         Raises:
-            ValueError: If schema or any video is archived
+            ValueError: If schema or any video is archived, or project name already exists
         """
         # Check if schema exists and is not archived
         schema = session.get(Schema, schema_id)
@@ -590,6 +590,30 @@ class ProjectService:
         if existing_project:
             raise ValueError(f"Project with name '{name}' already exists")
         
+        # Check if all videos exist and are not archived
+        for vid in video_ids:
+            video = session.get(Video, vid)
+            if not video:
+                raise ValueError(f"Video with ID {vid} not found")
+            if video.is_archived:
+                raise ValueError(f"Video with ID {vid} is archived")
+
+    @staticmethod
+    def create_project(name: str, schema_id: int, video_ids: List[int], session: Session) -> None:
+        """Create a new project and assign all admin users to it.
+        
+        Args:
+            name: Project name
+            schema_id: ID of the schema to use
+            video_ids: List of video IDs to include in the project
+            session: Database session
+            
+        Raises:
+            ValueError: If schema or any video is archived
+        """
+        # Verify input parameters
+        ProjectService.verify_create_project(name, schema_id, video_ids, session)
+        
         # Create project
         project = Project(name=name, schema_id=schema_id)
         session.add(project)
@@ -597,13 +621,6 @@ class ProjectService:
         
         # Add videos to project
         for vid in video_ids:
-            # Check if video exists and is not archived
-            video = session.get(Video, vid)
-            if not video:
-                raise ValueError(f"Video with ID {vid} not found")
-            if video.is_archived:
-                raise ValueError(f"Video with ID {vid} is archived")
-            
             session.add(ProjectVideo(project_id=project.id, video_id=vid))
         
         # Assign all admin users to the project using KEYWORD ARGUMENTS
@@ -882,6 +899,49 @@ class ProjectService:
             "is_archived": project.is_archived,
         }
 
+    @staticmethod
+    def verify_add_user_to_project(project_id: int, user_id: int, role: str, session: Session) -> None:
+        """Verify parameters for adding a user to a project.
+
+        Args:
+            project_id: The ID of the project
+            user_id: The ID of the user
+            role: The role to assign ('annotator', 'reviewer', 'admin', or 'model')
+            session: Database session
+
+        Raises:
+            ValueError: If project or user not found, archived, or role assignment is invalid
+        """
+        # Validate project exists and is not archived
+        project = session.get(Project, project_id)
+        if not project:
+            raise ValueError(f"Project with ID {project_id} not found")
+        if project.is_archived:
+            raise ValueError(f"Project with ID {project_id} is archived")
+        
+        # Validate user exists and is not archived
+        user = session.get(User, user_id)
+        if not user:
+            raise ValueError(f"User with ID {user_id} not found")
+        if user.is_archived:
+            raise ValueError(f"User with ID {user_id} is archived")
+            
+        # Validate role is valid
+        if role not in ["annotator", "reviewer", "admin", "model"]:
+            raise ValueError(f"Invalid role: {role}")
+            
+        # Validate role assignment rules
+        if role == "admin" and user.user_type != "admin":
+            raise ValueError(f"User {user_id} must be a global admin to be assigned admin role")
+        
+        if user.user_type == "admin" and role != "admin":
+            raise ValueError(f"User {user_id} must not be a global admin to be assigned a non-admin role")
+        
+        if role == "model" and user.user_type != "model":
+            raise ValueError(f"User {user_id} must be a model to be assigned model role")
+        
+        if user.user_type == "model" and role != "model":
+            raise ValueError(f"User {user_id} must not be a model to be assigned a non-model role")
 
     @staticmethod
     def add_user_to_project(project_id: int, user_id: int, role: str, session: Session, user_weight: Optional[float] = None) -> None:
@@ -897,37 +957,9 @@ class ProjectService:
         Raises:
             ValueError: If project or user not found, or if role is invalid
         """
-        # Validate project and user
-        project = session.get(Project, project_id)
-        if not project:
-            raise ValueError(f"Project with ID {project_id} not found")
-        if project.is_archived:
-            raise ValueError(f"Project with ID {project_id} is archived")
+        # Verify input parameters
+        ProjectService.verify_add_user_to_project(project_id, user_id, role, session)
         
-        user = session.get(User, user_id)
-        if not user:
-            raise ValueError(f"User with ID {user_id} not found")
-        if user.is_archived:
-            raise ValueError(f"User with ID {user_id} is archived")
-            
-        # Validate role
-        if role not in ["annotator", "reviewer", "admin", "model"]:
-            raise ValueError(f"Invalid role: {role}")
-            
-        # For admin role, verify user is a global admin
-        if role == "admin" and user.user_type != "admin":
-            raise ValueError(f"User {user_id} must be a global admin to be assigned admin role")
-        
-        if user.user_type == "admin" and role != "admin":
-            raise ValueError(f"User {user_id} must not be a global admin to be assigned a non-admin role")
-        
-        # For model role, can only be assigned to model users
-        if role == "model" and user.user_type != "model":
-            raise ValueError(f"User {user_id} must be a model to be assigned model role")
-        
-        if user.user_type == "model" and role != "model":
-            raise ValueError(f"User {user_id} must not be a model to be assigned a non-model role")
-            
         # Archive any existing roles for this user in this project
         session.execute(
             update(ProjectUserRole)
@@ -976,7 +1008,6 @@ class ProjectService:
             raise ValueError(f"Invalid role: {role}")
             
         session.commit()
-    
     
     @staticmethod
     def get_project_annotators(project_id: int, session: Session) -> Dict[str, Dict[str, Any]]:
@@ -3075,19 +3106,33 @@ class AuthService:
             for a in assignments
         ])
 
+
     @staticmethod
-    def create_user(user_id: str, email: str, password_hash: str, user_type: str, session: Session, is_archived: bool = False) -> User:
-        """Create a new user with validation."""
+    def verify_create_user(user_id: str, email: str, password_hash: str, user_type: str, session: Session, is_archived: bool = False) -> None:
+        """Verify parameters for creating a new user.
+
+        Args:
+            user_id: The unique identifier for the user
+            email: User's email address (required for human/admin, None for model)
+            password_hash: Hashed password
+            user_type: Type of user (human, model, admin)
+            session: Database session
+            is_archived: Whether the user should be archived (default: False)
+
+        Raises:
+            ValueError: If user_type is invalid, email validation fails, or user already exists
+        """
+        # Validate user type
         if user_type not in ["human", "model", "admin"]:
             raise ValueError("Invalid user type. Must be one of: human, model, admin")
-    
-        # For model users, email should be None
+
+        # Validate email requirements based on user type
         if user_type == "model":
             if email:
                 raise ValueError("Model users cannot have emails")
         elif not email:
             raise ValueError("Email is required for human and admin users")
-        
+
         # Check if user already exists - handle model users differently
         if user_type == "model":
             # For model users, only check user_id_str since all model users have email=None
@@ -3108,7 +3153,29 @@ class AuthService:
                 raise ValueError(f"Model user with ID '{user_id}' already exists")
             else:
                 raise ValueError(f"User with ID '{user_id}' or email '{email}' already exists")
-    
+
+    @staticmethod
+    def create_user(user_id: str, email: str, password_hash: str, user_type: str, session: Session, is_archived: bool = False) -> User:
+        """Create a new user with validation.
+
+        Args:
+            user_id: The unique identifier for the user
+            email: User's email address (required for human/admin, None for model)
+            password_hash: Hashed password
+            user_type: Type of user (human, model, admin)
+            session: Database session
+            is_archived: Whether the user should be archived (default: False)
+
+        Returns:
+            User: The created user object
+
+        Raises:
+            ValueError: If user_type is invalid, email validation fails, or user already exists
+        """
+        # Verify input parameters
+        AuthService.verify_create_user(user_id, email, password_hash, user_type, session, is_archived)
+
+        # Create user
         user = User(
             user_id_str=user_id,
             email=email,
@@ -4341,17 +4408,17 @@ class BaseAnswerService:
 
 class AnnotatorService(BaseAnswerService):
     @staticmethod
-    def submit_answer_to_question_group(
+    def verify_submit_answer_to_question_group(
         video_id: int,
         project_id: int,
         user_id: int,
         question_group_id: int,
-        answers: Dict[str, str],  # Maps question text to answer value
+        answers: Dict[str, str],
         session: Session,
         confidence_scores: Optional[Dict[str, float]] = None,
         notes: Optional[Dict[str, str]] = None
     ) -> None:
-        """Submit answers for all questions in a question group.
+        """Verify parameters for submitting answers to a question group.
         
         Args:
             video_id: The ID of the video
@@ -4380,19 +4447,64 @@ class AnnotatorService(BaseAnswerService):
             
         # Run verification if specified
         AnnotatorService._run_verification(group=group, answers=answers)
+        
+        # Validate confidence scores if provided
+        if confidence_scores:
+            for question_text, confidence_score in confidence_scores.items():
+                if not isinstance(confidence_score, float):
+                    raise ValueError(f"Confidence score for question '{question_text}' must be a float")
+        
+        # Validate answer values for each question
+        for question in questions:
+            answer_value = answers[question.text]
+            AnnotatorService._validate_answer_value(question=question, answer_value=answer_value)
+
+    @staticmethod
+    def submit_answer_to_question_group(
+        video_id: int,
+        project_id: int,
+        user_id: int,
+        question_group_id: int,
+        answers: Dict[str, str],  # Maps question text to answer value
+        session: Session,
+        confidence_scores: Optional[Dict[str, float]] = None,
+        notes: Optional[Dict[str, str]] = None
+    ) -> None:
+        """Submit answers for all questions in a question group.
+        
+        Args:
+            video_id: The ID of the video
+            project_id: The ID of the project
+            user_id: The ID of the user submitting the answers
+            question_group_id: The ID of the question group
+            answers: Dictionary mapping question text to answer value
+            session: Database session
+            confidence_scores: Optional dictionary mapping question text to confidence score
+            notes: Optional dictionary mapping question text to notes
+            
+        Raises:
+            ValueError: If validation fails or verification fails
+        """
+        # Verify input parameters
+        AnnotatorService.verify_submit_answer_to_question_group(
+            video_id=video_id,
+            project_id=project_id,
+            user_id=user_id,
+            question_group_id=question_group_id,
+            answers=answers,
+            session=session,
+            confidence_scores=confidence_scores,
+            notes=notes
+        )
+        
+        # Get questions for submission (already validated in verify method)
+        group, questions = AnnotatorService._validate_question_group(question_group_id=question_group_id, session=session)
             
         # Submit each answer
         for question in questions:
             answer_value = answers[question.text]
             confidence_score = confidence_scores.get(question.text) if confidence_scores else None
-            # If confidence score is not None, check if it's float
-            if confidence_score is not None:
-                if not isinstance(confidence_score, float):
-                    raise ValueError(f"Confidence score for question '{question.text}' must be a float")
             note = notes.get(question.text) if notes else None
-            
-            # Validate answer value
-            AnnotatorService._validate_answer_value(question=question, answer_value=answer_value)
             
             # Check for existing answer
             existing = session.scalar(
@@ -4672,17 +4784,17 @@ class AnnotatorService(BaseAnswerService):
 
 class GroundTruthService(BaseAnswerService):
     @staticmethod
-    def submit_ground_truth_to_question_group(
+    def verify_submit_ground_truth_to_question_group(
         video_id: int,
         project_id: int,
         reviewer_id: int,
         question_group_id: int,
-        answers: Dict[str, str],  # Maps question text to answer value
+        answers: Dict[str, str],
         session: Session,
         confidence_scores: Optional[Dict[str, float]] = None,
         notes: Optional[Dict[str, str]] = None
     ) -> None:
-        """Submit ground truth answers for all questions in a question group.
+        """Verify parameters for submitting ground truth answers to a question group.
         
         Args:
             video_id: The ID of the video
@@ -4711,19 +4823,64 @@ class GroundTruthService(BaseAnswerService):
             
         # Run verification if specified
         GroundTruthService._run_verification(group=group, answers=answers)
+        
+        # Validate confidence scores if provided
+        if confidence_scores:
+            for question_text, confidence_score in confidence_scores.items():
+                if not isinstance(confidence_score, float):
+                    raise ValueError(f"Confidence score for question '{question_text}' must be a float")
+        
+        # Validate answer values for each question
+        for question in questions:
+            answer_value = answers[question.text]
+            GroundTruthService._validate_answer_value(question=question, answer_value=answer_value)
+
+    @staticmethod
+    def submit_ground_truth_to_question_group(
+        video_id: int,
+        project_id: int,
+        reviewer_id: int,
+        question_group_id: int,
+        answers: Dict[str, str],  # Maps question text to answer value
+        session: Session,
+        confidence_scores: Optional[Dict[str, float]] = None,
+        notes: Optional[Dict[str, str]] = None
+    ) -> None:
+        """Submit ground truth answers for all questions in a question group.
+        
+        Args:
+            video_id: The ID of the video
+            project_id: The ID of the project
+            reviewer_id: The ID of the reviewer
+            question_group_id: The ID of the question group
+            answers: Dictionary mapping question text to answer value
+            session: Database session
+            confidence_scores: Optional dictionary mapping question text to confidence score
+            notes: Optional dictionary mapping question text to notes
+            
+        Raises:
+            ValueError: If validation fails or verification fails
+        """
+        # Verify input parameters
+        GroundTruthService.verify_submit_ground_truth_to_question_group(
+            video_id=video_id,
+            project_id=project_id,
+            reviewer_id=reviewer_id,
+            question_group_id=question_group_id,
+            answers=answers,
+            session=session,
+            confidence_scores=confidence_scores,
+            notes=notes
+        )
+        
+        # Get questions for submission (already validated in verify method)
+        group, questions = GroundTruthService._validate_question_group(question_group_id=question_group_id, session=session)
             
         # Submit each ground truth answer
         for question in questions:
             answer_value = answers[question.text]
             confidence_score = confidence_scores.get(question.text) if confidence_scores else None
-            # If confidence score is not None, check if it's float
-            if confidence_score is not None:
-                if not isinstance(confidence_score, float):
-                    raise ValueError(f"Confidence score for question '{question.text}' must be a float")
             note = notes.get(question.text) if notes else None
-            
-            # Validate answer value
-            GroundTruthService._validate_answer_value(question=question, answer_value=answer_value)
             
             # Check for existing ground truth
             existing = session.get(ReviewerGroundTruth, (video_id, question.id, project_id))

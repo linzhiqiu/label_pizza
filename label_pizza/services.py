@@ -3277,26 +3277,57 @@ class AuthService:
                 raise ValueError(f"User with ID '{user_id}' or email '{email}' already exists")
 
     @staticmethod
-    def create_user(user_id: str, email: str, password_hash: str, user_type: str, session: Session, is_archived: bool = False) -> User:
-        """Create a new user with validation.
-
+    def bulk_assign_user_to_projects(user_id: int, project_ids: List[int], role: str, session: Session, user_weight: float = 1.0) -> None:
+        """Assign a single user to multiple projects with the specified role.
+        
         Args:
-            user_id: The unique identifier for the user
-            email: User's email address (required for human/admin, None for model)
-            password_hash: Hashed password
-            user_type: Type of user (human, model, admin)
+            user_id: The ID of the user
+            project_ids: List of project IDs to assign the user to
+            role: The role to assign ('annotator', 'reviewer', 'admin', or 'model')
             session: Database session
-            is_archived: Whether the user should be archived (default: False)
-
-        Returns:
-            User: The created user object
-
+            user_weight: Weight for the user's answers (defaults to 1.0)
+            
         Raises:
-            ValueError: If user_type is invalid, email validation fails, or user already exists
+            ValueError: If role is invalid
         """
+        if role not in ["annotator", "reviewer", "admin", "model"]:
+            raise ValueError(f"Invalid role: {role}")
+        
+        if not project_ids:
+            return
+        
+        # Determine which roles to assign based on the requested role
+        roles_to_assign = []
+        if role == "annotator":
+            roles_to_assign = ["annotator"]
+        elif role == "reviewer":
+            roles_to_assign = ["annotator", "reviewer"]
+        elif role == "model":
+            roles_to_assign = ["model"]
+        elif role == "admin":
+            roles_to_assign = ["annotator", "reviewer", "admin"]
+        
+        # Create all role assignments in bulk
+        role_assignments = []
+        for project_id in project_ids:
+            for role_name in roles_to_assign:
+                role_assignments.append(ProjectUserRole(
+                    project_id=project_id,
+                    user_id=user_id,
+                    role=role_name,
+                    user_weight=user_weight,
+                    is_archived=False
+                ))
+        
+        # Bulk insert all assignments
+        session.add_all(role_assignments)
+
+    @staticmethod
+    def create_user(user_id: str, email: str, password_hash: str, user_type: str, session: Session, is_archived: bool = False) -> User:
+        """Create a new user with validation."""
         # Verify input parameters
         AuthService.verify_create_user(user_id, email, password_hash, user_type, session, is_archived)
-
+        
         # Create user
         user = User(
             user_id_str=user_id,
@@ -3308,19 +3339,18 @@ class AuthService:
         session.add(user)
         session.flush()  # Get user ID
         
-        # If user is admin, assign to all existing projects using KEYWORD ARGUMENTS
+        # If user is admin, assign to all existing projects
         if user_type == "admin" and not is_archived:
-            projects = session.scalars(
-                select(Project).where(Project.is_archived == False)
+            project_ids = session.scalars(
+                select(Project.id).where(Project.is_archived == False)
             ).all()
             
-            for project in projects:
-                ProjectService.add_user_to_project(
-                    project_id=project.id, 
-                    user_id=user.id, 
-                    role="admin", 
-                    session=session
-                )
+            AuthService.bulk_assign_user_to_projects(
+                user_id=user.id,
+                project_ids=project_ids,
+                role="admin",
+                session=session
+            )
         
         session.commit()
         return user

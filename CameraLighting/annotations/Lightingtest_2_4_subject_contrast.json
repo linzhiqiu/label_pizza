@@ -1,0 +1,266 @@
+[
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-GxPS6ucD5Bg_5130_5700.0.1.mp4",
+    "answers": {
+      "Subject lighting apply?": "Unclear or light-emitting subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-GxPS6ucD5Bg_5130_5700.0.2.mp4",
+    "answers": {
+      "Subject lighting apply?": "Unclear or light-emitting subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-h4qYFqoGWec_510_780.0.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Changing + Mixed"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hEQEOPvuRtU_0_150.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hgtcGDkaisY_2910_3480.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Unclear or light-emitting subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hgtcGDkaisY_2910_3480.1.mp4",
+    "answers": {
+      "Subject lighting apply?": "Unclear or light-emitting subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-HGUKRHTmki0_90_930.0.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Unclear or light-emitting subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.0.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.0.4.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.1.1.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.4.5.mp4",
+    "answers": {
+      "Subject lighting apply?": "Unclear or light-emitting subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hkQxSVI5Dks_0_900.0.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Inconsistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_0_2700.0.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Inconsistent subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_0_2700.0.8.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.0.3.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.0.4.mp4",
+    "answers": {
+      "Subject lighting apply?": "Inconsistent subject",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.1.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Inconsistent subject",
+      "Light contrast?": "High contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.2.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.4.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.7.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Mixed (spatial)"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.1.2.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_13500_16200.0.1.mp4",
+    "answers": {
+      "Subject lighting apply?": "Consistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-oiNiHSptuw0_4470_5400.1.mp4",
+    "answers": {
+      "Subject lighting apply?": "Non-physically realistic lighting on Subjects",
+      "Light contrast?": "Unclear"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Subject Contrast",
+    "project_name": "Subject Light Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_1230_1380.0.mp4",
+    "answers": {
+      "Subject lighting apply?": "Inconsistent subject",
+      "Light contrast?": "Normal contrast"
+    },
+    "is_ground_truth": false
+  }
+]

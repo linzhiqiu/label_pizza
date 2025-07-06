@@ -1,0 +1,65 @@
+{
+  "title": "Video Quality & Effects",
+  "description": "Assess distortion, overlays, and speed.",
+  "is_reusable": false,
+  "is_auto_submit": false,
+  "questions": [
+    {
+      "text": "Lens distortion:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Regular Lens",
+        "Barrel Distortion (e.g., Wide-angle lens)",
+        "Fisheye Distortion (e.g., Fisheye lens)"
+      ],
+      "display_values": [
+        "Regular Lens",
+        "Barrel Distortion (e.g., Wide-angle lens)",
+        "Fisheye Distortion (e.g., Fisheye lens)"
+      ],
+      "default_option": "Regular Lens",
+      "display_text": "Lens distortion:"
+    },
+    {
+      "text": "Text/watermarks present?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "No",
+        "Yes"
+      ],
+      "display_values": [
+        "No",
+        "Yes"
+      ],
+      "default_option": "No",
+      "display_text": "Text/watermarks present?"
+    },
+    {
+      "text": "Video speed:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Time-lapse",
+        "Fast-Motion",
+        "Regular",
+        "Slow-Motion",
+        "Stop-Motion",
+        "Speed-Ramp",
+        "Time-Reversed"
+      ],
+      "display_values": [
+        "Time-lapse",
+        "Fast-Motion",
+        "Regular",
+        "Slow-Motion",
+        "Stop-Motion",
+        "Speed-Ramp",
+        "Time-Reversed"
+      ],
+      "default_option": "Regular",
+      "display_text": "Video speed:"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+    {
+        "schema_name": "Cinematic Effects",
+        "question_group_names": [
+          "Dynamic effects", "Lens and Optical", "Light Reflection", "Natural and Atmospheric Effects", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Color Grading",
+        "question_group_names": [
+            "Color Grading", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Light Setup",
+        "question_group_names": [
+            "Light Setup", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Special Effects",
+        "question_group_names": [
+          "Artistic and Special Effects", "Volumetric Light", "Shadow Patterns and Gobo Lighting", "Color and Brightness Dynamics", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Subject Light",
+        "question_group_names": [
+            "Subject Contrast", "Light Direction", "Subject Light Effect", "Shot Transition"
+        ]
+    }
+]

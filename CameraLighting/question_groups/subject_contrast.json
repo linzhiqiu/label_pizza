@@ -1,0 +1,53 @@
+{
+    "title": "Subject Contrast",
+    "description": "Identify special lighting setups, overall lighting consistency, and contrast. Add free-text notes if needed.",
+    "is_reusable": false,
+    "is_auto_submit": false,
+    "verification_function": "",
+    "questions": [
+        {
+            "text": "Subject lighting apply?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Unclear or light-emitting subject",
+                "Non-physically realistic lighting on Subjects",
+                "Inconsistent subject",
+                "Consistent subject"
+            ],
+            "display_values": [
+                "Unclear or light-emitting subject",
+                "Non-physically realistic lighting on Subjects",
+                "Inconsistent subject",
+                "Consistent subject"
+            ],
+            "default_option": "Consistent subject",
+            "display_text": "Subject lighting apply?"
+        },
+        {
+            "text": "Light contrast?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Unclear",
+                "Changing (temporal)",
+                "Mixed (spatial)",
+                "Changing + Mixed",
+                "High contrast",
+                "Normal contrast",
+                "Low contrast"
+            ],
+            "display_values": [
+                "Unclear",
+                "Changing (temporal)",
+                "Mixed (spatial)",
+                "Changing + Mixed",
+                "High contrast",
+                "Normal contrast",
+                "Low contrast"
+            ],
+            "default_option": "Normal contrast",
+            "display_text": "Light contrast?"
+        }
+    ]
+}

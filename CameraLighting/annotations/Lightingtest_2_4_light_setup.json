@@ -1,0 +1,602 @@
+[
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-GxPS6ucD5Bg_5130_5700.0.1.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Unclear",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": "The video captures a scene of an object burning, with insufficient information to determine whether the lighting quality is hard or soft."
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-GxPS6ucD5Bg_5130_5700.0.2.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Unclear",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": "The video captures a scene of an object burning, with insufficient information to determine whether the lighting quality is hard or soft."
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-h4qYFqoGWec_510_780.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "Yes",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hEQEOPvuRtU_0_150.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hgtcGDkaisY_2910_3480.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Soft Sunlight (e.g., Overcast / Dusk / Dawn)",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "Yes",
+      "Describe the scene and lighting setup": "The video captures an explosion scene, with the dominant light sources being the explosion's firelight and sunlight from the sky, featuring soft lighting."
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hgtcGDkaisY_2910_3480.1.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "Yes",
+      "Sunlight level?": "Hard Sunlight (e.g., Sunny)",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-HGUKRHTmki0_90_930.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "Yes",
+      "Sunlight level?": "Hard Sunlight (e.g., Sunny)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.0.4.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.1.1.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.4.5.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "Yes",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hkQxSVI5Dks_0_900.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "Yes",
+      "Sunlight level?": "Hard Sunlight (e.g., Sunny)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_0_2700.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_0_2700.0.8.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.0.3.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.0.4.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.1.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "Yes",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.2.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.4.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.7.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.1.2.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_13500_16200.0.1.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-oiNiHSptuw0_4470_5400.1.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "Yes",
+      "Light quality across the entire scene?": "Unclear",
+      "Indoors or outdoors?": "Synthetic / Unrealistic",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_1230_1380.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Hard Sunlight (e.g., Sunny)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_7650_7830.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Interior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_15900_16170.1.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "Yes",
+      "Light quality across the entire scene?": "Unclear",
+      "Indoors or outdoors?": "Synthetic / Unrealistic",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-OnvQggy3Ezw_360_600.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Soft Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Normal Sunlight",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-oQTU0-Fwgzs_6180_6600.0.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "Yes",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-OUIZUkFpPpg_2640_2880.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "Hard Sunlight (e.g., Sunny)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "Yes",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Setup",
+    "project_name": "Light Setup Lightingtest_2_4 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-oVQi84_fqeI_720_1350.0.mp4",
+    "answers": {
+      "Abstract light source / N/A?": "No",
+      "Light quality across the entire scene?": "Hard Light",
+      "Indoors or outdoors?": "Exterior",
+      "Sunlight?": "No",
+      "Sunlight level?": "N/A (indoors or changing sunlight conditions)",
+      "Firelight?": "No",
+      "Moonlight / starlight? (moon/star visible)": "No",
+      "Artificial / Practical light?": "No",
+      "Non-visible light source?": "No",
+      "Light source complex (others)?": "No",
+      "Describe the scene and lighting setup": ""
+    },
+    "is_ground_truth": false
+  }
+]

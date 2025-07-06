@@ -1,0 +1,2402 @@
+[
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-kC0sLdh06aE_0_270.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-kC0sLdh06aE_0_270.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-kC0sLdh06aE_0_270.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "Yes"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-kC0sLdh06aE_0_270.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-kC0sLdh06aE_0_270.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-Kq0M4miVjyw_3420_3720.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-Kq0M4miVjyw_3420_3720.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-Kq0M4miVjyw_3420_3720.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-Kq0M4miVjyw_3420_3720.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-Kq0M4miVjyw_3420_3720.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-lA4WD92it0k_30_180.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-lA4WD92it0k_30_180.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-lA4WD92it0k_30_180.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-lA4WD92it0k_30_180.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-lA4WD92it0k_30_180.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-liUd2tukV3E_10650_11580.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-liUd2tukV3E_10650_11580.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-liUd2tukV3E_10650_11580.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-liUd2tukV3E_10650_11580.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-liUd2tukV3E_10650_11580.0.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-lL33GmldDcs_750_870.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-lL33GmldDcs_750_870.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-lL33GmldDcs_750_870.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-lL33GmldDcs_750_870.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-lL33GmldDcs_750_870.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-lnkRxtduotQ_0_150.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-lnkRxtduotQ_0_150.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-lnkRxtduotQ_0_150.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-lnkRxtduotQ_0_150.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-lnkRxtduotQ_0_150.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-lxbYjZc7CwM_1410_1590.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-lxbYjZc7CwM_1410_1590.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-lxbYjZc7CwM_1410_1590.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-lxbYjZc7CwM_1410_1590.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-lxbYjZc7CwM_1410_1590.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-M2QMBdsf8RI_2850_3750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-M2QMBdsf8RI_2850_3750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-M2QMBdsf8RI_2850_3750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-M2QMBdsf8RI_2850_3750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-M2QMBdsf8RI_2850_3750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-m4_9TFeMfJE_7890_8130.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-m4_9TFeMfJE_7890_8130.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-m4_9TFeMfJE_7890_8130.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-m4_9TFeMfJE_7890_8130.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-m4_9TFeMfJE_7890_8130.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-mHbxURZ4xyE_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-mHbxURZ4xyE_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-mHbxURZ4xyE_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-mHbxURZ4xyE_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-mHbxURZ4xyE_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-MKM90u7pf3U_390_900.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-MKM90u7pf3U_390_900.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-MKM90u7pf3U_390_900.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-MKM90u7pf3U_390_900.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-MKM90u7pf3U_390_900.0.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-mUPJckUSdzo_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-mUPJckUSdzo_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-mUPJckUSdzo_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-mUPJckUSdzo_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "Yes",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-mUPJckUSdzo_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-MY07V24n5cE_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-MY07V24n5cE_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-MY07V24n5cE_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-MY07V24n5cE_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-MY07V24n5cE_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-MY07V24n5cE_4260_4410.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-MY07V24n5cE_4260_4410.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-MY07V24n5cE_4260_4410.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-MY07V24n5cE_4260_4410.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-MY07V24n5cE_4260_4410.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-N-qxcHgX4kc_0_600.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-N-qxcHgX4kc_0_600.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-N-qxcHgX4kc_0_600.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-N-qxcHgX4kc_0_600.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-N-qxcHgX4kc_0_600.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-n6acks-wQ1w_240_450.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-n6acks-wQ1w_240_450.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-n6acks-wQ1w_240_450.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-n6acks-wQ1w_240_450.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-n6acks-wQ1w_240_450.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-n6acks-wQ1w_240_450.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-n6acks-wQ1w_240_450.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-n6acks-wQ1w_240_450.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-n6acks-wQ1w_240_450.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-n6acks-wQ1w_240_450.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-NdyqnIIsJik_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-NdyqnIIsJik_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-NdyqnIIsJik_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-NdyqnIIsJik_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-NdyqnIIsJik_0_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-niOXwZ8qels_450_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-niOXwZ8qels_450_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-niOXwZ8qels_450_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-niOXwZ8qels_450_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-niOXwZ8qels_450_750.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-nivLKTvZO-8_1050_1590.0.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-nivLKTvZO-8_1050_1590.0.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-nivLKTvZO-8_1050_1590.0.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-nivLKTvZO-8_1050_1590.0.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-nivLKTvZO-8_1050_1590.0.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-NkPvBS-rn28_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-NkPvBS-rn28_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-NkPvBS-rn28_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-NkPvBS-rn28_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-NkPvBS-rn28_0_180.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-NMjhjrBIrG8_0_390.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-NMjhjrBIrG8_0_390.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-NMjhjrBIrG8_0_390.0.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-NMjhjrBIrG8_0_390.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-NMjhjrBIrG8_0_390.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-NMjhjrBIrG8_3720_4410.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-NMjhjrBIrG8_3720_4410.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-NMjhjrBIrG8_3720_4410.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-NMjhjrBIrG8_3720_4410.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-NMjhjrBIrG8_3720_4410.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-Np2IqqJ5otg_0_510.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-Np2IqqJ5otg_0_510.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-Np2IqqJ5otg_0_510.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-Np2IqqJ5otg_0_510.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-Np2IqqJ5otg_0_510.1.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-Np2IqqJ5otg_570_750.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-Np2IqqJ5otg_570_750.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-Np2IqqJ5otg_570_750.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "Yes",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-Np2IqqJ5otg_570_750.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-Np2IqqJ5otg_570_750.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-nrb_pAy6s-g_1470_2130.2.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-nrb_pAy6s-g_1470_2130.2.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-nrb_pAy6s-g_1470_2130.2.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-nrb_pAy6s-g_1470_2130.2.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-nrb_pAy6s-g_1470_2130.2.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "Yes",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-o1bSmpc8oxo_390_570.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-o1bSmpc8oxo_390_570.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-o1bSmpc8oxo_390_570.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-o1bSmpc8oxo_390_570.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-o1bSmpc8oxo_390_570.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-O9Hngn4Zcbk_5460_5850.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-O9Hngn4Zcbk_5460_5850.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "Yes",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-O9Hngn4Zcbk_5460_5850.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "Yes",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-O9Hngn4Zcbk_5460_5850.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "Yes",
+      "Transformation or morphing?": "Yes",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-O9Hngn4Zcbk_5460_5850.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "Unsure",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-ObtBzJAhfWE_660_1200.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-ObtBzJAhfWE_660_1200.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-ObtBzJAhfWE_660_1200.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-ObtBzJAhfWE_660_1200.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-ObtBzJAhfWE_660_1200.0.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Haochi Zhang",
+    "video_uid": "light-oh6o3Pbu47A_150_330.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Han Wang",
+    "video_uid": "light-oh6o3Pbu47A_150_330.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "Yes"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "light-oh6o3Pbu47A_150_330.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "Yes"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "sarahchenart",
+    "video_uid": "light-oh6o3Pbu47A_150_330.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "Yes"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Dynamic Effects",
+    "project_name": "Cinematic Effects Lightingtest_2_3 1",
+    "user_name": "Yang Wang",
+    "video_uid": "light-oh6o3Pbu47A_150_330.0.mp4",
+    "answers": {
+      "Revealing shot?": "No",
+      "Transformation or morphing?": "No",
+      "Levitation or floating?": "No",
+      "Explosion?": "No",
+      "Shattering or breaking?": "No",
+      "Diffusion?": "No",
+      "Splashing or waves?": "No"
+    },
+    "is_ground_truth": false
+  }
+]

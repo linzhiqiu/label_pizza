@@ -1,0 +1,90 @@
+{
+    "title": "Color Grading",
+    "description": "Assess color temperature, colorfulness, overall brightness/exposure, and allow free-text notes about grading style.",
+    "is_reusable": false,
+    "is_auto_submit": false,
+    "questions": [
+        {
+            "text": "Color tones?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "N/A (black-white)",
+                "Changing and Contrasting",
+                "Changing",
+                "Contrast",
+                "Warm",
+                "Cool",
+                "Neither Warm nor Cool"
+            ],
+            "display_values": [
+                "N/A (black-white)",
+                "Changing and Contrasting",
+                "Changing",
+                "Contrast",
+                "Warm",
+                "Cool",
+                "Neither Warm nor Cool"
+            ],
+            "default_option": "Neither Warm nor Cool",
+            "display_text": "Color tones?"
+        },
+        {
+            "text": "Colorfulness?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "N/A (black-white)",
+                "Changing + Contrast",
+                "Changing",
+                "Contrast",
+                "Low colorfulness",
+                "High colorfulness",
+                "Neither low nor high colorfulness"
+            ],
+            "display_values": [
+                "N/A (black-white)",
+                "Changing + Contrast",
+                "Changing",
+                "Contrast",
+                "Low colorfulness",
+                "High colorfulness",
+                "Neither low nor high colorfulness"
+            ],
+            "default_option": "Neither low nor high colorfulness",
+            "display_text": "How colorful is this video?"
+        },
+        {
+            "text": "Brightness and Exposure?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Changing + Contrast",
+                "Changing",
+                "Contrast",
+                "Overexposed / Very Bright",
+                "Neither too bright nor too dark",
+                "Underexposed / Very Dark"
+            ],
+            "display_values": [
+                "Changing + Contrast",
+                "Changing",
+                "Contrast",
+                "Overexposed / Very Bright",
+                "Neither too bright nor too dark",
+                "Underexposed / Very Dark"
+            ],
+            "default_option": "Neither too bright nor too dark",
+            "display_text": "Brightness and Exposure?"
+        },
+        {
+            "text": "Describe the color grading",
+            "qtype": "description",
+            "required": false,
+            "options": null,
+            "display_values": null,
+            "default_option": null,
+            "display_text": "Describe the color grading"
+        }
+    ]
+}

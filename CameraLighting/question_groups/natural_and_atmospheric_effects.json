@@ -1,0 +1,111 @@
+{
+    "title": "Natural and Atmospheric Effects",
+    "description": "Detect and describe all natural and atmospheric effects, including atmospheric effects, atmospheric patterns, and atmospheric dynamics in the shot.",
+    "is_reusable": false,
+    "is_auto_submit": true,
+    "verification_function": "",
+    "questions": [
+        {
+            "text": "Aerial / atmospheric perspective",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Aerial / atmospheric perspective"
+        },
+        {
+            "text": "Rainbow",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Rainbow"
+        },
+        {
+            "text": "Aurora?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Aurora?"
+        },
+        {
+            "text": "Heat waves or heat haze?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Heat waves or heat haze?"
+        },
+        {
+            "text": "Lightning?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Lightning?"
+        },
+        {
+            "text": "Wave light or water caustics?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Wave light or water caustics?"
+        }
+    ]
+}

@@ -1,0 +1,159 @@
+{
+    "title": "Camera Tracking Shot",
+    "description": "Indicate whether the camera actively follows the subject and identify the tracking style used.",
+    "is_reusable": true,
+    "is_auto_submit": false,
+    "questions": [
+        {
+            "text": "Does the camera track the moving subject(s)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No"
+            ],
+            "display_values": [
+                "Yes",
+                "No"
+            ],
+            "default_option": "No",
+            "display_text": "Does the camera track the moving subject(s)?"
+        },
+        {
+            "text": "Is the camera side-tracking (moving alongside the subject)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera side-tracking (moving alongside the subject)?"
+        },
+        {
+            "text": "Is the camera tail-tracking (following behind the subject)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera tail-tracking (following behind the subject)?"
+        },
+        {
+            "text": "Is the camera lead-tracking (moving ahead of the subject)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera lead-tracking (moving ahead of the subject)?"
+        },
+        {
+            "text": "Is the camera aerial-tracking (from above, e.g., drone or crane)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera aerial-tracking (from above, e.g., drone or crane)?"
+        },
+        {
+            "text": "Is the camera arc-tracking (arcing around the subject)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera arc-tracking (arcing around the subject)?"
+        },
+        {
+            "text": "Is the camera pan-tracking (panning to follow the subject)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera pan-tracking (panning to follow the subject)?"
+        },
+        {
+            "text": "Is the camera tilt-tracking (tilting to follow the subject)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera tilt-tracking (tilting to follow the subject)?"
+        },
+        {
+            "text": "Does the size of the subject change during tracking?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Subject gets larger",
+                "Subject gets smaller"
+            ],
+            "display_values": [
+                "No",
+                "Subject gets larger",
+                "Subject gets smaller"
+            ],
+            "default_option": "No",
+            "display_text": "Does the size of the subject change during tracking?"
+        }
+    ]
+}

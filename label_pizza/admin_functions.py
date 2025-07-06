@@ -720,7 +720,7 @@ def admin_questions():
                                 
                                 current_verification = group_details.get("verification_function")
                                 
-                                st.text_input(
+                                new_display_title = st.text_input(
                                     "Group Display Title",
                                     value=group_details["display_title"],
                                     key="admin_edit_group_display_title"
@@ -874,7 +874,7 @@ def admin_questions():
                                 if st.button("💾 Update Question Group", key="admin_update_group_btn", type="primary", use_container_width=True):
                                     try:
                                         QuestionGroupService.edit_group(
-                                            group_id=selected_group_id, new_display_title=group_details["display_title"],
+                                            group_id=selected_group_id, new_display_title=new_display_title,
                                             new_description=new_description, is_reusable=new_is_reusable,
                                             verification_function=new_verification_function, is_auto_submit=new_is_auto_submit, session=session
                                         )

@@ -1361,6 +1361,37 @@ class SchemaService:
                 if existing_schema:
                     raise ValueError(
                         f"Question group {group.title} is not reusable and is already used in schema {existing_schema.name}")
+        
+        # Validate that all questions in schema are unique (no shared questions between groups)
+        all_question_ids = []
+        group_questions = {}  # group_id -> list of question_ids
+        
+        for group_id in question_group_ids:
+            questions = QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
+            question_ids = [q["id"] for q in questions]
+            group_questions[group_id] = question_ids
+            all_question_ids.extend(question_ids)
+        
+        # Check if all questions are unique
+        if len(all_question_ids) != len(set(all_question_ids)):
+            # Find which groups share questions
+            from collections import Counter
+            question_counts = Counter(all_question_ids)
+            shared_questions = [qid for qid, count in question_counts.items() if count > 1]
+            
+            # Find which groups share these questions
+            sharing_groups = []
+            for shared_qid in shared_questions:
+                groups_with_question = []
+                for group_id, question_ids in group_questions.items():
+                    if shared_qid in question_ids:
+                        group = session.get(QuestionGroup, group_id)
+                        if group:
+                            groups_with_question.append(group.title)
+                sharing_groups.append(groups_with_question)
+            
+            group_names = list(set().union(*sharing_groups))
+            raise ValueError(f"Question groups {group_names} share the same questions")
 
     @staticmethod
     def create_schema(

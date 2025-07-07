@@ -1156,11 +1156,14 @@ def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] 
         try:
             for assignment in processed:
                 # Check existing assignment using service method
-                user_projects = AuthService.get_user_projects_by_role(assignment['user_id'], session)
-                existing = any(
-                    assignment['project_id'] in [p['id'] for p in projects] 
-                    for projects in user_projects.values()
-                )
+                if assignment['role'] == 'model':
+                    existing = False
+                else:
+                    user_projects = AuthService.get_user_projects_by_role(assignment['user_id'], session)
+                    existing = any(
+                        assignment['project_id'] in [p['id'] for p in projects] 
+                        for projects in user_projects.values()
+                    )
                 
                 if assignment['is_active']:
                     ProjectService.add_user_to_project(
@@ -1223,7 +1226,6 @@ def upload_annotations(annotations_path: str = None, annotations_data: list[dict
                     project = ProjectService.get_project_by_name(annotation["project_name"], session)
                     user = AuthService.get_user_by_name(annotation["user_name"], session)
                     group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
-                    
                     # Verify submission
                     AnnotatorService.verify_submit_answer_to_question_group(
                         video_id=video.id,
@@ -1235,7 +1237,6 @@ def upload_annotations(annotations_path: str = None, annotations_data: list[dict
                         confidence_scores=annotation.get("confidence_scores"),
                         notes=annotation.get("notes")
                     )
-                    
                     # Check if answers already exist
                     existing = AnnotatorService.get_user_answers_for_question_group(
                         video_id=video.id,

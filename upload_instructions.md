@@ -1157,7 +1157,7 @@ question_groups_data = [
     "description": "Detect and describe all pizzas in the video.",
     "is_reusable": False,
     "is_auto_submit": False,
-    "verification_function": "check_pizza_description",
+    "verification_function": "",
     "is_active": True,
     "questions": [
       {

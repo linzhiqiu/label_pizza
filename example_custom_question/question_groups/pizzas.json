@@ -4,7 +4,7 @@
     "description": "Detect and describe all pizzas in the video.",
     "is_reusable": false,
     "is_auto_submit": false,
-    "verification_function": "check_pizza_custom",
+    "verification_function": "",
     "is_active": true,
     "questions": [
         {

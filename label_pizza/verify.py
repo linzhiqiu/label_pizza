@@ -46,3 +46,6 @@ def check_pizza_description(answers: Dict[str, str]) -> None:
         number_question="Number of pizzas?",
         description_question="If there are pizzas, describe them.",
     )
+    
+def check_pizza_custom(answers: Dict[str, str]) -> None:
+    return

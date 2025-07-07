@@ -330,6 +330,9 @@ Function for adding / editing / archiving videos
 #### - Add videos
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_videos
 
 videos_data = [
@@ -350,6 +353,9 @@ sync_videos(videos_data=videos_data)
 #### - Update videos
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_videos
 
 videos_data = [
@@ -427,6 +433,9 @@ Function for adding / editing / archiving users
 #### - Add users
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_users
 
 users_data = [
@@ -445,19 +454,22 @@ sync_users(user_data=users_data)
 #### - Update users
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_users
 
 users_data = [
     {
         "user_id": "New User 1",          # must already exist OR email must match
-        "email": "user1@example.com",     # must already exist OR user_id must match
+        "email": "user1-new@example.com",     # must already exist OR user_id must match
         "password": "user111-new",        # update password
         "user_type": "human",
-        "is_active": true
+        "is_active": True
     }
 ]
 
-sync_users(user_data=users_data)
+sync_users(users_data=users_data)
 ```
 
 >  **Either user_id or email must already exist in the database**
@@ -465,11 +477,14 @@ sync_users(user_data=users_data)
 ##### Update users via `user_id`
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_users
 
 users_data = [
     {
-        "user_id":  "New User 1",              # must already exist
+        "user_id":  "User 1",                  # must already exist
         "email":    "user1-new@example.com",   # new address (must be unused)
         "password": "user111-new",             # new password
         "user_type": "human",
@@ -477,30 +492,36 @@ users_data = [
     }
 ]
 
-sync_users(user_data=users_data)
+sync_users(users_data=users_data)
 ```
 
 ##### update users via `email`
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_users
 
 users_data = [
     {
-        "user_id":  "New User 1",              # must already exist OR email must match
-        "email":    "user1-new@example.com",   # must already exist OR user_id must match
+        "user_id":  "New User 1",              # new_user_id
+        "email":    "user1@example.com",   # must already exist
         "password": "user111-new",             # new password
         "user_type": "human",
         "is_active": True
     }
 ]
 
-sync_users(user_data=users_data)
+sync_users(users_data=users_data)
 ```
 
 #### - Archive users
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_users
 
 users_data = [
@@ -513,7 +534,7 @@ users_data = [
     }
 ]
 
-sync_users(user_data=users_data)
+sync_users(users_data=users_data)
 ```
 
 ### Workflow
@@ -560,7 +581,10 @@ Function for adding / editing / archiving question groups
 #### - Add Question Groups
 
 ```python
-from label_pizza.upload_utils import sync_question_grouops
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.upload_utils import sync_question_groups
 
 question_groups_data = [
     {
@@ -570,7 +594,7 @@ question_groups_data = [
         "is_reusable": False,
         "is_auto_submit": False,
         "verification_function": "check_human_description",
-        "is_active": True
+        "is_active": True,
         "questions": [
             {
                 "qtype": "single",
@@ -611,7 +635,10 @@ sync_question_group(question_groups_data=question_groups_data)
 #### - Update question groups
 
 ```python
-from label_pizza.upload_utils import sync_question_grouops
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.upload_utils import sync_question_groups
 
 question_groups_data = [
     {
@@ -621,7 +648,7 @@ question_groups_data = [
         "is_reusable": True,               # update is_reusable
         "is_auto_submit": True,            # update is_auto_submit
         "verification_function": "check_human_description_update",  # update verification_function, must exist in verify.py
-        "is_active": True
+        "is_active": True,
         "questions": [
             {
                 "qtype": "single",
@@ -662,7 +689,10 @@ sync_question_group(question_groups_data=question_groups_data)
 #### - Archive question groups
 
 ```python
-from label_pizza.upload_utils import sync_question_grouops
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.upload_utils import sync_question_groups
 
 question_groups_data = [
     {
@@ -672,7 +702,7 @@ question_groups_data = [
         "is_reusable": False,
         "is_auto_submit": False,
         "verification_function": "check_human_description",
-        "is_active": False.         # Set False to archive the question group
+        "is_active": False,         # Set False to archive the question group
         "questions": [
             {
                 "qtype": "single",
@@ -707,7 +737,7 @@ question_groups_data = [
     }
 ]
 
-sync_question_group(question_groups_data=question_groups_data)
+sync_question_groups(question_groups_data=question_groups_data)
 ```
 
 ### Workflow
@@ -751,12 +781,15 @@ With all checks green, the function starts **one database transaction**:
 #### - Add schemas
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_schemas
 
 schemas_data = [
   {
     "schema_name": "Questions about Humans",   # Must NOT exist in the database
-    "instruction_url": "",
+    "instructions_url": "",
     "question_group_names": [
       "Human", "NSFW"
     ],
@@ -771,12 +804,15 @@ sync_schemas(schemas_data=schemas_data)
 #### - Update schemas
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_schemas
 
 schemas_data = [
   {
     "schema_name": "Questions about Humans",            # Must exist in the database
-    "instruction_url": "https://your-instruction-rul",  # Update instruction_url
+    "instructions_url": "https://your-instruction-rul",  # Update instruction_url
     "question_group_names": [
       "Human", "NSFW"
     ],
@@ -791,12 +827,15 @@ sync_schemas(schemas_data=schemas_data)
 #### - Archive schemas
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_schemas
 
 schemas_data = [
   {
     "schema_name": "Questions about Humans",   # Must exist in the database
-    "instruction_url": "",
+    "instructions_url": "",
     "question_group_names": [
       "Human", "NSFW"
     ],
@@ -840,6 +879,9 @@ Start a single transaction: insert every group in the create list with all its q
 #### - Add projects
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_projects
 
 projects_data = [
@@ -865,6 +907,9 @@ sync_projects(projects_data=projects_data)
 #### - Archive projects
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_projects
 
 projects_data = [
@@ -922,6 +967,9 @@ Start a single transaction: create any new projects with their video links, upda
 #### - Add user to project
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import bulk_assign_users
 
 assignments_data = [
@@ -940,6 +988,9 @@ bulk_assign_users(assignments_data=assignments_data)
 #### - Remove user from project
 
 ```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import bulk_assign_users
 
 assignments_data = [
@@ -1002,6 +1053,9 @@ Both directories share the same JSON structure: each file contains answers for a
 #### - Upload annotations
 
 ```
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import upload_annotations
 
 annotations_data = [
@@ -1024,6 +1078,9 @@ upload_annotations(annotations_data=annotations_data)
 #### - Upload reviews
 
 ```
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import upload_reviews
 
 reviews_data = [
@@ -1085,9 +1142,12 @@ upload_reviews(reviews_data=annotations_data)
 
 ### Set Custom Display text for video in any project
 
-### 1. Sync Question Group
+### 1. Sync Question Group and Schema
 
 ```
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_question_groups
 
 question_groups_data = [
@@ -1095,15 +1155,15 @@ question_groups_data = [
     "title": "Pizza Custom",
     "display_title": "Pizza Custom",
     "description": "Detect and describe all pizzas in the video.",
-    "is_reusable": false,
-    "is_auto_submit": false,
+    "is_reusable": False,
+    "is_auto_submit": False,
     "verification_function": "check_pizza_description",
-    "is_active": true,
+    "is_active": True,
     "questions": [
       {
           "qtype": "single",
           "text": "Pick one option",
-          "display_text": "Number of pizzas?",
+          "display_text": "Pick one option",
           "options": [
               "Option A",
               "Option B"
@@ -1127,12 +1187,31 @@ question_groups_data = [
   }
 ]
 
-sync_question_groups(question_groups_data=question_groups-data)
+sync_question_groups(question_groups_data=question_groups_data)
+
+from label_pizza.upload_utils import sync_schemas
+
+schemas_data = [
+  {
+    "schema_name": "Questions about Pizzas Custom",
+    "instructions_url": "",
+    "question_group_names": [
+      "Pizza Custom"
+    ],
+    "has_custom_display": True,
+    "is_active": True
+  }
+]
+
+sync_schemas(schemas_data=schemas_data)
 ```
 
 ### 2. Sync Projects
 
 ```
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_projects
 
 projects_data = [
@@ -1153,6 +1232,9 @@ sync_projects(projects_data=projects_data)
 ### 3. Set Custom Display
 
 ```
+from label_pizza.db import init_database
+init_database("DBURL")
+
 from label_pizza.upload_utils import sync_projects
 
 projects_data = [

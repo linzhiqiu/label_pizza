@@ -48,14 +48,18 @@ Contains one entry per video.
 ```json
 [
   {
+    "video_uid": "human.mp4",
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",
+    "is_active": true,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
       "license": "Standard YouTube License"
     }
   },
   {
+    "video_uid": "pizza.mp4",
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
+    "is_active": true,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
       "license": "Standard YouTube License"
@@ -75,10 +79,12 @@ Below is an example question group that asks annotators to report how many peopl
 ```json
 {
     "title": "Human",
+    "display_title": "Human",
     "description": "Detect and describe all humans in the video.",
     "is_reusable": false,
     "is_auto_submit": false,
     "verification_function": "check_human_description",
+    "is_active": true,
     "questions": [
         {
             "qtype": "single",
@@ -128,15 +134,21 @@ A schema is a set of question groups.
 [
   {
     "schema_name": "Questions about Humans",
+    "instructions_url": "",
     "question_group_names": [
       "Human", "NSFW"
-    ]
+    ],
+    "has_custom_display": true,
+    "is_active": true
   },
   {
     "schema_name": "Questions about Pizzas",
+    "instructions_url": "",
     "question_group_names": [
       "Pizza", "NSFW"
-    ]
+    ],
+    "has_custom_display": true,
+    "is_active": true
   }
 ]
 ```
@@ -151,13 +163,21 @@ Lists the user accounts that should exist before projects are created. `user_typ
         "user_id": "Admin 1",
         "email": "admin1@example.com",
         "password": "admin111",
-        "user_type": "admin"
+        "user_type": "admin",
+        "is_active": true
     },
     {
         "user_id": "User 1",
         "email": "user1@example.com",
         "password": "user111",
-        "user_type": "human"
+        "user_type": "human",
+        "is_active": true
+    },
+    {
+        "user_id": "Robot 1",
+        "password": "robot111",
+        "user_type": "model",
+        "is_active": true
     }
 ]
 ```
@@ -171,6 +191,8 @@ A project applies a schema to a collection of videos.
   {
     "project_name": "Human Test 0",
     "schema_name": "Questions about Humans",
+    "description": "Project for human questions",
+    "is_active": true,
     "videos": [
       "human.mp4",
       "pizza.mp4"
@@ -179,6 +201,8 @@ A project applies a schema to a collection of videos.
   {
     "project_name": "Pizza Test 0",
     "schema_name": "Questions about Pizzas",
+    "description": "Project for pizza questions",
+    "is_active": true,
     "videos": [
       "human.mp4",
       "pizza.mp4"
@@ -196,12 +220,16 @@ Grants a **role** (`annotator`, `reviewer`, `admin`, or `model`) to a user withi
   {
     "user_email": "user1@example.com",
     "project_name": "Pizza Test 0",
-    "role": "annotator"
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": true
   },
   {
     "user_email": "user1@example.com",
     "project_name": "Human Test 0",
-    "role": "annotator"
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": true
   }
 ]
 ```
@@ -295,41 +323,69 @@ from label_pizza.db import init_database
 init_database("DBURL")  # replace with your database URL name as stored in .env, e.g. init_database("DBURL2")
 ```
 
-### Step 1: Upload Videos
+### Step 1: Sync Videos
 
-Function for adding / editing videos
+Function for adding / editing / archiving videos
 
-```json
-[
-  {
-    "video_uid": "human.mp4",	            
-    "url": "https://your-repo/editied_human.mp4",	
-    "metadata": {                         
-      "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
-      "license": "Standard YouTube License"
-    },
-    "is_active": true                  
-  },
-...
-]
-```
-
-The **`url`** must point straight to the video file itself, and the link must end with the actual filename like `my_clip.mp4`. Everything inside **`metadata`** is kept as-is for provenance. We recommend hosting services such as Hugging Face Datasets or S3 buckets for video files.
-
-Upload all the videos defined in `videos.json`.
+#### - Add videos
 
 ```python
-from label_pizza.upload_utils import upload_videos
+from label_pizza.upload_utils import sync_videos
 
-upload_videos(videos_path="./example/videos.json")
+videos_data = [
+  {
+    "video_uid": "human.mp4",	# Must NOT exist in the database
+    "url": "https://your-repo/human.mp4",
+    "is_active": True,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
+      "license": "Standard YouTube License"
+    }
+  }
+]
+
+sync_videos(videos_data=videos_data)
 ```
 
-### Usage
+#### - Update videos
 
-- Note that `video_uid`  is uncahangable after initialization.
+```python
+from label_pizza.upload_utils import sync_videos
 
-- Set new `url`, `metadata` to update video information.
-- Set `is_active == False`  to archive the video, set `is_active == True` to active the video. 
+videos_data = [
+  {
+    "video_uid": "human.mp4",                       # Must already exist in the database
+    "url": "https://your-repo-new/human.mp4",	      # update url
+    "is_active": True,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
+      "license": "Standard YouTube License Updated"	# update metadata
+    }
+  }
+]
+
+sync_videos(videos_data=videos_data)
+```
+
+#### - Archive videos
+
+```python
+from label_pizza.upload_utils import sync_videos
+
+videos_data = [
+  {
+    "video_uid": "human.mp4",	# Must already exist in the database
+    "url": "https://your-repo/human.mp4",
+    "is_active": False,	      # Set to False to archive the video
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
+      "license": "Standard YouTube License"
+    }
+  }
+]
+
+sync_videos(videos_data=videos_data)
+```
 
 ### Workflow
 
@@ -364,51 +420,101 @@ The function opens **one** database transaction:
 
 
 
-### Step 2: Upload Users
+### Step 2: Sync Users
 
-### `users.json`
+Function for adding / editing / archiving users
 
-Lists the user accounts that should exist before projects are created. `user_type` can be `admin`, `human`, or `model`.
+#### - Add users
 
-```json
-[
+```python
+from label_pizza.upload_utils import sync_users
+
+users_data = [
     {
-        "user_id": "Admin 1",
-        "email": "admin1@example.com",
-        "password": "admin111",
-        "user_type": "admin",
-        "is_archived": false
-    },
-    {
-        "user_id": "User 1",
-        "email": "user1@example.com",
+        "user_id": "User 1",          # Must NOT exist in the database
+        "email": "user1@example.com", # Must NOT exist in the database
         "password": "user111",
         "user_type": "human",
-        "is_active": true
-    },
+        "is_active": True
+    }
+]
+
+sync_users(user_data=users_data)
+```
+
+#### - Update users
+
+```python
+from label_pizza.upload_utils import sync_users
+
+users_data = [
     {
-        "user_id": "Robot 1",
-        "password": "robot111",
-        "user_type": "model",
+        "user_id": "New User 1",          # must already exist OR email must match
+        "email": "user1@example.com",     # must already exist OR user_id must match
+        "password": "user111-new",        # update password
+        "user_type": "human",
         "is_active": true
     }
 ]
+
+sync_users(user_data=users_data)
 ```
 
-Load the users from the `users.json`.
+>  **Either user_id or email must already exist in the database**
+
+##### Update users via `user_id`
 
 ```python
-from label_pizza.upload_utils import upload_users
+from label_pizza.upload_utils import sync_users
 
-upload_users(users_path="./example/users.json")
+users_data = [
+    {
+        "user_id":  "New User 1",              # must already exist
+        "email":    "user1-new@example.com",   # new address (must be unused)
+        "password": "user111-new",             # new password
+        "user_type": "human",
+        "is_active": True
+    }
+]
+
+sync_users(user_data=users_data)
 ```
 
-### Usage
+##### update users via `email`
 
-- Note that the `user_id` and `email` are unique.
-- Set new `email` and `user_id` to create new user.
-- Using existing `email` or `user_id` to match existing user, then update the other params.
-- Set `is_active == False`  to archive the user, set `is_active == True` to active the user. 
+```python
+from label_pizza.upload_utils import sync_users
+
+users_data = [
+    {
+        "user_id":  "New User 1",              # must already exist OR email must match
+        "email":    "user1-new@example.com",   # must already exist OR user_id must match
+        "password": "user111-new",             # new password
+        "user_type": "human",
+        "is_active": True
+    }
+]
+
+sync_users(user_data=users_data)
+```
+
+#### - Archive users
+
+```python
+from label_pizza.upload_utils import sync_users
+
+users_data = [
+    {
+        "user_id": "User 1",          # must already exist OR email must match
+        "email": "user1@example.com", # exists in the database (optional)
+        "password": "user111",
+        "user_type": "human",
+        "is_active": False            # Set to False to archive the video
+    }
+]
+
+sync_users(user_data=users_data)
+```
 
 ### Workflow
 
@@ -447,82 +553,162 @@ With all conflicts ruled out, the function opens a single database transaction:
 
 
 
-### Step 3: Upload Question Groups
+### Step 3: Sync Question Groups
 
-### `question_groups/`
+Function for adding / editing / archiving question groups
 
-Each JSON file defines *one* group of related questions.
-
-Below is an example question group that asks annotators to report how many people appear in a video and, if any, to describe them.
-
-```json
-{
-    "title": "Human",
-    "display_title": "Human",
-    "description": "Detect and describe all humans in the video.",
-    "is_reusable": false,
-    "is_auto_submit": false,
-    "is_active": true,
-    "verification_function": "check_human_description",
-    "questions": [
-        {
-            "qtype": "single",
-            "text": "Number of people?",
-            "display_text": "Number of people?",
-            "options": [
-                "0",
-                "1",
-                "2",
-                "3 or more"
-            ],
-            "display_values": [
-                "0",
-                "1",
-                "2",
-                "3 or more"
-            ],
-            "option_weights": [
-                1.0,
-                1.0,
-                1.0,
-                1.0
-            ],
-            "default_option": "0"
-        },
-        {
-            "qtype": "description",
-            "text": "If there are people, describe them.",
-            "display_text": "If there are people, describe them."
-        }
-    ]
-}
-```
-
-* **`text`** and **`options`** are immutable identifiers, whereas **`display_text`** and **`display_values`** can later be edited in the web UI for wording tweaks.
-* **`option_weights`** let you assign extra influence to certain answers in the weighted majority vote (for reviewer to resolve annotator disagreement), in case you need one option to carry more weight than the others.
-* **`default_option`** pre‑selects a choice when the task opens for both annotators and reviewers.
-* **`is_reusable`** indicates whether this question group can be added to multiple schemas.
-* **`is_auto_submit`** automatically submits the default answer as soon as the video loads. For example, if 99 % of your clips are safe, auto‑submitting "No" to an NSFW question saves annotators from repeatedly clicking the obvious answer.
-* Current `qtype` values are `single` (single‑choice) and `description` (free‑text).
-
-Create the user accounts listed in `users.json`.
-
-Load the question groups from the `question_groups/` folder.
+#### - Add Question Groups
 
 ```python
-from label_pizza.upload_utils import upload_question_groups
+from label_pizza.upload_utils import sync_question_grouops
 
-upload_question_groups(
-    question_groups_folder="./example/question_groups"
-)
+question_groups_data = [
+    {
+        "title": "Human",           # Must NOT exist in the database
+        "display_title": "Human",
+        "description": "Detect and describe all humans in the video.",
+        "is_reusable": False,
+        "is_auto_submit": False,
+        "verification_function": "check_human_description",
+        "is_active": True
+        "questions": [
+            {
+                "qtype": "single",
+                "text": "Number of people?",
+                "display_text": "Number of people?",
+                "options": [
+                    "0",
+                    "1",
+                    "2",
+                    "3 or more"
+                ],
+                "display_values": [
+                    "0",
+                    "1",
+                    "2",
+                    "3 or more"
+                ],
+                "option_weights": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "default_option": "0"
+            },
+            {
+                "qtype": "description",
+                "text": "If there are people, describe them.",
+                "display_text": "If there are people, describe them."
+            }
+        ]
+    }
+]
+
+sync_question_group(question_groups_data=question_groups_data)
 ```
 
-### Usage
+#### - Update question groups
 
-- Here we could only update the question group itself, could not update the inside questions.
-- Set new `title` to create new question group.
-- Set existing `title` to match the existing group. Reset `display_title`, `description`,  `is_auto_submit`and verification_function
-- Set `is_active == False` to archive the question group; set `is_active == True` to activate the question group. 
+```python
+from label_pizza.upload_utils import sync_question_grouops
+
+question_groups_data = [
+    {
+        "title": "Human",                  # Must exist in the database
+        "display_title": "Human Updated",  # update display_title
+        "description": "Detect and describe all humans in the video. (Updated)", # update description here
+        "is_reusable": True,               # update is_reusable
+        "is_auto_submit": True,            # update is_auto_submit
+        "verification_function": "check_human_description_update",  # update verification_function, must exist in verify.py
+        "is_active": True
+        "questions": [
+            {
+                "qtype": "single",
+                "text": "Number of people?",
+                "display_text": "Number of people?",
+                "options": [
+                    "0",
+                    "1",
+                    "2",
+                    "3 or more"
+                ],
+                "display_values": [
+                    "0",
+                    "1",
+                    "2",
+                    "3 or more"
+                ],
+                "option_weights": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "default_option": "0"
+            },
+            {
+                "qtype": "description",
+                "text": "If there are people, describe them.",
+                "display_text": "If there are people, describe them."
+            }
+        ]
+    }
+]
+
+sync_question_group(question_groups_data=question_groups_data)
+```
+
+#### - Archive question groups
+
+```python
+from label_pizza.upload_utils import sync_question_grouops
+
+question_groups_data = [
+    {
+        "title": "Human",           # Must exist in the database
+        "display_title": "Human",
+        "description": "Detect and describe all humans in the video.",
+        "is_reusable": False,
+        "is_auto_submit": False,
+        "verification_function": "check_human_description",
+        "is_active": False.         # Set False to archive the question group
+        "questions": [
+            {
+                "qtype": "single",
+                "text": "Number of people?",
+                "display_text": "Number of people?",
+                "options": [
+                    "0",
+                    "1",
+                    "2",
+                    "3 or more"
+                ],
+                "display_values": [
+                    "0",
+                    "1",
+                    "2",
+                    "3 or more"
+                ],
+                "option_weights": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "default_option": "0"
+            },
+            {
+                "qtype": "description",
+                "text": "If there are people, describe them.",
+                "display_text": "If there are people, describe them."
+            }
+        ]
+    }
+]
+
+sync_question_group(question_groups_data=question_groups_data)
+```
 
 ### Workflow
 
@@ -558,49 +744,69 @@ With all checks green, the function starts **one database transaction**:
 2. **Updates** – for each existing group:
    - Update `display_title`,  `description`,  `is_auto_submit`, `verification_function`, `is_active` if they changed.
 
-### Step 4: Upload Schemas
 
-### `schemas.json`
 
-A schema is a set of question groups.
+### Step 4: Sync Schemas
 
-```json
-[
+#### - Add schemas
+
+```python
+from label_pizza.upload_utils import sync_schemas
+
+schemas_data = [
   {
-    "schema_name": "Questions about Humans",
-    "instructions_url": "https://your-instruction-rul",
-    "has_custom_display": true,
-    "is_active": true,
+    "schema_name": "Questions about Humans",   # Must NOT exist in the database
+    "instruction_url": "",
     "question_group_names": [
       "Human", "NSFW"
-    ]
-  },
-  {
-    "schema_name": "Questions about Pizzas",
-    "instructions_url": "https://your-instruction-rul",
-    "has_custom_display": true,
-    "is_active": true,
-    "question_group_names": [
-      "Pizza", "NSFW"
-    ]
+    ],
+    "has_custom_display": True,
+    "is_active": True
   }
 ]
+
+sync_schemas(schemas_data=schemas_data)
 ```
 
-Load the schemas from the `schemas.json`.
+#### - Update schemas
 
+```python
+from label_pizza.upload_utils import sync_schemas
+
+schemas_data = [
+  {
+    "schema_name": "Questions about Humans",            # Must exist in the database
+    "instruction_url": "https://your-instruction-rul",  # Update instruction_url
+    "question_group_names": [
+      "Human", "NSFW"
+    ],
+    "has_custom_display": False,                        # Update has_custom_display
+    "is_active": True
+  }
+]
+
+sync_schemas(schemas_data=schemas_data)
 ```
-from label_pizza.upload_utils import upload_schemas
-upload_schemas(
-    schemas_path="./example/schemas.json"
-)
+
+#### - Archive schemas
+
+```python
+from label_pizza.upload_utils import sync_schemas
+
+schemas_data = [
+  {
+    "schema_name": "Questions about Humans",   # Must exist in the database
+    "instruction_url": "",
+    "question_group_names": [
+      "Human", "NSFW"
+    ],
+    "has_custom_display": True,
+    "is_active": False                         # Set False to archive schema
+  }
+]
+
+sync_schemas(schemas_data=schemas_data)
 ```
-
-### Usage
-
-- Assign new `schema_name` to create new schema. Make sure all the question groups all existing. And they have not been used by other schema if they are not reusable.
-- Using existing `schema_name` to update existing schema. You could only update `instructions_url` and `has_custom_display`.
-- Set `is_active == False` to archive the schema; set `is_active == True` to activate the schema. 
 
 ### Workflow
 
@@ -629,85 +835,53 @@ Start a single transaction: insert every group in the create list with all its q
 
 
 
-### Step 5: Upload Projects
+### Step 5: Sync Projects
 
-### `projects.json`
+#### - Add projects
 
-A project applies a schema to a collection of videos. (We support two kinds of videos list)
+```python
+from label_pizza.upload_utils import sync_projects
 
-```
-[
+projects_data = [
   {
-    "project_name": "Human Test 1",
+    "project_name": "Human Test 0",        # Must Not exist in the database
     "schema_name": "Questions about Humans",
-    "description": "Project about humans",
-    "is_active": true
+    "description": "Test project for human questions",
+    "is_active": True,
     "videos": [
-      "human.mp4", 
+      "human.mp4",
       "pizza.mp4"
-    ]  
-  },
-  {
-    "project_name": "Pizza Test 1",
-    "schema_name": "Questions about Pizzas",
-    "description": "Project about pizzas",
-    "is_active": true
-    "videos": [
-      {
-        "video_uid": "human.mp4",                
-        "questions": [                          
-          {
-            "question_text":  "Pick one option",  
-            "custom_question": "Is there a pizza in the video?",
-            "custom_option": {                    
-              "Option A": "No",
-              "Option B": "Yes, there is."
-            }
-          },
-          {
-            "question_text": "Describe one aspect of the video",
-            "display_text":  "If no pizza is shown, describe what is present instead."
-          }
-        ]
-      },
-      {
-        "video_uid": "pizza.mp4",
-        "questions": [
-          {
-            "question_text":  "Pick one option",
-            "custom_question": "What type of pizza is shown?",
-            "custom_option": {
-              "Option A": "Pepperoni",
-              "Option B": "Veggie"
-            }
-          },
-          {
-            "question_text": "Describe one aspect of the video",
-            "display_text":  "Describe the type of pizza shown in the video."
-          }
-        ]
-      }
     ]
   }
 ]
+
+sync_projects(projects_data=projects_data)
 ```
 
-Generate projects from `projects.json`.
+#### - Update projects
+
+> **Project could not be updated!**
+
+#### - Archive projects
 
 ```python
-from label_pizza.upload_utils import upload_projects
+from label_pizza.upload_utils import sync_projects
 
-upload_projects(projects_path="./example/projects.json")
+projects_data = [
+  {
+    "project_name": "Human Test 0",        # Must exist in the database
+    "schema_name": "Questions about Humans",
+    "description": "Test project for human questions",
+    "is_active": False,                    # Set False to archive the project
+    "videos": [
+      "human.mp4",
+      "pizza.mp4"
+    ]
+  }
+]
+
+sync_projects(projects_data=projects_data)
 ```
-
-### Usage
-
-- Using a new `project_name` to create new project, `schema_name` and `videos`are required.
-- Inside the videos, we support two kinds of video construction:
-  1. `str`, videos could be construct in `str`. In this style, we would delete all the custom question displays of this video inside this project.
-  2. `dict`,videos could be construct in `dict`. In this style, we would add / update the custom question displays of this video and delete the existing custom displays that are not present in the json file.
-- Using a existing `project_name` to update existing project, you could only update `description` and custom displays.
-- Set `is_active == False`to archive a project; set `is_active == True`to activate a project.
 
 ### Workflow
 
@@ -741,33 +915,44 @@ Run `verify_add_project()` on new projects and `verify_update_project()` on exis
 
 Start a single transaction: create any new projects with their video links, update existing projects, and execute the per-video/per-question display logic (delete, overwrite, or skip); commit if every operation succeeds, otherwise roll back the entire batch.
 
+
+
 ### Step 6: Upload Users to Projects
 
-Assign / Remove a **role** (`annotator`, `reviewer`, `admin`, or `model`) to a user within a project. Admins gain project access automatically, and once a user is created as `model` they cannot be switched to a human role (or vice‑versa) because model accounts store confidence scores.
-
-```json
-[
-  {
-    "user_email": "user1@example.com",
-    "project_name": "Pizza Test 0",
-    "role": "annotator",
-    "is_active": true
-  },
-  {
-    "user_email": "user1@example.com",
-    "project_name": "Human Test 0",
-    "role": "annotator",
-    "is_active": true
-  }
-]
-```
-
-Assign / Remove roles to users as specified in `assignments.json`.
+#### - Add user to project
 
 ```python
 from label_pizza.upload_utils import bulk_assign_users
 
-bulk_assign_users(assignment_path="./example/assignments.json")
+assignments_data = [
+  {
+    "user_name": "User 1",
+    "project_name": "Human Test 0",
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": True
+  }
+]
+
+bulk_assign_users(assignments_data=assignments_data)
+```
+
+#### - Remove user from project
+
+```python
+from label_pizza.upload_utils import bulk_assign_users
+
+assignments_data = [
+  {
+    "user_name": "User 1",
+    "project_name": "Human Test 0",
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": False                 # Set False to remove user from this project
+  }
+]
+
+bulk_assign_users(assignments_data=assignments_data)
 ```
 
 ### Workflow
@@ -806,91 +991,56 @@ Run `verify_add_assignment()`, `verify_update_assignment()`, or `verify_remove_a
 - Execute every **create**, **update**, and **remove** exactly as classified.
 - **Commit** only if all succeed; otherwise **roll back** the entire batch.
 
+
+
 ### Step 7: Upload Annotations and Reviews
 
 ### `annotations/` and `reviews/`
 
 Both directories share the same JSON structure: each file contains answers for a single question group across all projects and videos. Use `annotations/` for annotator answers and `reviews/` for reviewer ground truth (there can be only one ground‑truth answer per video‑question‑group pair).
 
-#### Example annotations folder:
+#### - Upload annotations
 
-* `annotations/humans.json` - Contains all human‑related annotations
-* `annotations/pizzas.json` - Contains all pizza‑related annotations
-* `annotations/nsfw.json`  - Contains all NSFW‑related annotations
+```
+from label_pizza.upload_utils import upload_annotations
 
-**Example `annotations/humans.json`:**
-
-```json
-[
+annotations_data = [
   {
-    "question_group_title": "Human",
-    "project_name": "Human Test 0",
-    "user_name": "User 1",
-    "video_uid": "human.mp4",
-    "answers": {
+    "question_group_title": "Human",    # Must exist in the database
+    "project_name": "Human Test 0",     # Must exist in the database
+    "user_name": "User 1",              # User must have at least "annotation" privileges
+    "video_uid": "human.mp4",           # Video must exist in the project
+    "answers": {        # Answers must include all and only the questions defined in the question group
       "Number of people?": "1",
       "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    "is_ground_truth": false
-  },
-  {
-    "question_group_title": "Human",
-    "project_name": "Human Test 0",
-    "user_name": "User 1",
-    "video_uid": "pizza.mp4",
-    "answers": {
-      "Number of people?": "0",
-      "If there are people, describe them.": ""
-    },
-    "is_ground_truth": false
+    "is_ground_truth": True
   }
 ]
+
+upload_annotations(annotations_data=annotations_data)
 ```
 
-#### Example reviews folder:
+#### - Upload reviews
 
-* `reviews/humans.json` - Contains all human‑related ground‑truth reviews
-* `reviews/pizzas.json` - Contains all pizza‑related ground‑truth reviews
-* `reviews/nsfw.json`   - Contains all NSFW‑related ground‑truth reviews
+```
+from label_pizza.upload_utils import upload_reviews
 
-**Example `reviews/humans.json`:**
-
-```json
-[
+reviews_data = [
   {
-    "question_group_title": "Human",
-    "project_name": "Human Test 0",
-    "user_name": "Admin 1",
-    "video_uid": "human.mp4",
-    "answers": {
+    "question_group_title": "Human",    # Must exist in the database
+    "project_name": "Human Test 0",     # Must exist in the database
+    "user_name": "User 1",              # User must have at least "annotation" privileges
+    "video_uid": "human.mp4",           # Video must exist in the project
+    "answers": {        # Answers must include all and only the questions defined in the question group
       "Number of people?": "1",
       "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    "is_ground_truth": true
-  },
-  {
-    "question_group_title": "Human",
-    "project_name": "Human Test 0",
-    "user_name": "Admin 1",
-    "video_uid": "pizza.mp4",
-    "answers": {
-      "Number of people?": "0",
-      "If there are people, describe them.": ""
-    },
-    "is_ground_truth": true
+    "is_ground_truth": True             # Must be True
   }
 ]
-```
 
-**Important:** The `is_ground_truth: true` field marks reviewer ground‑truth answers. A (video, question group, project) can have at most one ground truth answer.
-
-Finally, upload any pre‑existing annotations and reviewer ground truth.
-
-```python
-from label_pizza.upload_utils import upload_annotations, upload_reviews
-
-batch_upload_annotations(annotations_folder="./example/annotations")
-batch_upload_reviews(reviews_folder="./example/reviews")
+upload_reviews(reviews_data=annotations_data)
 ```
 
 ### Workflow
@@ -933,81 +1083,98 @@ batch_upload_reviews(reviews_folder="./example/reviews")
 
 # Custom Display Text for Video Annotations
 
-## Overview
+### Set Custom Display text for video in any project
 
-Label Pizza allows you to customize how questions and options appear to annotators on a per-video basis within a project. This is useful when the same underlying question needs different wording depending on the video content.
-
-## Quick Setup
-
-For a quick start, use the single command-line tool:
-
-bash
-
-```bash
-# Ensure your database is configured in .env
-python upload_projects_from_folder.py --folder-path ./example_custom_questions/ --database-url-name DBURL_2
-```
-
-This command imports everything from the folder — videos, users, question groups, schemas, projects, custom displays, and sample annotations — giving you a fully-working demo in seconds.
-
-## Folder Structure
+### 1. Sync Question Group
 
 ```
-example_custom_question/
-├── videos.json          # Video metadata
-├── question_groups/     # Question definitions
-│   ├── humans.json
-│   ├── pizzas.json
-│   └── nsfw.json
-├── schemas.json         # Schema definitions (must have has_custom_display: true)
-├── users.json          # User accounts
-├── projects.json       # Project configurations with custom displays
-├── assignments.json    # User-project role assignments
-├── annotations/        # Sample annotations (optional)
-│   ├── humans.json
-│   ├── pizzas.json
-│   └── nsfw.json
-└── reviews/           # Sample reviews (optional)
-    ├── humans.json
-    ├── pizzas.json
-    └── nsfw.json
-```
+from label_pizza.upload_utils import sync_question_groups
 
-
-
-## Custom Display Configuration
-
-### File Structure
-
-The `projects.json` file supports two formats for video lists:
-
-json
-
-```json
-[
+question_groups_data = [
   {
-    "project_name": "Human Test Simple",
-    "schema_name": "Questions about Humans Custom",
-    "videos": ["human.mp4", "pizza.mp4"]  // Simple format: No custom displays
-  },
+    "title": "Pizza Custom",
+    "display_title": "Pizza Custom",
+    "description": "Detect and describe all pizzas in the video.",
+    "is_reusable": false,
+    "is_auto_submit": false,
+    "verification_function": "check_pizza_description",
+    "is_active": true,
+    "questions": [
+      {
+          "qtype": "single",
+          "text": "Pick one option",
+          "display_text": "Number of pizzas?",
+          "options": [
+              "Option A",
+              "Option B"
+          ],
+          "display_values": [
+              "Option A",
+              "Option B"
+          ],
+          "option_weights": [
+              1.0,
+              1.0
+          ],
+          "default_option": "Option A"
+      },
+      {
+        "qtype": "description",
+        "text": "Describe one aspect of the video",
+        "display_text": "Describe one aspect of the video"
+      }
+    ]
+  }
+]
+
+sync_question_groups(question_groups_data=question_groups-data)
+```
+
+### 2. Sync Projects
+
+```
+from label_pizza.upload_utils import sync_projects
+
+projects_data = [
   {
-    "project_name": "Pizza Test Custom",
+    "project_name": "Pizza Test 0 Custom",
     "schema_name": "Questions about Pizzas Custom",
+    "description": "Test project for custom questions",
+    "videos": [
+      "human.mp4"
+			"pizza.mp4"
+    ]
+  }
+]
+
+sync_projects(projects_data=projects_data)
+```
+
+### 3. Set Custom Display
+
+```
+from label_pizza.upload_utils import sync_projects
+
+projects_data = [
+  {
+    "project_name": "Pizza Test 0 Custom",
+    "schema_name": "Questions about Pizzas Custom",
+    "description": "Test project for custom questions",
     "videos": [
       {
         "video_uid": "human.mp4",
         "questions": [
           {
-            "question_text": "Pick one option",        // Original question text (required)
-            "custom_question": "Is there a pizza?",    // Custom display text
-            "custom_option": {                         // Custom option labels
+            "question_text": "Pick one option",
+            "custom_question": "Is there a pizza in the video?",
+            "custom_option": {
               "Option A": "No",
-              "Option B": "Yes, there is one"
+              "Option B": "Yes, there is."
             }
           },
           {
-            "question_text": "Describe the object",
-            "display_text": "If no pizza is shown, describe what you see instead."
+            "question_text": "Describe one aspect of the video",
+            "display_text": "If no pizza is shown, describe what is present instead."
           }
         ]
       },
@@ -1018,58 +1185,22 @@ json
             "question_text": "Pick one option",
             "custom_question": "What type of pizza is shown?",
             "custom_option": {
-              "Option A": "Pepperoni",
-              "Option B": "Veggie"
+                "Option A": "Pepperoni",
+                "Option B": "Veggie"
             }
           },
           {
             "question_text": "Describe the object",
-            "display_text": "Describe the pizza toppings in detail."
+            "display_text": "Describe the type of pizza shown in the video."
           }
         ]
       }
     ]
   }
 ]
+
+sync_projects(projects_data=projects_data)
 ```
-
-### Field Definitions
-
-- **`question_text`** (required): The original question text as defined in the question group
-- **`custom_question`** or **`display_text`**: The custom text to display for this question
-- **`custom_option`** or **`option_map`**: Custom labels for multiple-choice options (key = original option, value = custom label)
-
-### Synchronization Logic
-
-When processing custom displays, the system follows these rules:
-
-1. Simple Format
-
-   (
-
-   ```
-   "videos": ["video1.mp4"]
-   ```
-
-   ):
-
-   - Removes ALL custom displays for these videos
-   - Used to reset videos to default question text
-
-2. Detailed Format
-
-   (with questions array):
-
-   - **Creates** custom displays for questions specified in JSON but not in database
-   - **Updates** custom displays when JSON differs from database
-   - **Skips** custom displays when JSON matches database (no changes)
-   - **Removes** custom displays that exist in database but not in JSON
-
-### Requirements
-
-- The schema must have `has_custom_display: true` enabled
-- Question text must match exactly with the original question definition
-- All videos must exist in the project
 
 ### Processing Report
 

@@ -2,6 +2,7 @@
   {
     "video_uid": "human.mp4",
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",
+    "is_active": true,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
       "license": "Standard YouTube License"
@@ -10,6 +11,7 @@
   {
     "video_uid": "pizza.mp4",
     "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
+    "is_active": true,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
       "description": "A video of a pizza being made.",

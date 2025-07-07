@@ -1,14 +1,20 @@
 [
   {
     "schema_name": "Questions about Humans",
+    "instructions_url": "",
     "question_group_names": [
       "Human", "NSFW"
-    ]
+    ],
+    "has_custom_display": true,
+    "is_active": true
   },
   {
     "schema_name": "Questions about Pizzas",
+    "instructions_url": "",
     "question_group_names": [
       "Pizza", "NSFW"
-    ]
+    ],
+    "has_custom_display": true,
+    "is_active": true
   }
 ]

@@ -2,16 +2,22 @@
   {
     "user_name": "User 1",
     "project_name": "Pizza Test 0",
-    "role": "annotator"
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": true
   },
   {
     "user_name": "User 1",
     "project_name": "Human Test 0",
-    "role": "annotator"
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": true
   },
   {
     "user_name": "Robot 1",
     "project_name": "Human Test 0",
-    "role": "model"
+    "role": "model",
+    "user_weight": 1.0,
+    "is_active": true
   }
 ]

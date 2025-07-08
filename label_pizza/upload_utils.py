@@ -31,30 +31,39 @@ def add_videos(videos_data: List[Dict]) -> None:
 
     with SessionLocal() as sess:
         duplicates = []
-        for v in videos_data:
-            try:
-                VideoService.verify_add_video(
+        
+        # Verify all videos with progress bar
+        with tqdm(total=len(videos_data), desc="Verifying videos for addition", unit="video") as pbar:
+            for v in videos_data:
+                try:
+                    VideoService.verify_add_video(
+                        video_uid=v["video_uid"],
+                        url=v["url"],
+                        metadata=v.get("metadata"),
+                        session=sess,
+                    )
+                except ValueError as err:
+                    if "already exists" in str(err):
+                        duplicates.append(v["video_uid"])
+                    else:
+                        raise
+                pbar.update(1)
+
+        if duplicates:
+            raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+
+        # Add videos with progress bar
+        with tqdm(total=len(videos_data), desc="Adding videos", unit="video") as pbar:
+            for v in videos_data:
+                VideoService.add_video(
                     video_uid=v["video_uid"],
                     url=v["url"],
                     metadata=v.get("metadata"),
                     session=sess,
                 )
-            except ValueError as err:
-                if "already exists" in str(err):
-                    duplicates.append(v["video_uid"])
-                else:
-                    raise
-
-        if duplicates:
-            raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
-
-        for v in videos_data:
-            VideoService.add_video(
-                video_uid=v["video_uid"],
-                url=v["url"],
-                metadata=v.get("metadata"),
-                session=sess,
-            )
+                pbar.set_postfix(uid=v["video_uid"][:20] + "..." if len(v["video_uid"]) > 20 else v["video_uid"])
+                pbar.update(1)
+                
         sess.commit()
         print(f"✔ Added {len(videos_data)} new video(s)")
 
@@ -66,37 +75,48 @@ def update_videos(videos_data: List[Dict]) -> None:
 
     with SessionLocal() as sess:
         missing = []
-        for v in videos_data:
-            try:
-                VideoService.verify_update_video(
+        
+        # Verify all videos with progress bar
+        with tqdm(total=len(videos_data), desc="Verifying videos for update", unit="video") as pbar:
+            for v in videos_data:
+                try:
+                    VideoService.verify_update_video(
+                        video_uid=v["video_uid"],
+                        new_url=v["url"],
+                        new_metadata=v.get("metadata"),
+                        session=sess,
+                    )
+                except ValueError as err:
+                    if "not found" in str(err):
+                        missing.append(v["video_uid"])
+                    else:
+                        raise
+                pbar.update(1)
+
+        if missing:
+            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+
+        # Update videos with progress bar
+        with tqdm(total=len(videos_data), desc="Updating videos", unit="video") as pbar:
+            for v in videos_data:
+                VideoService.update_video(
                     video_uid=v["video_uid"],
                     new_url=v["url"],
                     new_metadata=v.get("metadata"),
                     session=sess,
                 )
-            except ValueError as err:
-                if "not found" in str(err):
-                    missing.append(v["video_uid"])
-                else:
-                    raise
-
-        if missing:
-            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
-
-        for v in videos_data:
-            VideoService.update_video(
-                video_uid=v["video_uid"],
-                new_url=v["url"],
-                new_metadata=v.get("metadata"),
-                session=sess,
-            )
-            if "is_archived" in v:
-                rec = VideoService.get_video_by_uid(v["video_uid"], sess)
-                if rec and v["is_archived"] != rec.is_archived:
-                    if v["is_archived"]:
-                        VideoService.archive_video(rec.id, sess)
-                    else:
-                        rec.is_archived = False
+                
+                # Handle archive status if present
+                if "is_archived" in v:
+                    rec = VideoService.get_video_by_uid(v["video_uid"], sess)
+                    if rec and v["is_archived"] != rec.is_archived:
+                        if v["is_archived"]:
+                            VideoService.archive_video(rec.id, sess)
+                        else:
+                            rec.is_archived = False
+                
+                pbar.set_postfix(uid=v["video_uid"][:20] + "..." if len(v["video_uid"]) > 20 else v["video_uid"])
+                pbar.update(1)
 
         sess.commit()
         print(f"✔ Updated {len(videos_data)} video(s)")
@@ -115,37 +135,54 @@ def sync_videos(
 
     # Load JSON if a path is provided
     if videos_path:
+        print(f"📂 Loading videos from {videos_path}")
         with open(videos_path, "r") as f:
             videos_data = json.load(f)
 
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
 
-    # Validate & enrich each record
+    print(f"\n🚀 Starting video sync pipeline with {len(videos_data)} videos...")
+
+    # Validate & enrich each record with progress bar
     processed: List[Dict] = []
-    for idx, item in enumerate(videos_data, 1):
-        required = {"url", "video_uid", "metadata", "is_active"}
-        if missing := required - set(item.keys()):
-            raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+    with tqdm(total=len(videos_data), desc="Validating video data", unit="video") as pbar:
+        for idx, item in enumerate(videos_data, 1):
+            required = {"url", "video_uid", "metadata", "is_active"}
+            if missing := required - set(item.keys()):
+                raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
 
-        # optional active → archived conversion
-        if "is_active" in item:
-            item["is_archived"] = not item.pop("is_active")
+            # optional active → archived conversion
+            if "is_active" in item:
+                item["is_archived"] = not item.pop("is_active")
 
-        processed.append(item)
+            processed.append(item)
+            pbar.update(1)
 
     # Decide add vs update with a single read-only look‑up
+    print("\n📊 Categorizing videos...")
     with SessionLocal() as sess:
         to_add, to_update = [], []
-        for v in processed:
-            (to_update if VideoService.get_video_by_uid(v["video_uid"], sess) else to_add).append(v)
+        with tqdm(total=len(processed), desc="Checking existing videos", unit="video") as pbar:
+            for v in processed:
+                existing = VideoService.get_video_by_uid(v["video_uid"], sess)
+                if existing:
+                    to_update.append(v)
+                else:
+                    to_add.append(v)
+                pbar.update(1)
     
-    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+    print(f"\n📈 Summary: {len(to_add)} videos to add, {len(to_update)} videos to update")
+    
     if to_add:
+        print(f"\n➕ Adding {len(to_add)} new videos...")
         add_videos(to_add)
+        
     if to_update:
+        print(f"\n🔄 Updating {len(to_update)} existing videos...")
         update_videos(to_update)
-    print("🎉 Video pipeline complete")
+        
+    print("\n🎉 Video pipeline complete!")
 
 
 # --------------------------------------------------------------------------- #
@@ -807,11 +844,20 @@ def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str,
     """Create / update / remove / skip custom displays to match JSON spec."""
     stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
 
-    cfg = _normalize_video_data(videos)
-    
     # Get project info including schema
     project = ProjectService.get_project_by_id(project_id, sess)
     schema_id = project.schema_id
+    
+    # Early exit if schema doesn't support custom displays
+    schema = SchemaService.get_schema_by_id(schema_id, sess)
+    if not schema.has_custom_display:
+        # Count all potential operations as skipped for reporting
+        proj_q = ProjectService.get_project_questions(project_id, sess)
+        proj_v = VideoService.get_project_videos(project_id, sess)
+        stats["skipped"] = len(proj_q) * len(proj_v)
+        return stats
+
+    cfg = _normalize_video_data(videos)
     
     # Get project questions and videos using service methods
     proj_q = {q["id"]: q["text"] for q in ProjectService.get_project_questions(project_id, sess)}
@@ -1076,13 +1122,6 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     
     if total_custom_displays > 0:
         print(f"🎨 Total custom displays processed: {total_custom_displays}")
-    
-    # Return results for programmatic use
-    return {
-        "added": add_results,
-        "synced": sync_results,
-        "total_processed": len(add_results) + len(sync_results)
-    }
 
 
 def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] = None) -> None:
@@ -1423,7 +1462,7 @@ def upload_reviews(reviews_path: str = None, reviews_data: list[dict] = None) ->
 
 def batch_upload_annotations(annotations_folder: str = None, 
                            annotations_data: list[list[dict]] = None, 
-                           max_workers: int = 2) -> None:
+                           max_workers: int = 5) -> None:
     """Batch upload annotations from folder or data list."""
     import concurrent.futures
     import glob

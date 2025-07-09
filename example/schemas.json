@@ -5,7 +5,7 @@
     "question_group_names": [
       "Human", "NSFW"
     ],
-    "has_custom_display": true,
+    "has_custom_display": false,
     "is_active": true
   },
   {
@@ -14,7 +14,7 @@
     "question_group_names": [
       "Pizza", "NSFW"
     ],
-    "has_custom_display": true,
+    "has_custom_display": false,
     "is_active": true
   }
 ]

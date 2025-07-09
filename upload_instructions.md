@@ -14,6 +14,8 @@ This single command imports everything in the `example/` folder — videos, user
 
 The rest of this README explains the detailed folder structure, JSON formats, and step‑by‑step process for anyone who wants to learn how to batch‑upload their own projects.
 
+> If you want to archive any schema, you should ensure that all the projects that use the schema have been archived. You could see Step4 and Step5 to see how to archive schemas and projects separately.
+
 ## Folder Structure
 
 > This directory provides a compact, end‑to‑end example of the files required to set up a video‑annotation workflow. Copy whichever pieces you already have, adjust the JSON to match your questions and videos, and import them with the project‑creation scripts. Any missing parts (e.g., annotations or reviews) can always be added later through the web interface.
@@ -361,7 +363,7 @@ from label_pizza.upload_utils import sync_videos
 videos_data = [
   {
     "video_uid": "human.mp4",                       # Must already exist in the database
-    "url": "https://your-repo-new/human.mp4",	      # update url
+    "url": "https://your-repo-new/human.mp4",	      # update url (Must not exist in the database)
     "is_active": True,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
@@ -462,9 +464,9 @@ from label_pizza.upload_utils import sync_users
 users_data = [
     {
         "user_id": "New User 1",          # must already exist OR email must match
-        "email": "user1-new@example.com",     # must already exist OR user_id must match
+        "email": "user1-new@example.com", # must already exist OR user_id must match
         "password": "user111-new",        # update password
-        "user_type": "human",
+        "user_type": "human",             # Could only select from "admin", "human" and "model"
         "is_active": True
     }
 ]
@@ -487,7 +489,7 @@ users_data = [
         "user_id":  "User 1",                  # must already exist
         "email":    "user1-new@example.com",   # new address (must be unused)
         "password": "user111-new",             # new password
-        "user_type": "human",
+        "user_type": "human",                  
         "is_active": True
     }
 ]
@@ -505,8 +507,8 @@ from label_pizza.upload_utils import sync_users
 
 users_data = [
     {
-        "user_id":  "New User 1",              # new_user_id
-        "email":    "user1@example.com",   # must already exist
+        "user_id":  "New User 1",              # new_user_id (must be unused)
+        "email":    "user1@example.com",       # Must already exist
         "password": "user111-new",             # new password
         "user_type": "human",
         "is_active": True
@@ -649,7 +651,12 @@ question_groups_data = [
         "is_auto_submit": True,            # update is_auto_submit
         "verification_function": "check_human_description_update",  # update verification_function, must exist in verify.py
         "is_active": True,
-        "questions": [
+        "questions": [                     # New question order applied; questions must remain exactly the same as before
+            {
+                "qtype": "description",
+                "text": "If there are people, describe them.",
+                "display_text": "If there are people, describe them."
+            },
             {
                 "qtype": "single",
                 "text": "Number of people?",
@@ -673,11 +680,6 @@ question_groups_data = [
                     1.0
                 ],
                 "default_option": "0"
-            },
-            {
-                "qtype": "description",
-                "text": "If there are people, describe them.",
-                "display_text": "If there are people, describe them."
             }
         ]
     }
@@ -793,7 +795,7 @@ schemas_data = [
     "question_group_names": [
       "Human", "NSFW"
     ],
-    "has_custom_display": True,
+    "has_custom_display": False,
     "is_active": True
   }
 ]
@@ -811,12 +813,12 @@ from label_pizza.upload_utils import sync_schemas
 
 schemas_data = [
   {
-    "schema_name": "Questions about Humans",            # Must exist in the database
+    "schema_name": "Questions about Humans",             # Must exist in the database
     "instructions_url": "https://your-instruction-rul",  # Update instruction_url
-    "question_group_names": [
-      "Human", "NSFW"
+    "question_group_names": [                            # New group order applied; question groups should remain exactly the same as before
+      "NSFW", "Human"
     ],
-    "has_custom_display": False,                        # Update has_custom_display
+    "has_custom_display": True,                          # Update has_custom_display
     "is_active": True
   }
 ]
@@ -886,8 +888,8 @@ from label_pizza.upload_utils import sync_projects
 
 projects_data = [
   {
-    "project_name": "Human Test 0",        # Must Not exist in the database
-    "schema_name": "Questions about Humans",
+    "project_name": "Human Test 0",            # Must Not exist in the database
+    "schema_name": "Questions about Humans",   # Must Not exist in the database
     "description": "Test project for human questions",
     "is_active": True,
     "videos": [
@@ -902,7 +904,27 @@ sync_projects(projects_data=projects_data)
 
 #### - Update projects
 
-> **Project could not be updated!**
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.upload_utils import sync_projects
+
+projects_data = [
+  {
+    "project_name": "Human Test 0",            # Must exist in the database
+    "schema_name": "Questions about Humans",   # Must exist in the database
+    "description": "Test project for human questions updated",   # You could only update the description
+    "is_active": True,
+    "videos": [
+      "human.mp4",
+      "pizza.mp4"
+    ]
+  }
+]
+
+sync_projects(projects_data=projects_data)
+```
 
 #### - Archive projects
 
@@ -914,10 +936,10 @@ from label_pizza.upload_utils import sync_projects
 
 projects_data = [
   {
-    "project_name": "Human Test 0",        # Must exist in the database
-    "schema_name": "Questions about Humans",
+    "project_name": "Human Test 0",           # Must exist in the database
+    "schema_name": "Questions about Humans",  # Must exist in the database
     "description": "Test project for human questions",
-    "is_active": False,                    # Set False to archive the project
+    "is_active": False,                       # Set False to archive the project
     "videos": [
       "human.mp4",
       "pizza.mp4"
@@ -974,10 +996,10 @@ from label_pizza.upload_utils import bulk_assign_users
 
 assignments_data = [
   {
-    "user_name": "User 1",
-    "project_name": "Human Test 0",
-    "role": "annotator",
-    "user_weight": 1.0,
+    "user_name": "User 1",             # Must exists in the database
+    "project_name": "Human Test 0",    # Must exists in the database
+    "role": "annotator",               # You could only select from ["annotator", "reviewer", "admin", "model"]
+    "user_weight": 1.0,                
     "is_active": True
   }
 ]
@@ -1052,7 +1074,7 @@ Both directories share the same JSON structure: each file contains answers for a
 
 #### - Upload annotations
 
-```
+```python
 from label_pizza.db import init_database
 init_database("DBURL")
 
@@ -1077,7 +1099,7 @@ upload_annotations(annotations_data=annotations_data)
 
 #### - Upload reviews
 
-```
+```python
 from label_pizza.db import init_database
 init_database("DBURL")
 
@@ -1157,7 +1179,7 @@ question_groups_data = [
     "description": "Detect and describe all pizzas in the video.",
     "is_reusable": False,
     "is_auto_submit": False,
-    "verification_function": "",
+    "verification_function": "check_pizza_description",
     "is_active": True,
     "questions": [
       {

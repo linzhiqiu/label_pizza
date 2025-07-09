@@ -31,19 +31,19 @@ def run_label_pizza_setup(database_url_name, folder_path):
     from label_pizza.upload_utils import sync_projects
     sync_projects(projects_path=os.path.join(folder_path, "projects.json"))
     
-    from label_pizza.upload_utils import bulk_assign_users
-    bulk_assign_users(assignment_path=os.path.join(folder_path, "assignments.json"))
+    from label_pizza.upload_utils import bulk_sync_users_to_projects
+    bulk_sync_users_to_projects(assignment_path=os.path.join(folder_path, "assignments.json"))
     
-    from label_pizza.upload_utils import batch_upload_annotations
-    batch_upload_annotations(annotations_folder=os.path.join(folder_path, "annotations"))
+    from label_pizza.upload_utils import batch_sync_annotations
+    batch_sync_annotations(annotations_folder=os.path.join(folder_path, "annotations_processed"), max_workers=4)
 
-    from label_pizza.upload_utils import batch_upload_reviews
-    batch_upload_reviews(reviews_folder=os.path.join(folder_path, "reviews"))
+    from label_pizza.upload_utils import batch_sync_reviews
+    batch_sync_reviews(reviews_folder=os.path.join(folder_path, "reviews"), max_workers=4)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--database-url-name", default="DBURL")
-    parser.add_argument("--folder-path", default="./example_custom_question", help="Folder path containing data files")
+    parser.add_argument("--folder-path", default="./example", help="Folder path containing data files")
     args, _ = parser.parse_known_args()
     
     run_label_pizza_setup(args.database_url_name, args.folder_path)

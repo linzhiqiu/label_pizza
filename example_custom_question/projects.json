@@ -3,6 +3,7 @@
     "project_name": "Pizza Test 0 Custom",
     "schema_name": "Questions about Pizzas Custom",
     "description": "Test project for custom questions",
+    "is_active": true,
     "videos": [
       {
         "video_uid": "human.mp4",

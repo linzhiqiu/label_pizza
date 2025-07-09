@@ -481,9 +481,34 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
         if missing:
             raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
 
-        # ── Phase 1: verify ALL edits first ─────────────────────────────────
+        # ── Phase 1: prepare each group (get question IDs) ──────────────────
+        prepared: List[Tuple[Dict, List[int], object]] = []  # (group_data, question_ids, group_record)
+        missing_questions = []
+        
         for _, g in groups:
             grp = QuestionGroupService.get_group_by_name(g["title"], sess)
+            q_ids: List[int] = []
+            
+            # Get question IDs from the group data - all questions must exist
+            for q in g.get("questions", []):
+                try:
+                    q_rec = QuestionService.get_question_by_text(q["text"], sess)
+                    q_ids.append(q_rec["id"])
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Question doesn't exist - collect for error reporting
+                    missing_questions.append(q["text"])
+            
+            prepared.append((g, q_ids, grp))
+        
+        # Check for any missing questions and abort if found
+        if missing_questions:
+            raise ValueError("Update aborted – questions not found in DB: " + ", ".join(missing_questions))
+
+        # ── Phase 2: verify ALL edits first ─────────────────────────────────
+        for g, q_ids, grp in prepared:
             QuestionGroupService.verify_edit_group(
                 group_id=grp.id,
                 new_display_title=g.get("display_title", g["title"]),
@@ -494,9 +519,8 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 session=sess,
             )
 
-        # ── Phase 2: apply edits after all verifications passed ─────────────
-        for _, g in groups:
-            grp = QuestionGroupService.get_group_by_name(g["title"], sess)
+        # ── Phase 3: apply edits after all verifications passed ─────────────
+        for g, q_ids, grp in prepared:
             QuestionGroupService.edit_group(
                 group_id=grp.id,
                 new_display_title=g.get("display_title", g["title"]),
@@ -506,6 +530,15 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 is_auto_submit=g.get("is_auto_submit", False),
                 session=sess,
             )
+            
+            # Handle question order updates
+            if q_ids:  # Only if questions are provided
+                # Get current question order
+                current_order = QuestionGroupService.get_question_order(grp.id, sess)
+                
+                # Check if order has changed
+                if current_order != q_ids:
+                    QuestionGroupService.update_question_order(grp.id, q_ids, sess)
             
             # Handle archiving/unarchiving
             if "is_archived" in g and g["is_archived"] != grp.is_archived:
@@ -718,28 +751,70 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
         if missing:
             raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
 
-        # ── Phase 1: verify ALL edits first ─────────────────────────────────
+        # ── Phase 1: prepare each schema (get question group IDs) ───────────
+        prepared: List[Tuple[Dict, List[int], object]] = []  # (schema_data, group_ids, schema_record)
+        missing_groups = []
+        
         for s in schemas:
             sch = SchemaService.get_schema_by_name(s["schema_name"], sess)
+            group_ids: List[int] = []
+            
+            # Get question group IDs from the schema data if provided
+            if "question_groups" in s and s["question_groups"]:
+                for g in s["question_groups"]:
+                    try:
+                        group_rec = QuestionGroupService.get_group_by_name(g["title"], sess)
+                        group_ids.append(group_rec.id)
+                    except ValueError as err:
+                        # Only treat "not found" as missing, re-raise other errors
+                        if "not found" not in str(err).lower():
+                            raise
+                        # Question group doesn't exist
+                        missing_groups.append(g["title"])
+            
+            prepared.append((s, group_ids, sch))
+        
+        # Check for any missing question groups and abort if found
+        if missing_groups:
+            raise ValueError("Update aborted – question groups not found in DB: " + ", ".join(missing_groups))
+
+        # ── Phase 2: verify ALL edits first ─────────────────────────────────
+        for s, group_ids, sch in prepared:
             SchemaService.verify_edit_schema(
                 schema_id=sch.id,
+                name=s.get("schema_name"),
                 instructions_url=s.get("instructions_url"),
-                has_custom_display=s.get("has_custom_display", False),
+                has_custom_display=s.get("has_custom_display"),
                 is_archived=s.get("is_archived"),
                 session=sess,
             )
 
-        # ── Phase 2: apply edits ────────────────────────────────────────────
-        for s in schemas:
-            sch = SchemaService.get_schema_by_name(s["schema_name"], sess)
+        # ── Phase 3: apply edits after all verifications passed ─────────────
+        for s, group_ids, sch in prepared:
             SchemaService.edit_schema(
                 schema_id=sch.id,
-                name=s["schema_name"],
+                name=s.get("schema_name"),
                 instructions_url=s.get("instructions_url"),
-                has_custom_display=s.get("has_custom_display", False),
-                is_archived=s.get("is_archived"),
+                has_custom_display=s.get("has_custom_display"),
                 session=sess,
             )
+            
+            # Handle question group order updates
+            if group_ids:  # Only if question groups are provided
+                # Get current question group order
+                current_order = SchemaService.get_question_group_order(sch.id, sess)
+                
+                # Check if order has changed
+                if current_order != group_ids:
+                    SchemaService.update_question_group_order(sch.id, group_ids, sess)
+            
+            # Handle archiving/unarchiving
+            if "is_archived" in s and s["is_archived"] != sch.is_archived:
+                if s["is_archived"]:
+                    SchemaService.archive_schema(sch.id, sess)
+                else:
+                    SchemaService.unarchive_schema(sch.id, sess)
+            
             updated.append({"name": s["schema_name"], "id": sch.id})
 
         sess.commit()
@@ -841,7 +916,7 @@ def _normalize_video_data(videos: list[Any]) -> Dict[str, List[Dict]]:
 
 @staticmethod
 def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str, int]:
-    """Create / update / remove / skip custom displays to match JSON spec."""
+    """Create / update / remove / skip custom displays to match JSON spec with full verification first."""
     stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
 
     # Get project info including schema
@@ -863,10 +938,13 @@ def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str,
     proj_q = {q["id"]: q["text"] for q in ProjectService.get_project_questions(project_id, sess)}
     proj_v = {v["id"]: v["uid"] for v in VideoService.get_project_videos(project_id, sess)}
 
-    # Calculate total operations for progress bar
-    total_operations = len(proj_v) * len(proj_q)
+    # ── Phase 1: Plan all operations and verify them ──────────────────────
+    operations = []  # List of (operation_type, params) tuples
+    verification_errors = []
     
-    with tqdm(total=total_operations, desc="Syncing custom displays", unit="display") as pbar:
+    print("🔍 Planning and verifying custom display operations...")
+    
+    with tqdm(total=len(proj_v) * len(proj_q), desc="Verifying operations", unit="operation") as pbar:
         for vid_id, uid in proj_v.items():
             json_q_cfg = {qc["question_text"]: qc for qc in cfg.get(uid, [])}
 
@@ -876,18 +954,39 @@ def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str,
                 json_cfg = json_q_cfg.get(q_text)
 
                 if db_rec and not json_cfg:
-                    # Remove custom display if it exists but not in JSON
-                    CustomDisplayService.remove_custom_display(project_id, vid_id, q_id, sess)
-                    stats["removed"] += 1
+                    # Plan removal operation
+                    operations.append(("remove", {
+                        "project_id": project_id,
+                        "video_id": vid_id, 
+                        "question_id": q_id,
+                        "video_uid": uid,
+                        "question_text": q_text
+                    }))
                 elif json_cfg:
                     # Check if we need to update or create
                     same_text = db_rec and db_rec.get("display_text") == json_cfg["display_text"]
                     same_map = db_rec and db_rec.get("display_values") == json_cfg["option_map"]
                     
                     if db_rec and same_text and same_map:
-                        stats["skipped"] += 1
+                        # Plan skip operation
+                        operations.append(("skip", {
+                            "video_uid": uid,
+                            "question_text": q_text
+                        }))
                     else:
-                        # Verify before setting custom display
+                        # Plan create/update operation and verify it
+                        operation_type = "update" if db_rec else "create"
+                        operation_params = {
+                            "project_id": project_id,
+                            "video_id": vid_id,
+                            "question_id": q_id,
+                            "custom_display_text": json_cfg["display_text"],
+                            "custom_option_display_map": json_cfg["option_map"],
+                            "video_uid": uid,
+                            "question_text": q_text
+                        }
+                        
+                        # Verify this operation
                         try:
                             CustomDisplayService.verify_set_custom_display(
                                 project_id=project_id,
@@ -897,31 +996,59 @@ def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str,
                                 custom_option_display_map=json_cfg["option_map"],
                                 session=sess
                             )
-                            
-                            # If verification passes, set the custom display
-                            CustomDisplayService.set_custom_display(
-                                project_id=project_id,
-                                video_id=vid_id,
-                                question_id=q_id,
-                                custom_display_text=json_cfg["display_text"],
-                                custom_option_display_map=json_cfg["option_map"],
-                                session=sess
-                            )
-                            
-                            if db_rec:
-                                stats["updated"] += 1
-                            else:
-                                stats["created"] += 1
-                                
+                            operations.append((operation_type, operation_params))
                         except ValueError as e:
-                            # Log the error but continue processing other displays
-                            tqdm.write(f"⚠️  Warning: Failed to set custom display for question {q_id} on video {vid_id}: {e}")
-                            stats["skipped"] += 1
+                            verification_errors.append(f"Question '{q_text}' on video '{uid}': {e}")
+                else:
+                    # No operation needed - neither in DB nor JSON
+                    operations.append(("skip", {
+                        "video_uid": uid,
+                        "question_text": q_text
+                    }))
                 
-                # Update progress bar
                 pbar.update(1)
-                pbar.set_postfix(created=stats["created"], updated=stats["updated"], 
-                                removed=stats["removed"], skipped=stats["skipped"])
+    
+    # Check if any verifications failed
+    if verification_errors:
+        error_summary = f"Custom display verification failed for {len(verification_errors)} operations:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = verification_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(verification_errors) > 5:
+            error_summary += f"\n  ... and {len(verification_errors) - 5} more errors"
+        raise ValueError(error_summary)
+
+    # ── Phase 2: Execute all operations after verification passed ──────────
+    print(f"✅ All verifications passed. Executing {len(operations)} operations...")
+    
+    with tqdm(total=len(operations), desc="Executing operations", unit="operation") as pbar:
+        for operation_type, params in operations:
+            if operation_type == "remove":
+                CustomDisplayService.remove_custom_display(
+                    params["project_id"], 
+                    params["video_id"], 
+                    params["question_id"], 
+                    sess
+                )
+                stats["removed"] += 1
+                
+            elif operation_type in ["create", "update"]:
+                CustomDisplayService.set_custom_display(
+                    project_id=params["project_id"],
+                    video_id=params["video_id"],
+                    question_id=params["question_id"],
+                    custom_display_text=params["custom_display_text"],
+                    custom_option_display_map=params["custom_option_display_map"],
+                    session=sess
+                )
+                stats[operation_type + "d"] += 1
+                
+            elif operation_type == "skip":
+                stats["skipped"] += 1
+            
+            pbar.update(1)
+            pbar.set_postfix(created=stats["created"], updated=stats["updated"], 
+                            removed=stats["removed"], skipped=stats["skipped"])
                         
     return stats
 
@@ -937,6 +1064,7 @@ def add_projects(projects: List[Dict]) -> List[Dict]:
 
     output: List[Dict] = []
     with SessionLocal() as sess:
+        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
         # Check for duplicates
         duplicates: List[str] = []
         for cfg in projects:
@@ -949,24 +1077,44 @@ def add_projects(projects: List[Dict]) -> List[Dict]:
         if duplicates:
             raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
 
+        # ── Phase 1: verify ALL operations first ───────────────────────────
+        for cfg in projects:
+            project_name = cfg["project_name"]
+            
+            # Get schema ID
+            schema_id = SchemaService.get_schema_id_by_name(cfg["schema_name"], sess)
+            
+            # Get video IDs
+            video_uids = list(_normalize_video_data(cfg["videos"]).keys())
+            video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
+            description = cfg.get("description", "")
+            
+            # Verify creation parameters
+            ProjectService.verify_create_project(project_name, description, schema_id, video_ids, sess)
+
+        # ── Phase 2: apply operations after all verifications passed ──────
         # Prepare and create projects with progress bar
         with tqdm(total=len(projects), desc="Adding projects", unit="project") as pbar:
             for cfg in projects:
                 project_name = cfg["project_name"]
                 pbar.set_description(f"Adding project: {project_name}")
                 
-                # Get schema ID
+                # Get schema ID (we already verified this exists)
                 schema_id = SchemaService.get_schema_id_by_name(cfg["schema_name"], sess)
                 
-                # Get video IDs
+                # Get video IDs (we already verified these exist)
                 video_uids = list(_normalize_video_data(cfg["videos"]).keys())
                 video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
+                description = cfg.get("description", "")
                 
-                # Verify creation parameters
-                ProjectService.verify_create_project(project_name, schema_id, video_ids, sess)
-                
-                # Create the project
-                ProjectService.create_project(project_name, schema_id, video_ids, sess)
+                # Create the project (verification already done)
+                ProjectService.create_project(
+                    name=project_name, 
+                    description=description, 
+                    schema_id=schema_id, 
+                    video_ids=video_ids, 
+                    session=sess
+                )
                 
                 # Get the created project by name to get its ID
                 proj = ProjectService.get_project_by_name(project_name, sess)
@@ -1003,13 +1151,42 @@ def update_projects(projects: List[Dict]) -> List[Dict]:
 
     output: List[Dict] = []
     with SessionLocal() as sess:
-        # Validate all projects exist
+        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
+        missing = []
         for cfg in projects:
             try:
                 ProjectService.get_project_by_name(cfg["project_name"], sess)
-            except ValueError:
-                raise ValueError(f"Sync aborted – not found in DB: {cfg['project_name']}")
+            except ValueError as err:
+                # Only treat "not found" as missing, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Project doesn't exist
+                missing.append(cfg["project_name"])
+        
+        if missing:
+            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
 
+        # ── Phase 1: verify ALL operations first ───────────────────────────
+        for cfg in projects:
+            proj = ProjectService.get_project_by_name(cfg["project_name"], sess)
+            
+            # Handle archive flag (is_active has priority for backwards compatibility)
+            desired_archived = cfg["is_archived"]
+            
+            # Verify archive/unarchive operations
+            if desired_archived is not None and desired_archived != proj.is_archived:
+                if desired_archived:
+                    # Verify we can archive this project
+                    ProjectService.verify_archive_project(proj.id, sess)
+                else:
+                    # Verify we can unarchive this project
+                    ProjectService.verify_unarchive_project(proj.id, sess)
+            
+            # Verify description updates if provided
+            if "description" in cfg:
+                ProjectService.verify_update_project_description(proj.id, cfg["description"], sess)
+
+        # ── Phase 2: apply operations after all verifications passed ──────
         # Process each project with progress bar
         with tqdm(total=len(projects), desc="Syncing projects", unit="project") as pbar:
             for cfg in projects:
@@ -1019,19 +1196,24 @@ def update_projects(projects: List[Dict]) -> List[Dict]:
                 proj = ProjectService.get_project_by_name(project_name, sess)
                 
                 # Handle archive flag (is_active has priority for backwards compatibility)
+                desired_archived = None
                 if "is_active" in cfg:
-                    cfg["is_archived"] = not cfg.pop("is_active")
-                    
-                if "is_archived" in cfg:
+                    desired_archived = not cfg["is_active"]
+                elif "is_archived" in cfg:
                     desired_archived = cfg["is_archived"]
-                    if desired_archived != proj.is_archived:
-                        if desired_archived:
-                            ProjectService.archive_project(proj.id, sess)
-                            tqdm.write(f"📦 Archived project '{project_name}'")
-                        else:
-                            # Unarchive by setting the flag directly
-                            proj.is_archived = False
-                            tqdm.write(f"📂 Unarchived project '{project_name}'")
+                    
+                if desired_archived is not None and desired_archived != proj.is_archived:
+                    if desired_archived:
+                        ProjectService.archive_project(proj.id, sess)
+                        tqdm.write(f"📦 Archived project '{project_name}'")
+                    else:
+                        ProjectService.unarchive_project(proj.id, sess)
+                        tqdm.write(f"📂 Unarchived project '{project_name}'")
+                
+                # Update description if provided
+                if "description" in cfg:
+                    ProjectService.update_project_description(proj.id, cfg["description"], sess)
+                    tqdm.write(f"📝 Updated description for project '{project_name}'")
                             
                 # Sync custom displays
                 stats = _sync_custom_displays(proj.id, cfg["videos"], sess)
@@ -1075,13 +1257,12 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     with tqdm(total=len(projects_data), desc="Validating projects", unit="project") as pbar:
         for idx, cfg in enumerate(projects_data, 1):
             # Validate required fields
-            for key in ("project_name", "schema_name", "videos"):
+            for key in ("project_name", "schema_name", "is_active", "videos"):
                 if key not in cfg:
                     raise ValueError(f"Entry #{idx}: missing '{key}'")
                     
             # Normalize is_active to is_archived
-            if "is_active" in cfg:
-                cfg["is_archived"] = not cfg.pop("is_active")
+            cfg["is_archived"] = not cfg.pop("is_active")
                 
             processed.append(cfg)
             pbar.update(1)
@@ -1124,7 +1305,7 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
         print(f"🎨 Total custom displays processed: {total_custom_displays}")
 
 
-def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] = None) -> None:
+def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None) -> None:
     """Bulk assign users to projects with roles."""
     
     # Load and validate input
@@ -1230,7 +1411,7 @@ def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] 
             raise RuntimeError(f"Assignment failed: {e}")
 
 
-def upload_annotations(annotations_path: str = None, annotations_data: list[dict] = None) -> None:
+def sync_annotations(annotations_path: str = None, annotations_data: list[dict] = None) -> None:
     """Upload annotations from JSON file or data list with optimized connection handling."""
     from tqdm import tqdm
     
@@ -1342,7 +1523,7 @@ def upload_annotations(annotations_path: str = None, annotations_data: list[dict
             raise RuntimeError(f"Upload failed: {e}")
 
 
-def upload_reviews(reviews_path: str = None, reviews_data: list[dict] = None) -> None:
+def sync_reviews(reviews_path: str = None, reviews_data: list[dict] = None) -> None:
     """Upload ground truth reviews from JSON file or data list.
     
     Args:
@@ -1460,7 +1641,7 @@ def upload_reviews(reviews_path: str = None, reviews_data: list[dict] = None) ->
                 raise RuntimeError(f"Upload failed: {e}")
 
 
-def batch_upload_annotations(annotations_folder: str = None, 
+def batch_sync_annotations(annotations_folder: str = None, 
                            annotations_data: list[list[dict]] = None, 
                            max_workers: int = 5) -> None:
     """Batch upload annotations from folder or data list."""
@@ -1473,7 +1654,7 @@ def batch_upload_annotations(annotations_folder: str = None,
         def process_file(filepath):
             with open(filepath, 'r') as f:
                 data = json.load(f)
-            upload_annotations(annotations_data=data)
+            sync_annotations(annotations_data=data)
             return filepath
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -1489,7 +1670,7 @@ def batch_upload_annotations(annotations_folder: str = None,
     
     elif annotations_data:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(upload_annotations, annotations_data=data) 
+            futures = [executor.submit(sync_annotations, annotations_data=data) 
                       for data in annotations_data]
             
             for i, future in enumerate(concurrent.futures.as_completed(futures)):
@@ -1500,7 +1681,7 @@ def batch_upload_annotations(annotations_folder: str = None,
                     print(f"✗ Failed batch {i+1}: {e}")
 
 
-def batch_upload_reviews(reviews_folder: str = None, 
+def batch_sync_reviews(reviews_folder: str = None, 
                         reviews_data: list[list[dict]] = None, 
                         max_workers: int = 3) -> None:
     """Batch upload reviews from folder or data list."""
@@ -1513,7 +1694,7 @@ def batch_upload_reviews(reviews_folder: str = None,
         def process_file(filepath):
             with open(filepath, 'r') as f:
                 data = json.load(f)
-            upload_reviews(reviews_data=data)
+            sync_reviews(reviews_data=data)
             return filepath
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -1529,7 +1710,7 @@ def batch_upload_reviews(reviews_folder: str = None,
     
     elif reviews_data:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(upload_reviews, reviews_data=data) 
+            futures = [executor.submit(sync_reviews, reviews_data=data) 
                       for data in reviews_data]
             
             for i, future in enumerate(concurrent.futures.as_completed(futures)):

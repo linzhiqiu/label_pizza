@@ -5641,13 +5641,16 @@ class AnnotatorService(BaseAnswerService):
         
         # Validate user role
         AnnotatorService._validate_user_role(user_id=user_id, project_id=project_id, required_role="annotator", session=session)
+            
         # Validate question group and get questions
         group, questions = AnnotatorService._get_question_group_with_questions(question_group_id=question_group_id, session=session)
         
         # Validate answers match questions
         AnnotatorService._validate_answers_match_questions(answers=answers, questions=questions)
+            
         # Run verification if specified
         AnnotatorService._run_verification(group=group, answers=answers)
+        
         # Validate confidence scores if provided
         if confidence_scores:
             for question_text, confidence_score in confidence_scores.items():

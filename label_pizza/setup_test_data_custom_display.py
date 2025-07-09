@@ -236,6 +236,7 @@ def create_custom_display_schema_and_project_2025_07_01(session, group_ids, vide
     try:
         ProjectService.create_project(
             name="Content Safety Analysis Project 2025-07-01",
+            description="Stress test for content safety analysis for custom display functionality",
             schema_id=schema.id,
             video_ids=video_ids,
             session=session

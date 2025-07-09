@@ -210,6 +210,7 @@ def create_schema_and_project(session, group_ids, video_ids):
     try:
         ProjectService.create_project(
             name="Video Cinematography Stress Test",
+            description="Stress test for video cinematography analysis for auto-submit functionality",
             schema_id=schema.id,
             video_ids=video_ids,
             session=session

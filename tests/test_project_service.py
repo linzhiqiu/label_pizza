@@ -22,6 +22,7 @@ def test_project_service_create_project_duplicate(session, test_project):
     with pytest.raises(ValueError, match="Project with name 'test_project' already exists"):
         ProjectService.create_project(
             name="test_project",
+            description="test description",
             schema_id=test_project.schema_id,
             video_ids=[],
             session=session
@@ -32,6 +33,7 @@ def test_project_service_create_project_invalid_schema(session, test_video):
     with pytest.raises(ValueError, match="Schema with ID 999 not found"):
         ProjectService.create_project(
             name="test_project",
+            description="test description",
             schema_id=999,  # Non-existent schema ID
             video_ids=[test_video.id],
             session=session
@@ -42,6 +44,7 @@ def test_project_service_create_project_invalid_video(session, test_schema):
     with pytest.raises(ValueError, match="Video with ID 999 not found"):
         ProjectService.create_project(
             name="test_project",
+            description="test description",
             schema_id=test_schema.id,
             video_ids=[999],  # Non-existent video ID
             session=session

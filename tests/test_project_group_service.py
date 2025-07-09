@@ -251,6 +251,7 @@ def test_project_group_service_validate_project_group_uniqueness(session):
     # Create two projects with the same schema and video
     ProjectService.create_project(
         name="project1",
+        description="test description",
         schema_id=schema.id,
         video_ids=[video.id],
         session=session
@@ -259,6 +260,7 @@ def test_project_group_service_validate_project_group_uniqueness(session):
     
     ProjectService.create_project(
         name="project2",
+        description="test description",
         schema_id=schema.id,
         video_ids=[video.id],
         session=session

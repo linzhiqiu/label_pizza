@@ -74,7 +74,7 @@ Service-Layer API Spec
 | Function                                              | Status | Parameters | Returns     | Rules enforced                                         |
 | ----------------------------------------------------- | ------ | ---------- | ----------- | ------------------------------------------------------ |
 | `get_all_projects(session)`                           | ✔︎     | —          | `DataFrame` | shows vids, schema, % GT                               |
-| `create_project(name, schema_id, video_ids, session)` | ✔︎     | —          | `Project`   | • schema not archived 🛡️<br>• videos not archived 🛡️ |
+| `create_project(name, description, schema_id, video_ids, session)` | ✔︎     | —          | `Project`   | • schema not archived 🛡️<br>• videos not archived 🛡️ |
 | `get_video_ids_by_uids(uids, session)`                | ✔︎     | —          | `list[int]` | —                                                      |
 | `archive_project(project_id, session)`                | ✔︎     | —          | `None`      | • Sets `is_archived=True`<br>• blocks new answers 🛡️  |
 | `progress(project_id, session)`                       | ✔︎     | —          | `dict`      | returns videos × questions × answers                   |
@@ -82,9 +82,7 @@ Service-Layer API Spec
 | `get_project_by_name(name, session)`                  | ✔︎     | —          | `Optional[Project]` | —                                           |
 | `add_user_to_project(project_id, user_id, role, session, user_weight=None)` | ✔︎ | — | `None` | Role validation 🛡️ |
 | `remove_user_from_project(user_id, project_id, session)`        | ✔︎     | —          | `None` | — |
-| `bulk_assign_users_to_project(user_ids, project_id, role, session)` | ✔︎ | — | `None` | — |
-| `bulk_remove_users_from_project(user_ids, project_id, session)` | ✔︎ | — | `None` | — |
-| `archive_user_from_project(user_id, project_id, session)`       | ✔︎ | — | `None` | — |
+| `remove_user_from_project(user_id, project_id, session)`       | ✔︎ | — | `None` | — |
 
 **Rules:**
 - Projects are immutable after creation (unless some videos or questions are archived)
@@ -185,11 +183,7 @@ Service-Layer API Spec
 | `update_user_role(user_id, new_role, session)`                  | ✔︎     | —          | `None` | — |
 | `toggle_user_archived(user_id, session)`                        | ✔︎     | —          | `None` | — |
 | `get_project_assignments(session)`                              | ✔︎     | —          | `DataFrame` | — |
-| `assign_user_to_project(user_id, project_id, role, session, user_weight=None)`    | ✔︎     | —          | `None` | • Upsert<br>• Admin auto reviewer 🛡️ |
 | `remove_user_from_project(user_id, project_id, session)`        | ✔︎     | —          | `None` | — |
-| `bulk_assign_users_to_project(user_ids, project_id, role, session)` | ✔︎ | — | `None` | — |
-| `bulk_remove_users_from_project(user_ids, project_id, session)` | ✔︎ | — | `None` | — |
-| `archive_user_from_project(user_id, project_id, session)`       | ✔︎ | — | `None` | — |
 
 **Rules:**
 - User IDs and emails must be unique

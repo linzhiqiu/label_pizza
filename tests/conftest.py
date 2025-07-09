@@ -141,6 +141,7 @@ def test_question(session):
 def test_project(session, test_schema, test_video):
     ProjectService.create_project(
         name="test_project",
+        description="test description",
         schema_id=test_schema.id,
         video_ids=[test_video.id],
         session=session

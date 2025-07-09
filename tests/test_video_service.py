@@ -114,6 +114,7 @@ def test_video_service_get_videos_with_project_status(session, test_video):
     # Create project with video
     ProjectService.create_project(
         name="test_project_with_status",
+        description="test description",
         schema_id=schema.id,
         video_ids=[test_video.id],
         session=session
@@ -157,6 +158,7 @@ def test_video_service_get_videos_with_ground_truth(session, test_video, test_us
     # Create project with video
     ProjectService.create_project(
         name="test_project_with_gt",
+        description="test description",
         schema_id=schema.id,
         video_ids=[test_video.id],
         session=session
@@ -335,6 +337,7 @@ def test_video_service_get_all_videos_multiple_projects(session, test_video):
         
         ProjectService.create_project(
             name=f"test_project{i}",
+            description="test description",
             schema_id=schema.id,
             video_ids=[test_video.id],
             session=session
@@ -402,6 +405,7 @@ def test_video_service_get_all_videos_with_review(session, test_video, test_user
     # Create project with the new schema
     ProjectService.create_project(
         name="test_project_with_review",
+        description="test description",
         schema_id=schema.id,  # Use the new schema with questions
         video_ids=[test_video.id],
         session=session

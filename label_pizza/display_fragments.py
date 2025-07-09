@@ -668,6 +668,12 @@ def display_description_question(
     
     # Use preloaded value if available, otherwise use existing value
     current_value = preloaded_value if preloaded_value else existing_value
+
+    if not current_value:
+        # Try to get default option for description questions
+        default_option = question.get("default_option")
+        if default_option:
+            current_value = default_option
     
     # Question header
     if role == "reviewer" and is_modified_by_admin:

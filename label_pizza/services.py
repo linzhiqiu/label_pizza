@@ -351,7 +351,7 @@ class VideoService:
         } for v in videos]
 
     @staticmethod
-    def verify_update_video(video_uid: str, new_url: str, new_metadata: dict, session: Session) -> None:
+    def verify_update_video(video_uid: str=None, new_url: str=None, new_metadata: dict=None, session: Session=None) -> None:
         """Verify parameters for updating a video.
 
         Args:
@@ -372,6 +372,11 @@ class VideoService:
         if new_url and new_url != video.url:
             if not new_url.startswith(("http://", "https://")):
                 raise ValueError("URL must start with http:// or https://")
+            
+            # Check if video url already exists
+            existing = VideoService.get_video_by_url(new_url, session)
+            if existing:
+                raise ValueError(f"Video with URL '{new_url}' already exists")
 
         # Validate new metadata if provided
         if new_metadata is not None:
@@ -422,6 +427,104 @@ class VideoService:
 
         video.updated_at = datetime.now(timezone.utc)
         session.commit()
+
+    # Add these new methods to VideoService class
+    @staticmethod
+    def get_video_counts(session: Session) -> Dict[str, int]:
+        """Get video counts without loading actual data."""
+        total_videos = session.scalar(select(func.count(Video.id)))
+        active_videos = session.scalar(select(func.count(Video.id)).where(Video.is_archived == False))
+        archived_videos = total_videos - active_videos
+        
+        # Get unassigned count efficiently
+        assigned_video_ids = session.scalars(
+            select(ProjectVideo.video_id).distinct()
+        ).all()
+        
+        unassigned_count = session.scalar(
+            select(func.count(Video.id)).where(
+                Video.is_archived == False,
+                ~Video.id.in_(assigned_video_ids) if assigned_video_ids else True
+            )
+        )
+        
+        return {
+            "total": total_videos,
+            "active": active_videos, 
+            "archived": archived_videos,
+            "unassigned": unassigned_count
+        }
+
+    @staticmethod
+    def search_videos(search_term: str = "", show_archived: bool = False, 
+                    show_only_unassigned: bool = False, page: int = 0, 
+                    page_size: int = 50, session: Session = None) -> Dict[str, Any]:
+        """Search videos with pagination and filters."""
+        # Build base query
+        query = select(Video)
+        
+        # Apply filters
+        conditions = []
+        if not show_archived:
+            conditions.append(Video.is_archived == False)
+        
+        if search_term:
+            search_filter = or_(
+                Video.video_uid.ilike(f"%{search_term}%"),
+                Video.url.ilike(f"%{search_term}%")
+            )
+            conditions.append(search_filter)
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        # Handle unassigned filter
+        if show_only_unassigned:
+            assigned_video_ids = session.scalars(
+                select(ProjectVideo.video_id).distinct()
+            ).all()
+            if assigned_video_ids:
+                query = query.where(~Video.id.in_(assigned_video_ids))
+        
+        # Get total count for pagination
+        count_query = select(func.count()).select_from(query.subquery())
+        total_count = session.scalar(count_query)
+        
+        # Apply pagination
+        query = query.offset(page * page_size).limit(page_size)
+        videos = session.scalars(query).all()
+        
+        # Convert to dataframe format
+        video_data = []
+        for v in videos:
+            video_data.append({
+                "ID": v.id,
+                "Video UID": v.video_uid,
+                "URL": v.url,
+                "Created At": v.created_at,
+                "Updated At": v.updated_at,
+                "Archived": v.is_archived
+            })
+        
+        return {
+            "videos": pd.DataFrame(video_data),
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count - 1) // page_size + 1 if total_count > 0 else 1
+        }
+
+    @staticmethod
+    def search_videos_for_selection(search_term: str, limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search videos for selection dropdowns - returns limited results."""
+        query = select(Video).where(
+            Video.is_archived == False,
+            Video.video_uid.ilike(f"%{search_term}%")
+        ).limit(limit)
+        
+        videos = session.scalars(query).all()
+        return [{"id": v.id, "uid": v.video_uid, "url": v.url} for v in videos]
+
 
 class ProjectService:
     @staticmethod
@@ -568,11 +671,17 @@ class ProjectService:
         return pd.DataFrame(rows)
 
     @staticmethod
-    def verify_create_project(name: str, schema_id: int, video_ids: List[int], session: Session) -> None:
+    def verify_create_project(
+        name: str=None,
+        description: str=None,
+        schema_id: int=None,
+        video_ids: List[int]=None,
+        session: Session=None) -> None:
         """Verify parameters for creating a new project.
         
         Args:
             name: Project name
+            description: Project description
             schema_id: ID of the schema to use
             video_ids: List of video IDs to include in the project
             session: Database session
@@ -587,10 +696,16 @@ class ProjectService:
         if schema.is_archived:
             raise ValueError(f"Schema with ID {schema_id} is archived")
         
+        if name == None:
+            raise ValueError("Project name is required")
+        
         # Check if project name already exists
         existing_project = session.scalar(select(Project).where(Project.name == name))
         if existing_project:
             raise ValueError(f"Project with name '{name}' already exists")
+        
+        if len(video_ids) == 0:
+            raise ValueError("At least one video is required")
         
         # Check if all videos exist and are not archived
         for vid in video_ids:
@@ -601,11 +716,17 @@ class ProjectService:
                 raise ValueError(f"Video with ID {vid} is archived")
 
     @staticmethod
-    def create_project(name: str, schema_id: int, video_ids: List[int], session: Session) -> None:
+    def create_project(
+        name: str=None,
+        description: str=None,
+        schema_id: int=None,
+        video_ids: List[int]=None,
+        session: Session=None) -> None:
         """Create a new project and assign all admin users to it.
         
         Args:
             name: Project name
+            description: Project description
             schema_id: ID of the schema to use
             video_ids: List of video IDs to include in the project
             session: Database session
@@ -614,10 +735,10 @@ class ProjectService:
             ValueError: If schema or any video is archived
         """
         # Verify input parameters
-        ProjectService.verify_create_project(name, schema_id, video_ids, session)
+        ProjectService.verify_create_project(name=name, description=description, schema_id=schema_id, video_ids=video_ids, session=session)
         
         # Create project
-        project = Project(name=name, schema_id=schema_id)
+        project = Project(name=name, description=description, schema_id=schema_id)
         session.add(project)
         session.flush()  # Get the project ID
         
@@ -654,6 +775,23 @@ class ProjectService:
         return session.scalars(select(Video.id).where(Video.video_uid.in_(video_uids))).all()
 
     @staticmethod
+    def verify_archive_project(project_id: int, session: Session) -> None:
+        """Verify that a project exists and is not already archived.
+        
+        Args:
+            project_id: The ID of the project to verify
+            session: Database session
+
+        Raises:
+            ValueError: If project not found or already archived
+        """
+        project = session.get(Project, project_id)
+        if not project:
+            raise ValueError(f"Project with ID {project_id} not found")
+        if project.is_archived:
+            raise ValueError(f"Project with ID {project_id} is already archived")
+
+    @staticmethod
     def archive_project(project_id: int, session: Session) -> None:
         """Archive a project and block new answers.
         
@@ -664,14 +802,83 @@ class ProjectService:
         Raises:
             ValueError: If project not found
         """
+        ProjectService.verify_archive_project(project_id=project_id, session=session)
+        
+        project = session.get(Project, project_id)
+        project.is_archived = True
+        session.commit()
+    
+    @staticmethod
+    def verify_unarchive_project(project_id: int, session: Session) -> None:
+        """Verify that a project exists and is archived.
+        
+        Args:
+            project_id: The ID of the project to verify
+            session: Database session
+            
+        Raises:
+            ValueError: If project not found or not archived
+        """
         project = session.get(Project, project_id)
         if not project:
             raise ValueError(f"Project with ID {project_id} not found")
+        if not project.is_archived:
+            raise ValueError(f"Project with ID {project_id} is not archived")
+    
+    @staticmethod
+    def unarchive_project(project_id: int, session: Session) -> None:
+        """Unarchive a project and allow new answers.
         
-        project.is_archived = True
+        Args:
+            project_id: The ID of the project to unarchive
+            session: Database session
+
+        Raises:
+            ValueError: If project not found
+        """
+        ProjectService.verify_unarchive_project(project_id=project_id, session=session)
+        
+        project = session.get(Project, project_id)
+        
+        project.is_archived = False
+        session.commit()
+    
+    @staticmethod
+    def verify_update_project_description(project_id: int, description: str, session: Session) -> None:
+        """Verify that a project exists and is not archived.
+        
+        Args:
+            project_id: The ID of the project to verify
+            description: The new description for the project
+            session: Database session
+
+        Raises:
+            ValueError: If project not found or not archived
+        """
+        project = session.get(Project, project_id)
+        if not project:
+            raise ValueError(f"Project with ID {project_id} not found")
+        if project.is_archived:
+            raise ValueError(f"Project with ID {project_id} is archived")
+    
+    @staticmethod
+    def update_project_description(project_id: int, description: str, session: Session) -> None:
+        """Update the description of a project.
+        
+        Args:
+            project_id: The ID of the project to update
+            description: The new description for the project
+            session: Database session
+
+        Raises:
+            ValueError: If project not found or not archived
+        """
+        ProjectService.verify_update_project_description(project_id=project_id, description=description, session=session)
+        
+        project = session.get(Project, project_id)
+        project.description = description
         session.commit()
 
-    
     @staticmethod
     def get_project_reviewers(project_id: int, session: Session) -> List[Dict[str, Any]]:
         """Get all reviewers who have submitted ground truth in a project.
@@ -914,19 +1121,18 @@ class ProjectService:
         Raises:
             ValueError: If project or user not found, archived, or role assignment is invalid
         """
-        # Validate project exists and is not archived
         project = session.get(Project, project_id)
         if not project:
             raise ValueError(f"Project with ID {project_id} not found")
         if project.is_archived:
-            raise ValueError(f"Project with ID {project_id} is archived")
+            raise ValueError(f"Project '{project.name}' is archived")  # Use name
         
         # Validate user exists and is not archived
         user = session.get(User, user_id)
         if not user:
             raise ValueError(f"User with ID {user_id} not found")
         if user.is_archived:
-            raise ValueError(f"User with ID {user_id} is archived")
+            raise ValueError(f"User '{user.user_id_str}' is archived")  # Use name
             
         # Validate role is valid
         if role not in ["annotator", "reviewer", "admin", "model"]:
@@ -934,16 +1140,16 @@ class ProjectService:
             
         # Validate role assignment rules
         if role == "admin" and user.user_type != "admin":
-            raise ValueError(f"User {user_id} must be a global admin to be assigned admin role")
+            raise ValueError(f"User '{user.user_id_str}' must be a global admin to be assigned admin role")
         
         if user.user_type == "admin" and role != "admin":
-            raise ValueError(f"User {user_id} must not be a global admin to be assigned a non-admin role")
+            raise ValueError(f"Admin user '{user.user_id_str}' cannot be assigned non-admin roles")
         
         if role == "model" and user.user_type != "model":
-            raise ValueError(f"User {user_id} must be a model to be assigned model role")
+            raise ValueError(f"User '{user.user_id_str}' must be a model to be assigned model role")
         
         if user.user_type == "model" and role != "model":
-            raise ValueError(f"User {user_id} must not be a model to be assigned a non-model role")
+            raise ValueError(f"Model user '{user.user_id_str}' cannot be assigned non-model roles")
 
     @staticmethod
     def add_user_to_project(project_id: int, user_id: int, role: str, session: Session, user_weight: Optional[float] = None) -> None:
@@ -1118,6 +1324,111 @@ class ProjectService:
             
         except Exception:
             return False
+
+        # Add these new methods to ProjectService class  
+    
+    @staticmethod
+    def get_project_counts(session: Session) -> Dict[str, int]:
+        """Get project counts without loading actual data."""
+        total_projects = session.scalar(select(func.count(Project.id)))
+        archived_projects = session.scalar(select(func.count(Project.id)).where(Project.is_archived == True))
+        active_projects = total_projects - archived_projects
+        
+        # Get training mode count more simply - projects that have any ground truth
+        training_mode = session.scalar(
+            select(func.count(func.distinct(ReviewerGroundTruth.project_id)))
+            .select_from(ReviewerGroundTruth)
+            .join(Project, ReviewerGroundTruth.project_id == Project.id)
+            .where(Project.is_archived == False)
+        )
+        
+        annotation_mode = active_projects - (training_mode or 0)
+        
+        return {
+            "total": total_projects,
+            "active": active_projects,
+            "archived": archived_projects, 
+            "training_mode": training_mode or 0,
+            "annotation_mode": annotation_mode
+        }
+    
+    @staticmethod
+    def search_projects(search_term: str = "", show_archived: bool = True, 
+                    page: int = 0, page_size: int = 50, session: Session = None) -> Dict[str, Any]:
+        """Search projects with pagination and filters."""
+        # Build base query  
+        query = select(Project)
+        
+        # Apply filters
+        conditions = []
+        if not show_archived:
+            conditions.append(Project.is_archived == False)
+        
+        if search_term:
+            conditions.append(Project.name.ilike(f"%{search_term}%"))
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        # Get total count
+        count_query = select(func.count()).select_from(query.subquery())
+        total_count = session.scalar(count_query)
+        
+        # Apply pagination
+        query = query.offset(page * page_size).limit(page_size)
+        projects = session.scalars(query).all()
+        
+        # Process projects with enhanced data
+        enhanced_projects = []
+        for project in projects:
+            schema_info = SchemaService.get_schema_name_by_id_with_archived(schema_id=project.schema_id, session=session)
+            schema_name = f"{schema_info['name']} {'[Archived]' if schema_info['is_archived'] else ''}"
+            
+            try:
+                progress = ProjectService.progress(project_id=project.id, session=session)
+                has_full_gt = ProjectService.check_project_has_full_ground_truth(project_id=project.id, session=session)
+                mode = "🎓 Training" if has_full_gt else "📝 Annotation"
+                
+                enhanced_projects.append({
+                    "ID": project.id,
+                    "Name": project.name,
+                    "Archived": project.is_archived,
+                    "Videos": progress['total_videos'],
+                    "Schema Name": schema_name,
+                    "Mode": mode,
+                    "GT Progress": f"{progress['completion_percentage']:.1f}%",
+                    "GT Answers": f"{progress['ground_truth_answers']}/{progress['total_videos'] * progress['total_questions']}"
+                })
+            except Exception as e:
+                print(f"Error getting project counts for project {project.id}: {e}")
+                enhanced_projects.append({
+                    "ID": project.id,
+                    "Name": project.name,
+                    "Archived": project.is_archived,
+                    "Videos": 0,
+                    "Schema Name": schema_name,
+                    "Mode": "Error",
+                    "GT Progress": "Error", 
+                    "GT Answers": "Error"
+                })
+        
+        return {
+            "projects": pd.DataFrame(enhanced_projects),
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count - 1) // page_size + 1 if total_count > 0 else 1
+        }
+
+    @staticmethod
+    def search_projects_for_selection(search_term: str, limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search projects for selection dropdowns - returns limited results."""
+        query = select(Project).where(
+            Project.name.ilike(f"%{search_term}%")
+        ).limit(limit)
+        
+        projects = session.scalars(query).all()
+        return [{"id": p.id, "name": p.name} for p in projects]
 
 
 class SchemaService:
@@ -1301,6 +1612,28 @@ class SchemaService:
         if schema.is_archived:
             raise ValueError(f"Schema with ID {schema_id} is archived")
         return schema.name
+    
+    @staticmethod
+    def get_schema_name_by_id_with_archived(schema_id: int, session: Session) -> str:
+        """Get schema name by ID.
+        
+        Args:
+            schema_id: The ID of the schema
+            session: Database session
+            
+        Returns:
+            Schema name
+            
+        Raises:
+            ValueError: If schema not found
+        """
+        schema = session.get(Schema, schema_id)
+        if not schema:
+            raise ValueError(f"Schema with ID {schema_id} not found")
+        return {
+            "name": schema.name,
+            "is_archived": schema.is_archived
+        }
 
     @staticmethod
     def verify_create_schema(
@@ -1661,14 +1994,14 @@ class SchemaService:
         return [a.question_group_id for a in assignments]
 
     @staticmethod
-    def update_question_group_order(schema_id: int, group_ids: List[int], session: Session) -> None:
-        """Update the order of question groups in a schema.
+    def verify_update_question_group_order(schema_id: int, group_ids: List[int], session: Session) -> None:
+        """Verify that a schema exists and that all question groups in the list exist in the schema.
         
         Args:
             schema_id: Schema ID
             group_ids: List of question group IDs in desired order
             session: Database session
-            
+
         Raises:
             ValueError: If schema not found, or if any group not in schema
         """
@@ -1676,7 +2009,7 @@ class SchemaService:
         schema = session.get(Schema, schema_id)
         if not schema:
             raise ValueError(f"Schema with ID {schema_id} not found")
-            
+        
         # Get all current assignments
         assignments = session.scalars(
             select(SchemaQuestionGroup)
@@ -1690,7 +2023,7 @@ class SchemaService:
         for group_id in group_ids:
             if group_id not in assignment_map:
                 raise ValueError(f"Question group {group_id} not in schema {schema_id}")
-
+        
         current_ids = set(assignment_map.keys())
         new_ids = set(group_ids)
         if current_ids != new_ids:
@@ -1702,6 +2035,29 @@ class SchemaService:
             if extra:
                 error_msg += f". Extra groups: {list(extra)}"
             raise ValueError(error_msg)
+            
+    @staticmethod
+    def update_question_group_order(schema_id: int, group_ids: List[int], session: Session) -> None:
+        """Update the order of question groups in a schema.
+        
+        Args:
+            schema_id: Schema ID
+            group_ids: List of question group IDs in desired order
+            session: Database session
+            
+        Raises:
+            ValueError: If schema not found, or if any group not in schema
+        """
+        SchemaService.verify_update_question_group_order(schema_id=schema_id, group_ids=group_ids, session=session)
+
+
+        assignments = session.scalars(
+            select(SchemaQuestionGroup)
+            .where(SchemaQuestionGroup.schema_id == schema_id)
+        ).all()
+        
+        # Create lookup for assignments
+        assignment_map = {a.question_group_id: a for a in assignments}
         
         # Update orders based on list position
         for i, group_id in enumerate(group_ids):
@@ -1848,6 +2204,92 @@ class SchemaService:
             "Description": g.description
         } for g in groups]
 
+    # Add these new methods to SchemaService class in services.py
+    @staticmethod
+    def get_schema_counts(session: Session) -> Dict[str, int]:
+        """Get schema counts without loading actual data."""
+        total_schemas = session.scalar(select(func.count(Schema.id)))
+        archived_schemas = session.scalar(select(func.count(Schema.id)).where(Schema.is_archived == True))
+        active_schemas = total_schemas - archived_schemas
+        schemas_with_custom_display = session.scalar(
+            select(func.count(Schema.id)).where(
+                Schema.has_custom_display == True,
+                Schema.is_archived == False
+            )
+        )
+        
+        return {
+            "total": total_schemas,
+            "active": active_schemas,
+            "archived": archived_schemas,
+            "custom_display": schemas_with_custom_display
+        }
+
+    @staticmethod
+    def search_schemas(search_term: str = "", show_archived: bool = False,
+                    page: int = 0, page_size: int = 20, session: Session = None) -> Dict[str, Any]:
+        """Search schemas with pagination and filters."""
+        query = select(Schema)
+        
+        # Apply filters
+        conditions = []
+        if not show_archived:
+            conditions.append(Schema.is_archived == False)
+        
+        if search_term:
+            # We'll need to search in question groups - simplified for now
+            conditions.append(Schema.name.ilike(f"%{search_term}%"))
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        # Get total count
+        count_query = select(func.count()).select_from(query.subquery())
+        total_count = session.scalar(count_query)
+        
+        # Apply pagination
+        query = query.offset(page * page_size).limit(page_size)
+        schemas = session.scalars(query).all()
+        
+        # Process schemas
+        schema_data = []
+        for schema in schemas:
+            # Get question groups for this schema
+            groups = session.scalars(
+                select(QuestionGroup)
+                .join(SchemaQuestionGroup, QuestionGroup.id == SchemaQuestionGroup.question_group_id)
+                .where(SchemaQuestionGroup.schema_id == schema.id)
+            ).all()
+            
+            schema_data.append({
+                "ID": schema.id,
+                "Name": schema.name,
+                "Instructions URL": schema.instructions_url,
+                "Question Groups": ", ".join(g.title for g in groups) if groups else "No groups",
+                "Has Custom Display": schema.has_custom_display,
+                "Archived": schema.is_archived
+            })
+        
+        return {
+            "schemas": pd.DataFrame(schema_data),
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count - 1) // page_size + 1 if total_count > 0 else 1
+        }
+    
+    @staticmethod
+    def search_schemas_for_selection(search_term: str, limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search schemas for selection dropdowns - returns limited results including archived."""
+        query = select(Schema).where(
+            Schema.name.ilike(f"%{search_term}%")
+        ).limit(limit)
+        
+        schemas = session.scalars(query).all()
+        return [{"id": s.id, "name": s.name, "archived": s.is_archived} for s in schemas]
+
+
+
 class QuestionService:
     
     @staticmethod
@@ -1971,7 +2413,7 @@ class QuestionService:
             text: Question text (immutable, unique)
             qtype: Question type ('single' or 'description')
             options: List of options for single-choice questions
-            default: Default option for single-choice questions
+            default: Default option/answer for single-choice/description questions
             session: Database session
             display_values: Optional list of display text for options. For single-type questions, if not provided, uses options as display values.
             display_text: Optional display text for UI. If not provided, uses text.
@@ -2085,7 +2527,7 @@ class QuestionService:
                 if len(new_option_weights) != len(new_opts):
                     raise ValueError("Number of option weights must match number of options")
         else:  # description type
-            if new_opts is not None or new_default is not None or new_display_values is not None or new_option_weights is not None:
+            if new_opts is not None or new_display_values is not None or new_option_weights is not None:
                 raise ValueError("Cannot change question type")
 
     @staticmethod
@@ -2373,6 +2815,95 @@ class QuestionService:
             })
         
         return result
+
+    # Add these new methods to QuestionService class
+    @staticmethod
+    def get_question_counts(session: Session) -> Dict[str, int]:
+        """Get question counts without loading actual data."""
+        total_questions = session.scalar(select(func.count(Question.id)))
+        archived_questions = session.scalar(select(func.count(Question.id)).where(Question.is_archived == True))
+        active_questions = total_questions - archived_questions
+        single_choice = session.scalar(select(func.count(Question.id)).where(Question.type == "single", Question.is_archived == False))
+        description_type = session.scalar(select(func.count(Question.id)).where(Question.type == "description", Question.is_archived == False))
+        
+        return {
+            "total": total_questions,
+            "active": active_questions,
+            "archived": archived_questions,
+            "single_choice": single_choice,
+            "description": description_type
+        }
+
+    @staticmethod
+    def search_questions(search_term: str = "", show_archived: bool = False,
+                        page: int = 0, page_size: int = 20, session: Session = None) -> Dict[str, Any]:
+        """Search questions with pagination and filters."""
+        query = select(Question)
+        
+        # Apply filters
+        conditions = []
+        if not show_archived:
+            conditions.append(Question.is_archived == False)
+        
+        if search_term:
+            search_filter = or_(
+                Question.text.ilike(f"%{search_term}%"),
+                Question.display_text.ilike(f"%{search_term}%")
+            )
+            conditions.append(search_filter)
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        # Get total count
+        count_query = select(func.count()).select_from(query.subquery())
+        total_count = session.scalar(count_query)
+        
+        # Apply pagination
+        query = query.offset(page * page_size).limit(page_size)
+        questions = session.scalars(query).all()
+        
+        # Process questions
+        question_data = []
+        for q in questions:
+            # Get group for this question
+            group_title = session.scalar(
+                select(QuestionGroup.title)
+                .join(QuestionGroupQuestion, QuestionGroup.id == QuestionGroupQuestion.question_group_id)
+                .where(QuestionGroupQuestion.question_id == q.id)
+            )
+            
+            question_data.append({
+                "ID": q.id,
+                "Text": q.text,
+                "Display Text": q.display_text,
+                "Type": q.type,
+                "Group": group_title or "No group",
+                "Options": ", ".join(q.options or []) if q.options else "",
+                "Default": q.default_option or "",
+                "Archived": q.is_archived
+            })
+        
+        return {
+            "questions": pd.DataFrame(question_data),
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count - 1) // page_size + 1 if total_count > 0 else 1
+        }
+
+    @staticmethod
+    def search_questions_for_selection(search_term: str, limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search questions for selection dropdowns - returns limited results including archived."""
+        query = select(Question).where(
+            or_(
+                Question.text.ilike(f"%{search_term}%"),
+                Question.display_text.ilike(f"%{search_term}%")
+            )
+        ).limit(limit)
+        
+        questions = session.scalars(query).all()
+        return [{"id": q.id, "text": q.text, "display_text": q.display_text, "type": q.type, "archived": q.is_archived} for q in questions]
 
 class CustomDisplayService:
     @staticmethod
@@ -2804,6 +3335,15 @@ class CustomDisplayService:
         Returns:
             List of dictionaries with all custom display overrides
         """
+        # Check if the schema has custom display enabled
+        # get schema from project
+        project = session.get(Project, project_id)
+        if not project:
+            raise ValueError(f"Project with ID {project_id} not found")
+        schema = session.get(Schema, project.schema_id)
+        if not schema or not schema.has_custom_display:
+            return []
+        
         overrides = session.scalars(
             select(ProjectVideoQuestionDisplay)
             .where(ProjectVideoQuestionDisplay.project_id == project_id)
@@ -3204,32 +3744,6 @@ class AuthService:
         ])
 
     @staticmethod
-    def get_project_assignments_old(session: Session) -> pd.DataFrame:
-        """Get all project assignments in a DataFrame format."""
-        assignments = session.scalars(
-            select(ProjectUserRole)
-            .join(Project, ProjectUserRole.project_id == Project.id)
-            .join(User, ProjectUserRole.user_id == User.id)
-            .where(ProjectUserRole.is_archived == False)
-        ).all()
-        
-        return pd.DataFrame([
-            {
-                "Project ID": a.project_id,
-                "Project Name": session.get(Project, a.project_id).name,
-                "User ID": a.user_id,
-                "User Name": session.get(User, a.user_id).user_id_str,
-                "Role": a.role,
-                "Archived": a.is_archived,
-                "Assigned At": a.assigned_at,
-                "Completed At": a.completed_at,
-                "User Weight": a.user_weight
-            }
-            for a in assignments
-        ])
-
-
-    @staticmethod
     def verify_create_user(user_id: str, email: str, password_hash: str, user_type: str, session: Session, is_archived: bool = False) -> None:
         """Verify parameters for creating a new user.
 
@@ -3355,139 +3869,201 @@ class AuthService:
         session.commit()
         return user
 
-    @staticmethod
-    def assign_user_to_project(user_id: int, project_id: int, role: str, session: Session, user_weight: Optional[float] = None) -> None:
-        """Assign a user to a project with role validation and admin privileges.
+    # @staticmethod
+    # def verify_assign_user_to_project(user_id: int, project_id: int, role: str, session: Session) -> None:
+    #     """Verify that a user can be assigned to a project with the specified role.
         
-        Args:
-            user_id: The ID of the user
-            project_id: The ID of the project
-            role: The role to assign ('annotator', 'reviewer', 'admin', or 'model')
-            session: Database session
-            user_weight: Optional weight for the user's answers (defaults to 1.0)
+    #     Args:
+    #         user_id: The ID of the user
+    #         project_id: The ID of the project
+    #         role: The role to assign ('annotator', 'reviewer', 'admin', or 'model')
+    #         session: Database session
+
+    #     Raises:
+    #         ValueError: If role is invalid
+    #     """
+    #     if role not in ["annotator", "reviewer", "admin", "model"]:
+    #         raise ValueError("Invalid role. Must be one of: annotator, reviewer, admin, model")
+        
+    #     # Get user and project
+    #     user = session.get(User, user_id)
+    #     if not user:
+    #         raise ValueError(f"User with ID {user_id} not found")
+    #     if user.is_archived:
+    #         raise ValueError(f"User '{user.user_id_str}' is archived")  # Use name instead of ID
+        
+    #     project = session.get(Project, project_id)
+    #     if not project:
+    #         raise ValueError(f"Project with ID {project_id} not found")
+    #     if project.is_archived:
+    #         raise ValueError(f"Project '{project.name}' is archived")  # Use name instead of ID
+        
+    #     if user.user_type == "admin" and role != "admin":
+    #         raise ValueError(f"Admin user '{user.user_id_str}' cannot be assigned to projects with roles other than admin")
+        
+    
+    # @staticmethod
+    # def assign_user_to_project(user_id: int, project_id: int, role: str, session: Session, user_weight: Optional[float] = None) -> None:
+    #     """Assign a user to a project with a specific role.
+        
+    #     Args:
+    #         user_id: The ID of the user
+    #         project_id: The ID of the project
+    #         role: The role to assign ('annotator', 'reviewer', 'admin', or 'model')
+    #         session: Database session
+    #         user_weight: Optional weight for the user's answers (defaults to 1.0)
             
-        Raises:
-            ValueError: If user or project not found, or if role is invalid
-        """
-        if role not in ["annotator", "reviewer", "admin", "model"]:
-            raise ValueError("Invalid role. Must be one of: annotator, reviewer, admin, model")
+    #     Raises:
+    #         ValueError: If user or project not found, or if role is invalid
+    #     """
+    #     AuthService.verify_assign_user_to_project(user_id, project_id, role, session)
         
-        # Get user and project
+    #     # Check if THIS SPECIFIC role assignment already exists
+    #     existing = session.scalar(
+    #         select(ProjectUserRole).where(
+    #             ProjectUserRole.user_id == user_id,
+    #             ProjectUserRole.project_id == project_id,
+    #             ProjectUserRole.role == role  # Now checking for specific role
+    #         )
+    #     )
+        
+    #     if existing:
+    #         existing.is_archived = False  # Unarchive if it was archived
+    #         existing.user_weight = user_weight if user_weight is not None else 1.0
+    #     else:
+    #         assignment = ProjectUserRole(
+    #             project_id=project_id,
+    #             user_id=user_id,
+    #             role=role,
+    #             user_weight=user_weight if user_weight is not None else 1.0,
+    #             is_archived=False
+    #         )
+    #         session.add(assignment)
+        
+    #     session.commit()
+
+    @staticmethod
+    def verify_remove_user_from_project(user_id: int, project_id: int, role: str, session: Session) -> None:
+        """Verify that a user can be removed from a project for a specific role."""
+        # Validate user exists and isn't archived
         user = session.get(User, user_id)
         if not user:
             raise ValueError(f"User with ID {user_id} not found")
         if user.is_archived:
-            raise ValueError(f"User with ID {user_id} is archived")
+            raise ValueError(f"User '{user.user_id_str}' is archived")
         
+        # Admin users cannot be removed from any project role
+        if user.user_type == "admin":
+            raise ValueError(f"Cannot remove admin user '{user.user_id_str}' from any project role")
+        
+        # Validate project exists
         project = session.get(Project, project_id)
         if not project:
             raise ValueError(f"Project with ID {project_id} not found")
-        if project.is_archived:
-            raise ValueError(f"Project with ID {project_id} is archived")
         
-        # If user is an admin, they automatically get reviewer role
-        if user.user_type == "admin" and role != "admin":
-            role = "reviewer"
+        # Validate role is valid
+        if role not in ["annotator", "reviewer", "admin", "model"]:
+            raise ValueError(f"Invalid role: {role}")
         
-        # Check if assignment already exists (including archived ones)
-        existing = session.scalar(
+        # Determine which roles would be affected by removal
+        roles_to_check = []
+        if role == "annotator":
+            roles_to_check = ["annotator", "reviewer", "admin"]
+        elif role == "reviewer":
+            roles_to_check = ["reviewer", "admin"]
+        elif role == "admin":
+            roles_to_check = ["admin"]
+        elif role == "model":
+            roles_to_check = ["model"]
+        
+        # Check if user has any active assignments at the requested level or above
+        active_assignments = session.scalars(
             select(ProjectUserRole).where(
                 ProjectUserRole.user_id == user_id,
-                ProjectUserRole.project_id == project_id
+                ProjectUserRole.project_id == project_id,
+                ProjectUserRole.role.in_(roles_to_check),
+                ProjectUserRole.is_archived == False
             )
-        )
+        ).all()
         
-        if existing:
-            existing.role = role
-            existing.is_archived = False  # Unarchive if it was archived
-            existing.user_weight = user_weight if user_weight is not None else 1.0
-        else:
-            assignment = ProjectUserRole(
-                project_id=project_id,
-                user_id=user_id,
-                role=role,
-                user_weight=user_weight if user_weight is not None else 1.0,
-                is_archived=False
+        if not active_assignments:
+            raise ValueError(f"No active assignments found for user '{user.user_id_str}' in project '{project.name}' at role level '{role}' or above")
+        
+    @staticmethod
+    def remove_user_from_project(user_id: int, project_id: int, role: str, session: Session) -> None:
+        """Remove a user's specific role assignment from a project.
+
+        Hierarchy logic:
+            - Remove "annotator" → removes annotator + reviewer + admin (all depend on annotator)
+            - Remove "reviewer" → removes reviewer + admin (admin depends on reviewer)  
+            - Remove "admin" → removes only admin
+            - Remove "model" → removes only model
+        
+        Args:
+            user_id: The ID of the user
+            project_id: The ID of the project
+            role: The specific role to remove ('annotator', 'reviewer', 'admin', or 'model')
+            session: Database session
+            
+        Raises:
+            ValueError: If no assignment found for the specific role
+        """
+        AuthService.verify_remove_user_from_project(user_id, project_id, role, session)
+
+        if role == "annotator":
+            roles_to_remove = ["annotator", "reviewer", "admin"]
+        elif role == "reviewer":
+            roles_to_remove = ["reviewer", "admin"]
+        elif role == "admin":
+            roles_to_remove = ["admin"]
+        elif role == "model":
+            roles_to_remove = ["model"]
+        
+        # Get and archive all affected role assignments
+        assignments_to_remove = session.scalars(
+            select(ProjectUserRole).where(
+                ProjectUserRole.user_id == user_id,
+                ProjectUserRole.project_id == project_id,
+                ProjectUserRole.role.in_(roles_to_remove),
+                ProjectUserRole.is_archived == False
             )
-            session.add(assignment)
+        ).all()
+        
+        if not assignments_to_remove:
+            # Get project name for better error message
+            project = session.get(Project, project_id)
+            project_name = project.name if project else f"Project {project_id}"
+            raise ValueError(f"No active assignments found for user '{user.user_id_str}' in project '{project_name}' at role level '{role}' or above")
+        
+        # Archive all affected role assignments
+        for assignment in assignments_to_remove:
+            assignment.is_archived = True
         
         session.commit()
 
+    
     @staticmethod
-    def verify_remove_user_from_project(user_id: int, project_id: int, session: Session) -> None:
-        """Verify that a user can be removed from a project."""
-        assignment = session.scalar(
-            select(ProjectUserRole).where(
-                ProjectUserRole.user_id == user_id,
-                ProjectUserRole.project_id == project_id
-            )
-        )
-        if not assignment:
-            raise ValueError(f"No assignment found for user {user_id} in project {project_id}")
-        
-        # If the user is admin, then cannot remove them from the project
-        if assignment.role == "admin":
-            raise ValueError(f"Cannot remove admin user {user_id} from project {project_id}")
-        
-        
-    @staticmethod
-    def remove_user_from_project(user_id: int, project_id: int, session: Session) -> None:
-        """Remove a user's assignment from a project."""
-        AuthService.verify_remove_user_from_project(user_id, project_id, session)
-
-        assignment = session.scalar(
-            select(ProjectUserRole).where(
-                ProjectUserRole.user_id == user_id,
-                ProjectUserRole.project_id == project_id
-            )
-        )
-
-        # Instead of deleting, mark as archived
-        assignment.is_archived = True
-        session.commit()
-
-    @staticmethod
-    def bulk_assign_users_to_project(user_ids: List[int], project_id: int, role: str, session: Session) -> None:
-        """Assign multiple users to a project with the same role."""
-        for user_id in user_ids:
-            try:
-                AuthService.assign_user_to_project(
-                    user_id=user_id, 
-                    project_id=project_id, 
-                    role=role, 
-                    session=session
-                )
-            except ValueError as e:
-                # Log error but continue with other assignments
-                print(f"Error assigning user {user_id}: {str(e)}")
-
-    @staticmethod
-    def bulk_remove_users_from_project(user_ids: List[int], project_id: int, session: Session) -> None:
-        """Remove multiple users from a project."""
-        # Instead of deleting, mark as archived
-        session.execute(
-            update(ProjectUserRole)
-            .where(
-                ProjectUserRole.user_id.in_(user_ids),
-                ProjectUserRole.project_id == project_id
-            )
-            .values(is_archived=True)
-        )
-        session.commit()
-
-    @staticmethod
-    def archive_user_from_project(user_id: int, project_id: int, session: Session) -> None:
-        """Archive a user's assignment from a project.
+    def remove_all_user_roles_from_project(user_id: int, project_id: int, session: Session) -> int:
+        """Remove ALL role assignments for a user from a project.
         
         Args:
             user_id: The ID of the user
             project_id: The ID of the project
             session: Database session
             
-        Raises:
-            ValueError: If no assignments found
+        Returns:
+            Number of role assignments removed
         """
-        # Get all role assignments for this user in this project
+        # Get the user to check if they are a global admin
+        user = session.get(User, user_id)
+        if not user:
+            raise ValueError(f"User with ID {user_id} not found")
+        
+        # Admin users cannot be removed from any project role
+        if user.user_type == "admin":
+            raise ValueError(f"Cannot remove admin user {user_id} from any project role")
+        
+        # Get all active role assignments for this user in this project
         assignments = session.scalars(
             select(ProjectUserRole).where(
                 ProjectUserRole.user_id == user_id,
@@ -3497,13 +4073,172 @@ class AuthService:
         ).all()
         
         if not assignments:
-            return
+            return 0
         
         # Archive all role assignments
         for assignment in assignments:
             assignment.is_archived = True
         
         session.commit()
+        return len(assignments)
+
+    
+
+    @staticmethod
+    def verify_bulk_assign_users_to_projects(user_ids: List[int], project_ids: List[int], role: str, session: Session) -> None:
+        """Verify that all users can be assigned to all projects with the specified role.
+        
+        Args:
+            user_ids: List of user IDs
+            project_ids: List of project IDs  
+            role: The role to assign
+            session: Database session
+            
+        Raises:
+            ValueError: If any assignment would fail, with details about all failures
+        """
+        failures = []
+        
+        for user_id in user_ids:
+            for project_id in project_ids:
+                try:
+                    ProjectService.verify_add_user_to_project(project_id, user_id, role, session)  # Updated call
+                except ValueError as e:
+                    # Get user and project names for better error messages
+                    try:
+                        user = session.get(User, user_id)
+                        project = session.get(Project, project_id)
+                        user_name = user.user_id_str if user else f"User {user_id}"
+                        project_name = project.name if project else f"Project {project_id}"
+                        failures.append(f"• {user_name} → {project_name}: {str(e)}")
+                    except:
+                        failures.append(f"• User {user_id} → Project {project_id}: {str(e)}")
+        
+        if failures:
+            failure_summary = f"Cannot assign {len(user_ids)} users to {len(project_ids)} projects as {role}. Found {len(failures)} conflicts:\n\n" + "\n".join(failures)
+            raise ValueError(failure_summary)
+
+    @staticmethod  
+    def bulk_assign_users_to_projects(user_ids: List[int], project_ids: List[int], role: str, session: Session, user_weight: Optional[float] = None) -> int:
+        """Assign all users to all projects after verification.
+        
+        Args:
+            user_ids: List of user IDs
+            project_ids: List of project IDs
+            role: The role to assign
+            session: Database session
+            user_weight: Optional weight for the user's answers
+            
+        Returns:
+            Number of assignments created/updated
+            
+        Raises:
+            ValueError: If verification fails
+        """
+        # First verify all assignments would succeed
+        AuthService.verify_bulk_assign_users_to_projects(user_ids, project_ids, role, session)
+        
+        # If verification passes, do all assignments
+        assignment_count = 0
+        for user_id in user_ids:
+            for project_id in project_ids:
+                ProjectService.add_user_to_project(project_id, user_id, role, session, user_weight)  # Updated call
+                assignment_count += 1
+        
+        return assignment_count
+
+    @staticmethod
+    def verify_bulk_remove_users_from_projects(user_ids: List[int], project_ids: List[int], role: str, session: Session) -> None:
+        """Verify that all users can be removed from all projects for a specific role.
+        
+        Args:
+            user_ids: List of user IDs
+            project_ids: List of project IDs
+            role: The specific role to remove
+            session: Database session
+            
+        Raises:
+            ValueError: If any removal would fail, with details about all failures
+        """
+        failures = []
+    
+        for user_id in user_ids:
+            for project_id in project_ids:
+                try:
+                    AuthService.verify_remove_user_from_project(user_id, project_id, role, session)
+                except ValueError as e:
+                    # Get user and project names for better error messages
+                    try:
+                        user = session.get(User, user_id)
+                        project = session.get(Project, project_id)
+                        user_name = user.user_id_str if user else f"User {user_id}"  # Fixed: was user.user_id
+                        project_name = project.name if project else f"Project {project_id}"
+                        failures.append(f"• {user_name} → {project_name}: {str(e)}")
+                    except:
+                        failures.append(f"• User {user_id} → Project {project_id}: {str(e)}")
+        
+        if failures:
+            failure_summary = f"Cannot remove {role} role for {len(user_ids)} users from {len(project_ids)} projects. Found {len(failures)} conflicts:\n\n" + "\n".join(failures)
+            raise ValueError(failure_summary)
+
+    @staticmethod
+    def bulk_remove_users_from_projects(user_ids: List[int], project_ids: List[int], role: str, session: Session) -> int:
+        """Remove specific role for all users from all projects after verification.
+        
+        Args:
+            user_ids: List of user IDs  
+            project_ids: List of project IDs
+            role: The specific role to remove
+            session: Database session
+            
+        Returns:
+            Number of role assignments removed
+            
+        Raises:
+            ValueError: If verification fails or any individual operation fails
+        """
+        # First verify all removals would succeed
+        AuthService.verify_bulk_remove_users_from_projects(user_ids, project_ids, role, session)
+        
+        # If verification passes, do all removals WITHOUT try/catch
+        # If any fail after verification, that's a real error that should bubble up
+        removal_count = 0
+        for user_id in user_ids:
+            for project_id in project_ids:
+                AuthService.remove_user_from_project(user_id, project_id, role, session)
+                removal_count += 1
+        
+        return removal_count
+
+    # @staticmethod
+    # def remove_user_from_project(user_id: int, project_id: int, session: Session) -> None:
+    #     """Archive a user's assignment from a project.
+        
+    #     Args:
+    #         user_id: The ID of the user
+    #         project_id: The ID of the project
+    #         session: Database session
+            
+    #     Raises:
+    #         ValueError: If no assignments found
+    #     """
+    #     # Get all role assignments for this user in this project
+    #     assignments = session.scalars(
+    #         select(ProjectUserRole).where(
+    #             ProjectUserRole.user_id == user_id,
+    #             ProjectUserRole.project_id == project_id,
+    #             ProjectUserRole.is_archived == False
+    #         )
+    #     ).all()
+        
+    #     if not assignments:
+    #         return
+        
+    #     # Archive all role assignments
+    #     for assignment in assignments:
+    #         assignment.is_archived = True
+        
+    #     session.commit()
     
     @staticmethod
     def get_annotator_user_ids_from_display_names(display_names: List[str], project_id: int, session: Session) -> List[int]:
@@ -3583,6 +4318,256 @@ class AuthService:
         
         return projects
 
+    @staticmethod
+    def get_assignment_counts(session: Session) -> Dict[str, int]:
+        """Get assignment counts without loading actual data."""
+        # Count total assignment records (use a different field since ProjectUserRole has no id)
+        total_assignments = session.scalar(
+            select(func.count()).select_from(ProjectUserRole)
+        )
+        
+        active_assignments = session.scalar(
+            select(func.count()).select_from(ProjectUserRole)
+            .where(ProjectUserRole.is_archived == False)
+        )
+        
+        archived_assignments = total_assignments - active_assignments
+        
+        # Count unique users with assignments
+        unique_users = session.scalar(
+            select(func.count(func.distinct(ProjectUserRole.user_id)))
+            .where(ProjectUserRole.is_archived == False)
+        )
+        
+        # Count unique projects with assignments
+        unique_projects = session.scalar(
+            select(func.count(func.distinct(ProjectUserRole.project_id)))
+            .where(ProjectUserRole.is_archived == False)
+        )
+        
+        return {
+            "total_assignments": total_assignments,
+            "active_assignments": active_assignments,
+            "archived_assignments": archived_assignments,
+            "unique_users": unique_users,
+            "unique_projects": unique_projects
+        }
+    
+    @staticmethod
+    def get_user_counts(session: Session) -> Dict[str, int]:
+        """Get count statistics for users."""
+        from sqlalchemy import func, select
+        
+        total_users = session.scalar(select(func.count()).select_from(User))
+        archived_users = session.scalar(
+            select(func.count()).select_from(User)
+            .where(User.is_archived == True)
+        )
+        active_users = total_users - archived_users
+        
+        # Count by role
+        admin_users = session.scalar(
+            select(func.count()).select_from(User)
+            .where(User.user_type == 'admin')
+        )
+        human_users = session.scalar(
+            select(func.count()).select_from(User)
+            .where(User.user_type == 'human')
+        )
+        model_users = session.scalar(
+            select(func.count()).select_from(User)
+            .where(User.user_type == 'model')
+        )
+        
+        return {
+            "total": total_users,
+            "active": active_users,
+            "archived": archived_users,
+            "admin": admin_users,
+            "human": human_users,
+            "model": model_users
+        }
+    
+    @staticmethod
+    def search_assignments(search_term: str = "", status_filter: str = "All", 
+                        user_role_filter: str = "All", project_role_filter: str = "All",
+                        page: int = 0, page_size: int = 20, session: Session = None) -> Dict[str, Any]:
+        """Search assignments with pagination and filters - paginated by users, not assignment records."""
+        
+        # Build base query to get all matching assignment records first
+        query = select(
+            ProjectUserRole.user_id,
+            ProjectUserRole.project_id,
+            ProjectUserRole.role,
+            ProjectUserRole.is_archived,
+            ProjectUserRole.assigned_at,
+            ProjectUserRole.completed_at,
+            ProjectUserRole.user_weight,
+            User.user_id_str,
+            User.email,
+            User.user_type,
+            Project.name.label('project_name')
+        ).select_from(
+            ProjectUserRole
+        ).join(
+            User, ProjectUserRole.user_id == User.id
+        ).join(
+            Project, ProjectUserRole.project_id == Project.id
+        )
+        
+        # Apply filters
+        conditions = []
+        
+        # Status filter
+        if status_filter == "Active":
+            conditions.append(ProjectUserRole.is_archived == False)
+        elif status_filter == "Archived":
+            conditions.append(ProjectUserRole.is_archived == True)
+        
+        # User role filter
+        if user_role_filter != "All":
+            conditions.append(User.user_type == user_role_filter)
+        
+        # Project role filter
+        if project_role_filter != "All":
+            conditions.append(ProjectUserRole.role == project_role_filter)
+        
+        # Search filter
+        if search_term:
+            search_filter = or_(
+                User.user_id_str.ilike(f"%{search_term}%"),
+                User.email.ilike(f"%{search_term}%"),
+                Project.name.ilike(f"%{search_term}%")
+            )
+            conditions.append(search_filter)
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        # Get ALL matching assignments (no pagination yet)
+        all_assignments = session.execute(query).all()
+        
+        # Group by USER first (this is the key change!)
+        user_assignments = {}
+        for assignment in all_assignments:
+            user_id = assignment.user_id
+            
+            if user_id not in user_assignments:
+                user_assignments[user_id] = {
+                    "name": assignment.user_id_str,
+                    "email": assignment.email,
+                    "user_role": assignment.user_type,
+                    "projects": {},
+                    "is_archived": True  # Will be set to False if any assignment is active
+                }
+            
+            # Check if user has any active assignments
+            if not assignment.is_archived:
+                user_assignments[user_id]["is_archived"] = False
+            
+            project_id = assignment.project_id
+            if project_id not in user_assignments[user_id]["projects"]:
+                user_assignments[user_id]["projects"][project_id] = {
+                    "name": assignment.project_name,
+                    "role_assignments": {}
+                }
+            
+            role = assignment.role
+            user_assignments[user_id]["projects"][project_id]["role_assignments"][role] = {
+                "assigned_date": assignment.assigned_at.strftime("%Y-%m-%d") if assignment.assigned_at else None,
+                "completed_date": assignment.completed_at.strftime("%Y-%m-%d") if assignment.completed_at else None,
+                "archived": assignment.is_archived,
+                "user_weight": assignment.user_weight
+            }
+        
+        # NOW paginate by USERS, not assignment records
+        user_list = list(user_assignments.items())
+        total_users = len(user_list)
+        total_pages = (total_users - 1) // page_size + 1 if total_users > 0 else 1
+        
+        # Get users for current page
+        start_idx = page * page_size
+        end_idx = min(start_idx + page_size, total_users)
+        page_users = user_list[start_idx:end_idx]
+        
+        # Convert back to dict format
+        paginated_user_assignments = {user_id: user_data for user_id, user_data in page_users}
+        
+        return {
+            "user_assignments": paginated_user_assignments,  # Back to user_assignments!
+            "total_count": total_users,  # Now counts users, not assignment records
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }
+    
+    @staticmethod
+    def search_users_for_assignment(search_term: str, user_role_filter: str = "All", 
+                                limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search users for assignment - returns limited results."""
+        query = select(User).where(User.is_archived == False)
+        
+        if user_role_filter != "All":
+            query = query.where(User.user_type == user_role_filter)
+        
+        if search_term:
+            query = query.where(
+                or_(
+                    User.user_id_str.ilike(f"%{search_term}%"),
+                    User.email.ilike(f"%{search_term}%")
+                )
+            )
+        
+        query = query.limit(limit)
+        users = session.scalars(query).all()
+        
+        return [{
+            "id": u.id,
+            "name": u.user_id_str,
+            "email": u.email,
+            "role": u.user_type
+        } for u in users]
+
+    @staticmethod
+    def search_projects_for_assignment(search_term: str, limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search projects for assignment - returns limited results including archived."""
+        query = select(Project).where(
+            Project.name.ilike(f"%{search_term}%")
+        ).limit(limit)
+        
+        projects = session.scalars(query).all()
+        return [{"id": p.id, "name": p.name, "archived": p.is_archived} for p in projects]
+
+    @staticmethod
+    def search_users_for_selection(search_term: str, user_role_filter: str = "All", limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search users for selection dropdowns - returns limited results including archived."""
+        query = select(User)
+        
+        conditions = []
+        if user_role_filter != "All":
+            conditions.append(User.user_type == user_role_filter)
+        
+        if search_term:
+            conditions.append(
+                or_(
+                    User.user_id_str.ilike(f"%{search_term}%"),
+                    User.email.ilike(f"%{search_term}%")
+                )
+            )
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        query = query.limit(limit)
+        users = session.scalars(query).all()
+        
+        return [{
+            "id": u.id,
+            "name": u.user_id_str,
+            "email": u.email,
+            "role": u.user_type,
+            "archived": u.is_archived
+        } for u in users]    
 
 class QuestionGroupService:
     @staticmethod
@@ -3739,6 +4724,34 @@ class QuestionGroupService:
             }
             for q in questions
         ])
+
+    @staticmethod
+    def get_group_counts(session: Session) -> Dict[str, int]:
+        """Get count statistics for question groups.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            Dictionary with count statistics
+        """
+        total_groups = session.scalar(select(func.count()).select_from(QuestionGroup))
+        archived_groups = session.scalar(
+            select(func.count()).select_from(QuestionGroup)
+            .where(QuestionGroup.is_archived == True)
+        )
+        active_groups = total_groups - archived_groups
+        reusable_groups = session.scalar(
+            select(func.count()).select_from(QuestionGroup)
+            .where(QuestionGroup.is_reusable == True, QuestionGroup.is_archived == False)
+        )
+        
+        return {
+            "total": total_groups,
+            "active": active_groups,
+            "archived": archived_groups,
+            "reusable": reusable_groups
+        }
 
     @staticmethod
     def get_group_questions_with_custom_display(group_id: int, project_id: int, video_id: int, session: Session) -> pd.DataFrame:
@@ -3912,6 +4925,13 @@ class QuestionGroupService:
                 raise ValueError(f"Question with ID {question_id} not found")
             if question.is_archived:
                 raise ValueError(f"Question with ID {question_id} is archived")
+
+        # If auto submit is TRUE, check that all questions have a default option
+        if is_auto_submit:
+            for question_id in question_ids:
+                question = session.scalar(select(Question).where(Question.id == question_id))
+                if not question.default_option:
+                    raise ValueError(f"Question with ID {question_id} does not have a default option")
 
     @staticmethod
     def create_group(
@@ -4294,6 +5314,21 @@ class QuestionGroupService:
             assignment_map[question_id].display_order = i
             
         session.commit()
+
+
+    @staticmethod  
+    def search_groups_for_selection(search_term: str, limit: int = 20, session: Session = None) -> List[Dict[str, Any]]:
+        """Search question groups for selection dropdowns - returns limited results including archived."""
+        query = select(QuestionGroup).where(
+            or_(
+                QuestionGroup.title.ilike(f"%{search_term}%"),
+                QuestionGroup.display_title.ilike(f"%{search_term}%"),
+                QuestionGroup.description.ilike(f"%{search_term}%")
+            )
+        ).limit(limit)
+        
+        groups = session.scalars(query).all()
+        return [{"id": g.id, "title": g.title, "display_title": g.display_title, "description": g.description, "archived": g.is_archived} for g in groups]
 
 class BaseAnswerService:
     """Base class with shared functionality for answer submission services."""
@@ -6481,28 +7516,39 @@ class GroundTruthService(BaseAnswerService):
 
 class ProjectGroupService:
     @staticmethod
-    def create_project_group(name: str, description: str, project_ids: list[int] | None, session: Session) -> ProjectGroup:
-        """Create a new project group with optional list of project IDs, enforcing uniqueness constraints."""
+    def verify_create_project_group(name: str, description: str, project_ids: list[int] | None, session: Session) -> ProjectGroup:
+        """Verify create project group with optional list of project IDs, enforcing uniqueness constraints."""
         # Check for unique name
         existing = session.scalar(select(ProjectGroup).where(ProjectGroup.name == name))
         if existing:
             raise ValueError(f"Project group with name '{name}' already exists")
+
+        if project_ids:
+            ProjectGroupService._validate_project_group_uniqueness(project_ids=project_ids, session=session)
+        
+    @staticmethod
+    def create_project_group(name: str, description: str, project_ids: list[int] | None, session: Session) -> ProjectGroup:
+        """Create a new project group with optional list of project IDs, enforcing uniqueness constraints."""
+        # Check for unique name
+        ProjectGroupService.verify_create_project_group(name=name, description=description, project_ids=project_ids, session=session)
+
         group = ProjectGroup(
             name=name,
             description=description,
         )
         session.add(group)
         session.flush()  # get group.id
+
         if project_ids:
-            ProjectGroupService._validate_project_group_uniqueness(project_ids=project_ids, session=session)
             for pid in project_ids:
                 session.add(ProjectGroupProject(project_group_id=group.id, project_id=pid))
+
         session.commit()
         return group
 
     @staticmethod
-    def edit_project_group(group_id: int, name: str | None, description: str | None, add_project_ids: list[int] | None, remove_project_ids: list[int] | None, session: Session) -> ProjectGroup:
-        """Edit group name/description, add/remove projects, enforcing uniqueness constraints when adding."""
+    def verify_edit_project_group(group_id: int, name: str | None, description: str | None, add_project_ids: list[int] | None, remove_project_ids: list[int] | None, session: Session) -> ProjectGroup:
+        """Verify edit project group with optional list of project IDs, enforcing uniqueness constraints when adding."""
         group = session.get(ProjectGroup, group_id)
         if not group:
             raise ValueError(f"Project group with ID {group_id} not found")
@@ -6511,6 +7557,25 @@ class ProjectGroupService:
             existing = session.scalar(select(ProjectGroup).where(ProjectGroup.name == name, ProjectGroup.id != group_id))
             if existing and existing.id != group_id:
                 raise ValueError(f"Project group with name '{name}' already exists")
+        if add_project_ids:
+            # Get current project IDs
+            current_ids = set(row.project_id for row in session.scalars(select(ProjectGroupProject).where(ProjectGroupProject.project_group_id == group_id)).all())
+            new_ids = set(add_project_ids)
+            all_ids = list(current_ids | new_ids)
+            ProjectGroupService._validate_project_group_uniqueness(project_ids=all_ids, session=session)
+        if remove_project_ids:
+            current_ids = set(row.project_id for row in session.scalars(select(ProjectGroupProject).where(ProjectGroupProject.project_group_id == group_id)).all())
+            for pid in remove_project_ids:
+                if pid not in current_ids:
+                    raise ValueError(f"Project with ID {pid} not found in group")
+        
+    
+    @staticmethod
+    def edit_project_group(group_id: int, name: str | None, description: str | None, add_project_ids: list[int] | None, remove_project_ids: list[int] | None, session: Session) -> ProjectGroup:
+        """Edit group name/description, add/remove projects, enforcing uniqueness constraints when adding."""
+        ProjectGroupService.verify_edit_project_group(group_id=group_id, name=name, description=description, add_project_ids=add_project_ids, remove_project_ids=remove_project_ids, session=session)
+        group = session.get(ProjectGroup, group_id)
+        if name:
             group.name = name
         if description:
             group.description = description
@@ -6523,6 +7588,7 @@ class ProjectGroupService:
             for pid in new_ids - current_ids:
                 session.add(ProjectGroupProject(project_group_id=group_id, project_id=pid))
         if remove_project_ids:
+            current_ids = set(row.project_id for row in session.scalars(select(ProjectGroupProject).where(ProjectGroupProject.project_group_id == group_id)).all())
             for pid in remove_project_ids:
                 row = session.scalar(select(ProjectGroupProject).where(ProjectGroupProject.project_group_id == group_id, ProjectGroupProject.project_id == pid))
                 if row:
@@ -6712,6 +7778,94 @@ class ProjectGroupService:
         
         # Remove empty groups
         return {name: projects for name, projects in grouped_projects.items() if projects}
+
+    @staticmethod
+    def get_project_group_counts(session: Session) -> Dict[str, int]:
+        """Get count statistics for project groups and their projects."""
+        from sqlalchemy import func, select
+        
+        total_groups = session.scalar(select(func.count()).select_from(ProjectGroup))
+        
+        # Count total projects in groups using join
+        total_projects_in_groups = session.scalar(
+            select(func.count()).select_from(ProjectGroupProject)
+        )
+        
+        # Calculate average (will be 0 if no groups)
+        avg_projects_per_group = round(total_projects_in_groups / total_groups, 1) if total_groups > 0 else 0
+        
+        return {
+            "total_groups": total_groups,
+            "total_projects_in_groups": total_projects_in_groups,
+            "avg_projects_per_group": avg_projects_per_group
+        }
+    
+    @staticmethod
+    def get_export_counts(user_id: int, role: str, session: Session) -> Dict[str, int]:
+        """Get count statistics for export without loading full data."""
+        from sqlalchemy import func, select, and_
+        
+        # Get project groups count for this user
+        project_groups_count = session.scalar(
+            select(func.count(func.distinct(ProjectGroup.id)))
+            .select_from(ProjectGroup)
+            .join(ProjectGroupProject, ProjectGroup.id == ProjectGroupProject.project_group_id)
+            .join(Project, ProjectGroupProject.project_id == Project.id)
+            .join(ProjectUserRole, Project.id == ProjectUserRole.project_id)  # FIXED: ProjectUserRole
+            .where(
+                and_(
+                    ProjectUserRole.user_id == user_id,
+                    ProjectUserRole.role == role,
+                    ProjectUserRole.is_archived == False
+                )
+            )
+        )
+        
+        # Get total projects accessible to this user
+        total_projects_count = session.scalar(
+            select(func.count(func.distinct(Project.id)))
+            .select_from(Project)
+            .join(ProjectUserRole, Project.id == ProjectUserRole.project_id)  # FIXED: ProjectUserRole
+            .where(
+                and_(
+                    ProjectUserRole.user_id == user_id,
+                    ProjectUserRole.role == role,
+                    ProjectUserRole.is_archived == False
+                )
+            )
+        )
+        
+        # Count projects ready for export (this is still expensive but only runs once)
+        ready_for_export_count = 0
+        try:
+            accessible_project_ids = session.scalars(
+                select(Project.id)
+                .select_from(Project)
+                .join(ProjectUserRole, Project.id == ProjectUserRole.project_id)  # FIXED: ProjectUserRole
+                .where(
+                    and_(
+                        ProjectUserRole.user_id == user_id,
+                        ProjectUserRole.role == role,
+                        ProjectUserRole.is_archived == False
+                    )
+                )
+            ).all()
+            
+            # This is still expensive but only runs once for counts
+            for project_id in accessible_project_ids:
+                try:
+                    if check_project_has_full_ground_truth(project_id=project_id, session=session):
+                        ready_for_export_count += 1
+                except:
+                    pass  # Skip projects that can't be checked
+        except Exception:
+            ready_for_export_count = 0
+        
+        return {
+            "project_groups": project_groups_count,
+            "total_projects": total_projects_count,
+            "ready_for_export": ready_for_export_count
+        }
 
 class AutoSubmitService:
     @staticmethod

@@ -349,33 +349,33 @@ def test_auth_service_get_project_assignments_with_archived(session, test_user, 
     ProjectService.add_user_to_project(test_user.id, test_project.id, "admin", session)
     
     # Archive the assignment
-    AuthService.archive_user_from_project(test_user.id, test_project.id, session)
+    AuthService.remove_user_from_project(test_user.id, test_project.id, session)
     
     # Get assignments
     df = AuthService.get_project_assignments(session)
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 0
 
-def test_auth_service_archive_user_from_project(session, test_user, test_project):
+def test_auth_service_remove_user_from_project(session, test_user, test_project):
     """Test archiving a user from a project."""
     # Add user to project
     ProjectService.add_user_to_project(test_user.id, test_project.id, "admin", session)
     
     # Archive user from project
-    AuthService.archive_user_from_project(test_user.id, test_project.id, session)
+    AuthService.remove_user_from_project(test_user.id, test_project.id, session)
     
     # Verify assignment is archived
     assignments = AuthService.get_project_assignments(session)
     assert len(assignments) == 0
 
 
-def test_auth_service_unarchive_user_from_project(session, test_user, test_project):
+def test_auth_service_unremove_user_from_project(session, test_user, test_project):
     """Test unarchiving a user from a project."""
     # Add user to project
     ProjectService.add_user_to_project(test_user.id, test_project.id, "admin", session)
     
     # Archive user from project
-    AuthService.archive_user_from_project(test_user.id, test_project.id, session)
+    AuthService.remove_user_from_project(test_user.id, test_project.id, session)
     # Verify assignment is not archived
     assignments = AuthService.get_project_assignments(session)
     assert len(assignments) == 0
@@ -401,7 +401,7 @@ def test_auth_service_unarchive_reviewer_from_project(session, test_project):
     assert len(assignments) == 2 # 1 reviewer, 1 annotator
 
     # Archive user from project
-    AuthService.archive_user_from_project(test_user.id, test_project.id, session)
+    AuthService.remove_user_from_project(test_user.id, test_project.id, session)
     # Verify assignment is not archived
     assignments = AuthService.get_project_assignments(session)
     assert len(assignments) == 0

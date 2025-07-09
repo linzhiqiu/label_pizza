@@ -447,6 +447,7 @@ class TestDataSetup:
                 if project_video_ids:
                     ProjectService.create_project(
                         name=project_data["name"],
+                        description=project_data["description"],
                         schema_id=schema_id,
                         video_ids=project_video_ids,
                         session=session

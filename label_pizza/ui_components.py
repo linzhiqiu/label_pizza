@@ -15,10 +15,23 @@ COLORS = {
     'secondary': '#6c757d'
 }
 
+# def get_card_style(color, opacity=0.15):
+#     """Generate consistent card styling"""
+#     return f"""
+#     background: linear-gradient(135deg, {color}{opacity}, {color}08);
+#     border: 2px solid {color};
+#     border-radius: 12px;
+#     padding: 16px;
+#     margin: 12px 0;
+#     box-shadow: 0 2px 8px {color}20;
+#     """
+
 def get_card_style(color, opacity=0.15):
     """Generate consistent card styling"""
+    # Convert decimal opacity to hex alpha value
+    hex_alpha = format(int(opacity * 255), '02x')
     return f"""
-    background: linear-gradient(135deg, {color}{opacity}, {color}08);
+    background: linear-gradient(135deg, {color}{hex_alpha}, {color}08);
     border: 2px solid {color};
     border-radius: 12px;
     padding: 16px;
@@ -168,30 +181,3 @@ def display_pagination_controls(current_page: int, total_pages: int, page_key: s
             </a>
         </div>
         """, height=25)
-
-
-@st.dialog("🎉 Congratulations!")
-def show_annotator_completion():
-    """Simple completion popup for annotators"""
-    st.markdown("### 🎉 **CONGRATULATIONS!** 🎉")
-    st.success("You've completed all questions in this project!")
-    custom_info("Great work! You can now move on to other projects or review your answers.")
-    
-    st.snow()
-    st.balloons()
-    
-    if st.button("Close", use_container_width=True):
-        st.rerun()
-
-@st.dialog("🎉 Outstanding Work!")
-def show_reviewer_completion():
-    """Simple completion popup for reviewers"""
-    st.markdown("### 🎉 **OUTSTANDING WORK!** 🎉")
-    st.success("This project's ground truth dataset is now complete!")
-    custom_info("Please notify the admin that you have completed this project. Excellent job!")
-    
-    st.snow()
-    st.balloons()
-    
-    if st.button("Close", use_container_width=True):
-        st.rerun()

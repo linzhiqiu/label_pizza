@@ -341,7 +341,7 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                         try:
                             overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
                             if overall_progress >= 100 and not is_group_complete:
-                                show_annotator_completion()
+                                show_annotator_completion(project_id=project_id)
                                 return
                         except Exception as e:
                             print(f"Error calculating user overall progress: {e}")
@@ -392,7 +392,7 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                             try:
                                 project_progress = ProjectService.progress(project_id=project_id, session=session)
                                 if project_progress['completion_percentage'] >= 100 and not is_group_complete:
-                                    show_reviewer_completion()
+                                    show_reviewer_completion(project_id=project_id)
                                     return
                             except Exception as e:
                                 print(f"Error showing reviewer completion: {e}")
@@ -1247,6 +1247,7 @@ def submit_answer_reviews(answer_reviews: Dict, video_id: int, project_id: int, 
                     print(f"Error submitting review for {annotator_display}: {e}")
                     continue
 
+
 def load_existing_answer_reviews(video_id: int, project_id: int, question_id: int, session: Session, cache_data: Dict = None) -> Dict[str, Dict]:
     """Load existing answer reviews for a description question"""
     reviews = {}
@@ -1305,6 +1306,50 @@ def load_existing_answer_reviews(video_id: int, project_id: int, question_id: in
         print(f"Error loading answer reviews: {e}")
     
     return reviews
+
+@st.dialog("🎉 Congratulations!")
+def show_annotator_completion(project_id: int):
+    """Simple completion popup for annotators"""
+    st.markdown("### 🎉 **CONGRATULATIONS!** 🎉")
+    st.success("You've completed all questions in this project!")
+    custom_info("Great work! You can now move on to other projects or review your answers.")
+    
+    # st.snow()
+    st.balloons()
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🏠 Back to Dashboard", use_container_width=True, type="primary"):
+            st.session_state.current_view = "dashboard"
+            st.session_state.selected_project_id = None
+            if "selected_annotators" in st.session_state:
+                del st.session_state.selected_annotators
+            
+            # Use existing clear project cache function
+            clear_project_cache(project_id)
+            st.rerun()
+
+@st.dialog("🎉 Outstanding Work!")
+def show_reviewer_completion(project_id: int):
+    """Simple completion popup for reviewers"""
+    st.markdown("### 🎉 **OUTSTANDING WORK!** 🎉")
+    st.success("This project's ground truth dataset is now complete!")
+    custom_info("Please notify the admin that you have completed this project. Excellent job!")
+    
+    st.snow()
+    st.balloons()
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🏠 Back to Dashboard", use_container_width=True, type="primary"):
+            st.session_state.current_view = "dashboard"
+            st.session_state.selected_project_id = None
+            if "selected_annotators" in st.session_state:
+                del st.session_state.selected_annotators
+            
+            # Use existing clear project cache function
+            clear_project_cache(project_id)
+            st.rerun()
 
 ###############################################################################
 # TAB DISPLAY FUNCTIONS
@@ -3628,7 +3673,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
             search_indicator = f"🔍 Filtered by '{search_term}' • "
         
         st.markdown(f"""
-        <div style="{get_card_style(group_color)}position: relative;">
+        <div style="{get_card_style(group_color)}background: linear-gradient(135deg, #ffffff, #f8f9fa) !important; position: relative;">
             <div style="position: absolute; top: -8px; left: 20px; background: {group_color}; color: white; padding: 4px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                 PROJECT GROUP
             </div>
@@ -3656,7 +3701,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                     st.rerun()
             
             with page_col2:
-                page_options = [f"Page {i+1}" for i in range(total_pages)]
+                page_options = [f"Page {i+1} / {total_pages}" for i in range(total_pages)]
                 selected_page_name = st.selectbox(
                     f"Page for {group_name}",
                     page_options,

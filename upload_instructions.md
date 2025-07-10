@@ -30,6 +30,7 @@ example/
 ├── schemas.json
 ├── users.json
 ├── projects.json
+├── project_groups.json
 ├── assignments.json
 ├── annotations/
 │   ├── humans.json
@@ -64,6 +65,25 @@ Contains one entry per video.
     "is_active": true,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
+      "description": "A video of a pizza being made.",
+      "license": "Standard YouTube License"
+    }
+  },
+  {
+    "video_uid": "human2.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human2.mp4",
+    "is_active": true,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=2vjPBrBU-TM",
+      "license": "Standard YouTube License"
+    }
+  },
+  {
+    "video_uid": "human3.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human3.mp4",
+    "is_active": true,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=2S24-y0Ij3Y",
       "license": "Standard YouTube License"
     }
   }
@@ -193,7 +213,7 @@ A project applies a schema to a collection of videos.
   {
     "project_name": "Human Test 0",
     "schema_name": "Questions about Humans",
-    "description": "Project for human questions",
+    "description": "Test project for humans",
     "is_active": true,
     "videos": [
       "human.mp4",
@@ -203,13 +223,40 @@ A project applies a schema to a collection of videos.
   {
     "project_name": "Pizza Test 0",
     "schema_name": "Questions about Pizzas",
-    "description": "Project for pizza questions",
+    "description": "Test project for pizzas",
     "is_active": true,
     "videos": [
       "human.mp4",
       "pizza.mp4"
     ]
+  },
+  {
+    "project_name": "Human Test 1",
+    "schema_name": "Questions about Humans",
+    "description": "Test project for humans",
+    "is_active": true,
+    "videos": [
+      "human2.mp4",
+      "human3.mp4"
+    ]
   }
+]
+```
+
+### `project_groups.json`
+
+A project group either combines different videos that share the same schema or the same videos labeled under different schemas.
+
+```
+[
+    {
+        "project_group_name": "Example Project Group",
+        "description": "This is a project group for human test",
+        "projects": [
+            "Human Test 0",
+            "Human Test 1"
+        ]
+    }
 ]
 ```
 
@@ -984,7 +1031,95 @@ Start a single transaction: create any new projects with their video links, upda
 
 
 
-### Step 6: Upload Users to Projects
+### Step 6: Sync Project Groups
+
+#### - Adding project group
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.upload_utils import sync_projects, sync_project_groups
+
+"""
+Before creating / editing project groups, we need to make sure that all the projects we used are already in the database.
+"""
+
+"""
+Adding projects first
+"""
+projects_data = [
+  {
+    "project_name": "Human Test 0",
+    "schema_name": "Questions about Humans",
+    "description": "Test project for humans",
+    "is_active": True,
+    "videos": [
+      "human.mp4",
+      "pizza.mp4"
+    ]
+  },
+  {
+    "project_name": "Human Test 1",
+    "schema_name": "Questions about Humans",
+    "description": "Test project for humans",
+    "is_active": True,
+    "videos": [
+      "human2.mp4",
+      "human3.mp4"
+    ]
+  }
+]
+
+sync_projects(projects_data=projects_data)
+
+"""
+Adding project groups
+"""
+project_groups_data = [
+    {
+        "project_group_name": "Example Project Group",                # Must NOT exist in the database
+        "description": "This is a project group for human test",
+        "is_active": True,
+        "projects": [             # All these projects MUST exist in the database
+            "Human Test 0",
+            "Human Test 1"
+        ]
+    }
+]
+
+sync_project_groups(project_groups_data=project_groups_data)
+```
+
+> If you find any videos that not exist in the database, please add them to the database according to Step 1.
+
+#### - Update project groups
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.upload_utils import sync_project_groups
+
+"""
+Assuming we already have Human Test 2 in our database.
+"""
+project_groups_data = [
+  {
+      "project_group_name": "Example Project Group",                         # Must exist in the database
+      "description": "This is a project group for human test updated",       # Update the description
+      "is_active": True,
+      "projects": [            # Adding / deleting existing project names to update the project groups
+          "Human Test 0",
+          "Human Test 2"
+      ]
+  }
+]
+```
+
+
+
+### Step 7: Sync Users to Projects
 
 #### - Add user to project
 
@@ -992,7 +1127,7 @@ Start a single transaction: create any new projects with their video links, upda
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.upload_utils import bulk_assign_users
+from label_pizza.upload_utils import bulk_sync_users_to_projects
 
 assignments_data = [
   {
@@ -1004,7 +1139,7 @@ assignments_data = [
   }
 ]
 
-bulk_assign_users(assignments_data=assignments_data)
+bulk_sync_users_to_projects(assignments_data=assignments_data)
 ```
 
 #### - Remove user from project
@@ -1013,7 +1148,7 @@ bulk_assign_users(assignments_data=assignments_data)
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.upload_utils import bulk_assign_users
+from label_pizza.upload_utils import bulk_sync_users_to_projects
 
 assignments_data = [
   {
@@ -1025,7 +1160,7 @@ assignments_data = [
   }
 ]
 
-bulk_assign_users(assignments_data=assignments_data)
+bulk_sync_users_to_projects(assignments_data=assignments_data)
 ```
 
 ### Workflow
@@ -1066,19 +1201,19 @@ Run `verify_add_assignment()`, `verify_update_assignment()`, or `verify_remove_a
 
 
 
-### Step 7: Upload Annotations and Reviews
+### Step 8: Sync Annotations and Reviews
 
 ### `annotations/` and `reviews/`
 
 Both directories share the same JSON structure: each file contains answers for a single question group across all projects and videos. Use `annotations/` for annotator answers and `reviews/` for reviewer ground truth (there can be only one ground‑truth answer per video‑question‑group pair).
 
-#### - Upload annotations
+#### - Sync annotations
 
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.upload_utils import upload_annotations
+from label_pizza.upload_utils import sync_annotations
 
 annotations_data = [
   {
@@ -1094,16 +1229,16 @@ annotations_data = [
   }
 ]
 
-upload_annotations(annotations_data=annotations_data)
+sync_annotations(annotations_data=annotations_data)
 ```
 
-#### - Upload reviews
+#### - Sync reviews
 
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.upload_utils import upload_reviews
+from label_pizza.upload_utils import sync_reviews
 
 reviews_data = [
   {
@@ -1119,7 +1254,7 @@ reviews_data = [
   }
 ]
 
-upload_reviews(reviews_data=annotations_data)
+sync_reviews(reviews_data=annotations_data)
 ```
 
 ### Workflow
@@ -1317,4 +1452,5 @@ After running the configuration, you'll see a summary:
    • Removed: 1
    • Skipped: 3
    • Total processed: 10
+```xxxxxxxxxx 📊 Summary:   • Created: 4   • Updated: 2   • Removed: 1   • Skipped: 3   • Total processed: 10
 ```

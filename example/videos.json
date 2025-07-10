@@ -17,5 +17,23 @@
       "description": "A video of a pizza being made.",
       "license": "Standard YouTube License"
     }
+  },
+  {
+    "video_uid": "human2.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human2.mp4",
+    "is_active": true,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=2vjPBrBU-TM",
+      "license": "Standard YouTube License"
+    }
+  },
+  {
+    "video_uid": "human3.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human3.mp4",
+    "is_active": true,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=2S24-y0Ij3Y",
+      "license": "Standard YouTube License"
+    }
   }
 ]

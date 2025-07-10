@@ -11,7 +11,8 @@ from label_pizza.services import (
     AuthService,
     AnnotatorService,
     GroundTruthService,
-    CustomDisplayService
+    CustomDisplayService,
+    ProjectGroupService
 )
 from label_pizza.db import SessionLocal
 from pathlib import Path
@@ -1303,6 +1304,246 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     
     if total_custom_displays > 0:
         print(f"🎨 Total custom displays processed: {total_custom_displays}")
+
+
+def add_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
+    """Create brand‑new project groups after *full* verification, single commit."""
+    if not isinstance(groups, list):
+        raise TypeError("groups must be list[(filename, dict)]")
+
+    created: List[Dict] = []
+
+    with SessionLocal() as sess:
+        # ── Phase 0: duplicate name check (cheap, read‑only) ───────────────
+        dup_names = []
+        for _, g in groups:
+            try:
+                ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+                dup_names.append(g["project_group_name"])
+            except ValueError as err:
+                # Only ignore "not found" errors, re-raise others
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist, which is what we want for adding
+        
+        if dup_names:
+            raise ValueError("Add aborted – already in DB: " + ", ".join(dup_names))
+
+        # ── Phase 1: prepare each group (get project IDs) ──────────
+        prepared: List[Tuple[Dict, List[int]]] = []  # (group_data, project_ids)
+        missing_projects = []
+        
+        for _, g in groups:
+            project_ids: List[int] = []
+            for project_name in g.get("projects", []):
+                try:
+                    project = ProjectService.get_project_by_name(project_name, sess)
+                    project_ids.append(project.id)
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Project doesn't exist - collect for error reporting
+                    missing_projects.append(project_name)
+            
+            prepared.append((g, project_ids))
+        
+        # Check for any missing projects and abort if found
+        if missing_projects:
+            raise ValueError("Add aborted – projects not found in DB: " + ", ".join(missing_projects))
+
+        # ── Phase 2: verify ALL groups before any create_group ──────────────
+        for g, project_ids in prepared:
+            ProjectGroupService.verify_create_project_group(
+                name=g["project_group_name"],
+                description=g.get("description", ""),
+                project_ids=project_ids if project_ids else None,
+                session=sess,
+            )
+
+        # ── Phase 3: all verifications passed – perform creations ───────────
+        for g, project_ids in prepared:
+            grp = ProjectGroupService.create_project_group(
+                name=g["project_group_name"],
+                description=g.get("description", ""),
+                project_ids=project_ids if project_ids else None,
+                session=sess,
+            )
+            created.append({"name": g["project_group_name"], "id": grp.id})
+
+        sess.commit()
+    return created
+
+
+def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
+    """Edit existing project groups after *full* verification, single commit."""
+    if not isinstance(groups, list):
+        raise TypeError("groups must be list[(filename, dict)]")
+
+    updated: List[Dict] = []
+    with SessionLocal() as sess:
+        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
+        missing = []
+        for _, g in groups:
+            try:
+                ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+            except ValueError as err:
+                # Only treat "not found" as missing, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist
+                missing.append(g["project_group_name"])
+        
+        if missing:
+            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+
+        # ── Phase 1: prepare each group (get project IDs and group record) ──────────────────
+        prepared: List[Tuple[Dict, List[int], object]] = []  # (group_data, project_ids, group_record)
+        missing_projects = []
+        
+        for _, g in groups:
+            grp = ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+            project_ids: List[int] = []
+            
+            # Get project IDs from the group data - all projects must exist
+            for project_name in g.get("projects", []):
+                try:
+                    project = ProjectService.get_project_by_name(project_name, sess)
+                    project_ids.append(project.id)
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Project doesn't exist - collect for error reporting
+                    missing_projects.append(project_name)
+            
+            prepared.append((g, project_ids, grp))
+        
+        # Check for any missing projects and abort if found
+        if missing_projects:
+            raise ValueError("Update aborted – projects not found in DB: " + ", ".join(missing_projects))
+
+        # ── Phase 2: verify ALL edits first ─────────────────────────────────
+        for g, project_ids, grp in prepared:
+            # Get current project IDs using ProjectGroupService instead of direct SQL
+            group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
+            current_project_ids = set(p["id"] for p in group_info["projects"])
+            
+            new_project_ids = set(project_ids)
+            
+            # Calculate what to add and remove
+            add_project_ids = list(new_project_ids - current_project_ids)
+            remove_project_ids = list(current_project_ids - new_project_ids)
+            
+            ProjectGroupService.verify_edit_project_group(
+                group_id=grp.id,
+                name=None,  # No name change in this implementation
+                description=g.get("description", ""),
+                add_project_ids=add_project_ids if add_project_ids else None,
+                remove_project_ids=remove_project_ids if remove_project_ids else None,
+                session=sess,
+            )
+
+        # ── Phase 3: apply edits after all verifications passed ─────────────
+        for g, project_ids, grp in prepared:
+            # Get current project IDs using ProjectGroupService instead of direct SQL
+            group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
+            current_project_ids = set(p["id"] for p in group_info["projects"])
+            
+            new_project_ids = set(project_ids)
+            
+            # Calculate what to add and remove
+            add_project_ids = list(new_project_ids - current_project_ids)
+            remove_project_ids = list(current_project_ids - new_project_ids)
+            
+            ProjectGroupService.edit_project_group(
+                group_id=grp.id,
+                name=None,  # No name change in this implementation
+                description=g.get("description", ""),
+                add_project_ids=add_project_ids if add_project_ids else None,
+                remove_project_ids=remove_project_ids if remove_project_ids else None,
+                session=sess,
+            )
+            
+            updated.append({"name": g["project_group_name"], "id": grp.id})
+
+        sess.commit()
+    return updated
+
+
+def sync_project_groups(
+    *, project_groups_path: str | Path | None = None, 
+    project_groups_data: List[Dict] | None = None) -> None:
+    """Validate every file first, then route to add/update ops."""
+
+    if project_groups_path is None and project_groups_data is None:
+        raise ValueError("Provide either project_groups_path or project_groups_data")
+
+    # Load JSON if path provided
+    if project_groups_path:
+        with open(project_groups_path, "r") as f:
+            project_groups_data = json.load(f)
+
+    if not isinstance(project_groups_data, list):
+        raise TypeError("project_groups_data must be list[dict]")
+
+    # Validate and normalize project groups data
+    processed: List[Dict] = []
+    for idx, g in enumerate(project_groups_data, 1):
+        # Validate required fields
+        for fld in ("project_group_name", "projects"):
+            if fld not in g:
+                raise ValueError(f"Entry #{idx} missing: {fld}")
+        
+        # Set defaults and normalize
+        g.setdefault("description", "")
+        
+        if not isinstance(g["projects"], list):
+            raise ValueError(f"Entry #{idx}: 'projects' must be a list")
+        
+        processed.append(g)
+
+    print(f"✅ JSON validation passed for {len(processed)} items")
+
+    # Classify add vs update with one read-only session
+    to_add, to_update = [], []
+    with SessionLocal() as sess:
+        for g in processed:
+            group_exists = False
+            try:
+                ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+                group_exists = True
+            except ValueError as err:
+                # Only treat "not found" as non-existence, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist
+                group_exists = False
+            
+            if group_exists:
+                to_update.append(g)
+            else:
+                to_add.append(g)
+
+    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+
+    # Execute operations
+    created = []
+    updated = []
+    
+    if to_add:
+        # Convert to the format expected by add_project_groups
+        add_data = [(f"item_{i}", g) for i, g in enumerate(to_add)]
+        created.extend(add_project_groups(add_data))
+    
+    if to_update:
+        # Convert to the format expected by update_project_groups
+        update_data = [(f"item_{i}", g) for i, g in enumerate(to_update)]
+        updated.extend(update_project_groups(update_data))
+
+    print("🎉 Project-group pipeline complete")
+    print(f"   • Groups created: {len(created)}")
+    print(f"   • Groups updated: {len(updated)}")
 
 
 def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None) -> None:

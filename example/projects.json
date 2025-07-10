@@ -18,5 +18,15 @@
       "human.mp4",
       "pizza.mp4"
     ]
+  },
+  {
+    "project_name": "Human Test 1",
+    "schema_name": "Questions about Humans",
+    "description": "Test project for humans",
+    "is_active": true,
+    "videos": [
+      "human2.mp4",
+      "human3.mp4"
+    ]
   }
 ]

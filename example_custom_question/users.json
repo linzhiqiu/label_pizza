@@ -12,12 +12,5 @@
         "password": "user111",
         "user_type": "human",
         "is_active": true
-    },
-    {
-        "user_id": "Robot 1",
-        "password": "robot111",
-        "email": "",
-        "user_type": "model",
-        "is_active": true
     }
 ]

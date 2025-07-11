@@ -1,0 +1,11 @@
+[
+    {
+        "project_group_name": "Example Project Group",
+        "description": "This is a project group for human test",
+        "projects": [
+            "Human Test 0",
+            "Camera Movement 0",
+            "Camera Movement 1"
+        ]
+    }
+]

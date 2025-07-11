@@ -1307,7 +1307,7 @@ def load_existing_answer_reviews(video_id: int, project_id: int, question_id: in
     
     return reviews
 
-@st.dialog("🎉 Congratulations!")
+@st.dialog("🎉 Congratulations!", width="large")
 def show_annotator_completion(project_id: int):
     """Simple completion popup for annotators"""
     st.markdown("### 🎉 **CONGRATULATIONS!** 🎉")
@@ -1329,7 +1329,7 @@ def show_annotator_completion(project_id: int):
             clear_project_cache(project_id)
             st.rerun()
 
-@st.dialog("🎉 Outstanding Work!")
+@st.dialog("🎉 Outstanding Work!", width="large")
 def show_reviewer_completion(project_id: int):
     """Simple completion popup for reviewers"""
     st.markdown("### 🎉 **OUTSTANDING WORK!** 🎉")

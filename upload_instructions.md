@@ -386,7 +386,7 @@ from label_pizza.upload_utils import sync_videos
 
 videos_data = [
   {
-    "video_uid": "human.mp4",	# Must NOT exist in the database
+    "video_uid": "human.mp4", # Must NOT exist in the database
     "url": "https://your-repo/human.mp4",
     "is_active": True,
     "metadata": {
@@ -410,11 +410,11 @@ from label_pizza.upload_utils import sync_videos
 videos_data = [
   {
     "video_uid": "human.mp4",                       # Must already exist in the database
-    "url": "https://your-repo-new/human.mp4",	      # update url (Must not exist in the database)
+    "url": "https://your-repo-new/human.mp4",       # update url (Must not exist in the database)
     "is_active": True,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
-      "license": "Standard YouTube License Updated"	# update metadata
+      "license": "Standard YouTube License Updated" # update metadata
     }
   }
 ]
@@ -429,9 +429,9 @@ from label_pizza.upload_utils import sync_videos
 
 videos_data = [
   {
-    "video_uid": "human.mp4",	# Must already exist in the database
+    "video_uid": "human.mp4", # Must already exist in the database
     "url": "https://your-repo/human.mp4",
-    "is_active": False,	      # Set to False to archive the video
+    "is_active": False,       # Set to False to archive the video
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
       "license": "Standard YouTube License"
@@ -624,6 +624,48 @@ With all conflicts ruled out, the function opens a single database transaction:
 
 
 ### Step 3: Sync Question Groups
+
+> Before creating question groups, it's important to understand the `verification_function`. In short, this function checks whether the answers within a group are logically consistent.
+>
+> **For example:** You shouldn't be able to select that there are "0 pizzas" and still provide a description for a pizza.
+
+```python
+def validate_pair(
+    answers: Dict[str, str],
+    number_question: str,
+    description_question: str,
+) -> None:
+    """Ensure the description answer is consistent with the count answer."""
+    count_answer = answers.get(number_question)
+
+    description_answer = answers.get(description_question, "")
+    has_items = count_answer.strip() != "0"
+
+    if has_items and not description_answer:
+        raise ValueError(
+            f"'{description_question}' cannot be empty when count is not zero"
+        )
+    if not has_items and description_answer:
+        raise ValueError(
+            f"'{description_question}' must be empty when count is zero"
+        )
+
+def check_human_description(answers: Dict[str, str]) -> None:
+    validate_pair(
+        answers,
+        number_question="Number of people?",
+        description_question="If there are people, describe them.",
+    )
+
+def check_pizza_description(answers: Dict[str, str]) -> None:
+    validate_pair(
+        answers,
+        number_question="Number of pizzas?",
+        description_question="If there are pizzas, describe them.",
+    )
+```
+
+**here you could see that if there is no pizza / human, we should provide no description.**
 
 Function for adding / editing / archiving question groups
 
@@ -1142,6 +1184,8 @@ assignments_data = [
 bulk_sync_users_to_projects(assignments_data=assignments_data)
 ```
 
+> Notice that you cannot assign an "Admin" user to a non-"Admin" role.
+
 #### - Remove user from project
 
 ```python
@@ -1378,7 +1422,7 @@ projects_data = [
     "description": "Test project for custom questions",
     "videos": [
       "human.mp4"
-			"pizza.mp4"
+      "pizza.mp4"
     ]
   }
 ]

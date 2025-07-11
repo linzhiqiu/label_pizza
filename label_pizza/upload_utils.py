@@ -19,108 +19,207 @@ from pathlib import Path
 from typing import List, Dict, Optional, Any, Set, Tuple
 import pandas as pd
 import os
+import concurrent.futures
+import threading
 
 
 # --------------------------------------------------------------------------- #
 # Core operations                                                             #
 # --------------------------------------------------------------------------- #
 
-def add_videos(videos_data: List[Dict]) -> None:
+def _process_video_add(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Process a single video addition in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            VideoService.verify_add_video(
+                video_uid=video_data["video_uid"],
+                url=video_data["url"],
+                metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            return video_data["video_uid"], True, None
+        except ValueError as err:
+            if "already exists" in str(err):
+                return video_data["video_uid"], False, "already exists"
+            else:
+                return video_data["video_uid"], False, str(err)
+
+def _add_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Add a single video in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            VideoService.add_video(
+                video_uid=video_data["video_uid"],
+                url=video_data["url"],
+                metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            return video_data["video_uid"], True, None
+        except Exception as e:
+            return video_data["video_uid"], False, str(e)
+
+def add_videos(videos_data: List[Dict], max_workers: int = 15) -> None:
     """Insert videos that are *not* yet in DB – relies on verify_add_video."""
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
 
-    with SessionLocal() as sess:
-        duplicates = []
-        
-        # Verify all videos with progress bar
-        with tqdm(total=len(videos_data), desc="Verifying videos for addition", unit="video") as pbar:
-            for v in videos_data:
-                try:
-                    VideoService.verify_add_video(
-                        video_uid=v["video_uid"],
-                        url=v["url"],
-                        metadata=v.get("metadata"),
-                        session=sess,
-                    )
-                except ValueError as err:
-                    if "already exists" in str(err):
-                        duplicates.append(v["video_uid"])
+    # Verify all videos with ThreadPoolExecutor
+    duplicates = []
+    errors = []
+    
+    with tqdm(total=len(videos_data), desc="Verifying videos for addition", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_video_add, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "already exists":
+                        duplicates.append(video_uid)
                     else:
-                        raise
+                        errors.append(f"{video_uid}: {error_msg}")
                 pbar.update(1)
 
-        if duplicates:
-            raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+    if duplicates:
+        raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+    
+    if errors:
+        raise ValueError("Add aborted – verification errors: " + "; ".join(errors))
 
-        # Add videos with progress bar
-        with tqdm(total=len(videos_data), desc="Adding videos", unit="video") as pbar:
-            for v in videos_data:
-                VideoService.add_video(
-                    video_uid=v["video_uid"],
-                    url=v["url"],
-                    metadata=v.get("metadata"),
-                    session=sess,
-                )
-                pbar.set_postfix(uid=v["video_uid"][:20] + "..." if len(v["video_uid"]) > 20 else v["video_uid"])
+    # Add videos with ThreadPoolExecutor
+    with tqdm(total=len(videos_data), desc="Adding videos", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_add_single_video, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    raise ValueError(f"Failed to add video {video_uid}: {error_msg}")
+                pbar.set_postfix(uid=video_uid[:20] + "..." if len(video_uid) > 20 else video_uid)
                 pbar.update(1)
                 
-        sess.commit()
-        print(f"✔ Added {len(videos_data)} new video(s)")
+    print(f"✔ Added {len(videos_data)} new video(s)")
 
 
-def update_videos(videos_data: List[Dict]) -> None:
+def _process_video_update(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Process a single video update verification in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            VideoService.verify_update_video(
+                video_uid=video_data["video_uid"],
+                new_url=video_data["url"],
+                new_metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            return video_data["video_uid"], True, None
+        except ValueError as err:
+            if "not found" in str(err):
+                return video_data["video_uid"], False, "not found"
+            else:
+                return video_data["video_uid"], False, str(err)
+
+def _update_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Update a single video in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            # Get existing video info
+            existing_video = VideoService.get_video_by_uid(video_data["video_uid"], sess)
+            if not existing_video:
+                return video_data["video_uid"], False, "Video not found"
+            
+            # Check if any information has changed
+            needs_update = False
+            
+            # Check URL
+            if video_data["url"] != existing_video.url:
+                needs_update = True
+            
+            # Check metadata
+            new_metadata = video_data.get("metadata", {})
+            existing_metadata = existing_video.video_metadata or {}
+            if new_metadata != existing_metadata:
+                needs_update = True
+            
+            # Check archive status
+            if "is_archived" in video_data:
+                if video_data["is_archived"] != existing_video.is_archived:
+                    needs_update = True
+            
+            # If no changes needed, skip update
+            if not needs_update:
+                return video_data["video_uid"], True, "No changes needed"
+            
+            # Perform the update
+            VideoService.update_video(
+                video_uid=video_data["video_uid"],
+                new_url=video_data["url"],
+                new_metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            
+            # Handle archive status if present
+            if "is_archived" in video_data:
+                rec = VideoService.get_video_by_uid(video_data["video_uid"], sess)
+                if rec and video_data["is_archived"] != rec.is_archived:
+                    if video_data["is_archived"]:
+                        VideoService.archive_video(rec.id, sess)
+                    else:
+                        rec.is_archived = False
+            
+            return video_data["video_uid"], True, None
+        except Exception as e:
+            return video_data["video_uid"], False, str(e)
+
+def update_videos(videos_data: List[Dict], max_workers: int = 15) -> None:
     """Update videos that *must* exist – relies on verify_update_video."""
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
 
-    with SessionLocal() as sess:
-        missing = []
-        
-        # Verify all videos with progress bar
-        with tqdm(total=len(videos_data), desc="Verifying videos for update", unit="video") as pbar:
-            for v in videos_data:
-                try:
-                    VideoService.verify_update_video(
-                        video_uid=v["video_uid"],
-                        new_url=v["url"],
-                        new_metadata=v.get("metadata"),
-                        session=sess,
-                    )
-                except ValueError as err:
-                    if "not found" in str(err):
-                        missing.append(v["video_uid"])
+    # Verify all videos with ThreadPoolExecutor
+    missing = []
+    errors = []
+    
+    with tqdm(total=len(videos_data), desc="Verifying videos for update", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_video_update, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "not found":
+                        missing.append(video_uid)
                     else:
-                        raise
+                        errors.append(f"{video_uid}: {error_msg}")
                 pbar.update(1)
 
-        if missing:
-            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+    if missing:
+        raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+    
+    if errors:
+        raise ValueError("Update aborted – verification errors: " + "; ".join(errors))
 
-        # Update videos with progress bar
-        with tqdm(total=len(videos_data), desc="Updating videos", unit="video") as pbar:
-            for v in videos_data:
-                VideoService.update_video(
-                    video_uid=v["video_uid"],
-                    new_url=v["url"],
-                    new_metadata=v.get("metadata"),
-                    session=sess,
-                )
+    # Update videos with ThreadPoolExecutor
+    updated_count = 0
+    skipped_count = 0
+    
+    with tqdm(total=len(videos_data), desc="Updating videos", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_update_single_video, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    raise ValueError(f"Failed to update video {video_uid}: {error_msg}")
                 
-                # Handle archive status if present
-                if "is_archived" in v:
-                    rec = VideoService.get_video_by_uid(v["video_uid"], sess)
-                    if rec and v["is_archived"] != rec.is_archived:
-                        if v["is_archived"]:
-                            VideoService.archive_video(rec.id, sess)
-                        else:
-                            rec.is_archived = False
+                if error_msg == "No changes needed":
+                    skipped_count += 1
+                else:
+                    updated_count += 1
                 
-                pbar.set_postfix(uid=v["video_uid"][:20] + "..." if len(v["video_uid"]) > 20 else v["video_uid"])
+                pbar.set_postfix(uid=video_uid[:20] + "..." if len(video_uid) > 20 else video_uid)
                 pbar.update(1)
 
-        sess.commit()
-        print(f"✔ Updated {len(videos_data)} video(s)")
+    print(f"✔ Updated {updated_count} video(s), skipped {skipped_count} video(s) (no changes)")
 
 # --------------------------------------------------------------------------- #
 # Orchestrator                                                                #
@@ -162,15 +261,29 @@ def sync_videos(
 
     # Decide add vs update with a single read-only look‑up
     print("\n📊 Categorizing videos...")
-    with SessionLocal() as sess:
-        to_add, to_update = [], []
-        with tqdm(total=len(processed), desc="Checking existing videos", unit="video") as pbar:
-            for v in processed:
-                existing = VideoService.get_video_by_uid(v["video_uid"], sess)
-                if existing:
-                    to_update.append(v)
+    
+    def _check_video_exists(video_data: Dict) -> Tuple[str, bool]:
+        """Check if a video exists in a thread-safe manner."""
+        with SessionLocal() as sess:
+            try:
+                existing = VideoService.get_video_by_uid(video_data["video_uid"], sess)
+                return video_data["video_uid"], existing is not None
+            except Exception as e:
+                # If there's an error checking, assume it doesn't exist
+                return video_data["video_uid"], False
+    
+    to_add, to_update = [], []
+    with tqdm(total=len(processed), desc="Checking existing videos", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(_check_video_exists, v): v for v in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, exists = future.result()
+                video_data = futures[future]
+                if exists:
+                    to_update.append(video_data)
                 else:
-                    to_add.append(v)
+                    to_add.append(video_data)
                 pbar.update(1)
     
     print(f"\n📈 Summary: {len(to_add)} videos to add, {len(to_update)} videos to update")
@@ -229,70 +342,114 @@ def add_users(users_data: List[Dict]) -> None:
 
 
 def update_users(users_data: List[Dict]) -> None:
-    """Update users that *must* exist – checks user existence before updating."""
+    """Update users that *must* exist – checks for changes before updating."""
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
 
-    with SessionLocal() as sess:
-        missing = []
-        for u in users_data:
-            user_exists = False
-            
-            # Check if user exists by user_id first
-            if u.get("user_id"):
+    # Process users in single session to avoid connection exhaustion
+    validated_entries = []
+    skipped_entries = []
+    
+    print("🔍 Validating and updating users...")
+    with SessionLocal() as session:
+        try:
+            # Validation phase with progress bar
+            for idx, user in enumerate(tqdm(users_data, desc="Validating", unit="users"), 1):
                 try:
-                    existing_user = AuthService.get_user_by_id(u["user_id"], sess)
-                    if existing_user:
-                        user_exists = True
-                except ValueError as err:
-                    if "not found" in str(err).lower():
-                        user_exists = False
+                    # Get existing user
+                    user_rec = None
+                    if user.get("user_id"):
+                        try:
+                            user_rec = AuthService.get_user_by_id(user["user_id"], session)
+                        except ValueError:
+                            pass
+                    
+                    if not user_rec and user.get("email"):
+                        try:
+                            user_rec = AuthService.get_user_by_email(user["email"], session)
+                        except ValueError:
+                            pass
+                    
+                    if not user_rec:
+                        raise ValueError(f"User not found: {user.get('user_id') or user.get('email')}")
+                    
+                    # Check if any information has changed
+                    needs_update = False
+                    changes = []
+                    
+                    # Check email
+                    if "email" in user and user["email"] != user_rec.email:
+                        needs_update = True
+                        changes.append("email")
+                    
+                    # Check password (we can't compare hashes, so we'll update if provided)
+                    if "password" in user:
+                        needs_update = True
+                        changes.append("password")
+                    
+                    # Check user_type
+                    if "user_type" in user and user["user_type"] != user_rec.user_type:
+                        needs_update = True
+                        changes.append("user_type")
+                    
+                    # Check user_id
+                    if "user_id" in user and user["user_id"] != user_rec.user_id_str:
+                        needs_update = True
+                        changes.append("user_id")
+                    
+                    # Check archive status
+                    if "is_archived" in user and user["is_archived"] != user_rec.is_archived:
+                        needs_update = True
+                        changes.append("archive_status")
+                    
+                    if not needs_update:
+                        skipped_entries.append({
+                            "user_id": user.get("user_id"),
+                            "email": user.get("email")
+                        })
                     else:
-                        raise
+                        validated_entries.append({
+                            "user_rec": user_rec,
+                            "user_data": user,
+                            "changes": changes
+                        })
+                        
+                except Exception as e:
+                    raise ValueError(f"[Row {idx}] {user.get('user_id') or user.get('email')}: {e}")
             
-            # If not found by user_id, check by email
-            if not user_exists and u.get("email"):
-                try:
-                    existing_user = AuthService.get_user_by_email(u["email"], sess)
-                    if existing_user:
-                        user_exists = True
-                except ValueError as err:
-                    if "not found" in str(err).lower():
-                        user_exists = False
-                    else:
-                        raise
+            print(f"✅ Validation passed: {len(validated_entries)} to update, {len(skipped_entries)} skipped")
             
-            # If user doesn't exist, add to missing list
-            if not user_exists:
-                missing.append(u.get("user_id") or u.get("email"))
-
-        if missing:
-            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
-
-        for u in users_data:
-            try:
-                user_rec = AuthService.get_user_by_id(u["user_id"], sess) if u.get("user_id") else AuthService.get_user_by_email(u["email"], sess)
-
-                if "email" in u and u["email"] != user_rec.email:
-                    AuthService.update_user_email(user_rec.id, u["email"], sess)
-                if "password" in u:
-                    AuthService.update_user_password(user_rec.id, u["password"], sess)
-                if "user_type" in u and u["user_type"] != user_rec.user_type:
-                    AuthService.update_user_role(user_rec.id, u["user_type"], sess)
-                if "user_id" in u and u["user_id"] != user_rec.user_id_str:
-                    AuthService.update_user_id(user_rec.id, u["user_id"], sess)
-                if "is_archived" in u and u["is_archived"] != user_rec.is_archived:
-                    AuthService.toggle_user_archived(user_rec.id, sess)
-            except ValueError as err:
-                if "not found" in str(err).lower():
-                    # This shouldn't happen since we verified earlier, but handle gracefully
-                    print(f"⚠ User not found during update: {u.get('user_id') or u.get('email')}")
-                    continue
-                else:
-                    raise
-
-        sess.commit()
-        print(f"✔ Updated {len(users_data)} user(s)")
+            # Update validated entries in same session with progress bar
+            if validated_entries:
+                print("📤 Updating users...")
+                for entry in tqdm(validated_entries, desc="Updating", unit="users"):
+                    user_rec = entry["user_rec"]
+                    user_data = entry["user_data"]
+                    changes = entry["changes"]
+                    
+                    # Apply only the changes that are needed
+                    if "email" in changes:
+                        AuthService.update_user_email(user_rec.id, user_data["email"], session)
+                    
+                    if "password" in changes:
+                        AuthService.update_user_password(user_rec.id, user_data["password"], session)
+                    
+                    if "user_type" in changes:
+                        AuthService.update_user_role(user_rec.id, user_data["user_type"], session)
+                    
+                    if "user_id" in changes:
+                        AuthService.update_user_id(user_rec.id, user_data["user_id"], session)
+                    
+                    if "archive_status" in changes:
+                        if user_data["is_archived"] != user_rec.is_archived:
+                            AuthService.toggle_user_archived(user_rec.id, session)
+                
+                session.commit()
+                print(f"🎉 Successfully updated {len(validated_entries)} users!")
+                
+        except Exception as e:
+            session.rollback()
+            raise RuntimeError(f"Update failed: {e}")
 
 # --------------------------------------------------------------------------- #
 # Orchestrator                                                                #
@@ -466,6 +623,8 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
         raise TypeError("groups must be list[(filename, dict)]")
 
     updated: List[Dict] = []
+    skipped: List[Dict] = []
+    
     with SessionLocal() as sess:
         # ── Phase 0: existence check (cheap, read‑only) ────────────────────
         missing = []
@@ -482,19 +641,23 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
         if missing:
             raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
 
-        # ── Phase 1: prepare each group (get question IDs) ──────────────────
+        # ── Phase 1: prepare each group and validate question sets ──────────
         prepared: List[Tuple[Dict, List[int], object]] = []  # (group_data, question_ids, group_record)
         missing_questions = []
+        question_set_errors = []
+        duplicate_errors = []
         
         for _, g in groups:
             grp = QuestionGroupService.get_group_by_name(g["title"], sess)
             q_ids: List[int] = []
+            question_texts: List[str] = []
             
             # Get question IDs from the group data - all questions must exist
             for q in g.get("questions", []):
                 try:
                     q_rec = QuestionService.get_question_by_text(q["text"], sess)
                     q_ids.append(q_rec["id"])
+                    question_texts.append(q["text"])
                 except ValueError as err:
                     # Only treat "not found" as missing, re-raise other errors
                     if "not found" not in str(err).lower():
@@ -502,14 +665,94 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                     # Question doesn't exist - collect for error reporting
                     missing_questions.append(q["text"])
             
+            # Check for duplicates in new question list
+            if len(q_ids) != len(set(q_ids)):
+                # Find which questions are duplicated
+                from collections import Counter
+                question_counter = Counter(question_texts)
+                duplicates = [text for text, count in question_counter.items() if count > 1]
+                duplicate_errors.append(f"Group '{g['title']}': Duplicate questions found: {', '.join(duplicates)}")
+            
+            # Check if question set has changed (before any database modifications)
+            current_question_ids = set(QuestionGroupService.get_question_order(grp.id, sess))
+            new_question_ids = set(q_ids)
+            
+            if current_question_ids != new_question_ids:
+                missing_questions_in_set = current_question_ids - new_question_ids
+                extra_questions_in_set = new_question_ids - current_question_ids
+                question_set_errors.append(
+                    f"Group '{g['title']}': Question set must remain the same. "
+                    f"Missing questions: {missing_questions_in_set}. "
+                    f"Extra questions: {extra_questions_in_set}"
+                )
+            
             prepared.append((g, q_ids, grp))
         
         # Check for any missing questions and abort if found
         if missing_questions:
             raise ValueError("Update aborted – questions not found in DB: " + ", ".join(missing_questions))
+        
+        # Check for duplicates and abort if found
+        if duplicate_errors:
+            raise ValueError("Update aborted – duplicate questions: " + "; ".join(duplicate_errors))
+        
+        # Check for question set changes and abort if found
+        if question_set_errors:
+            raise ValueError("Update aborted – question sets changed: " + "; ".join(question_set_errors))
 
-        # ── Phase 2: verify ALL edits first ─────────────────────────────────
+        # ── Phase 2: check for differences and skip if no changes ───────────
+        to_update = []
         for g, q_ids, grp in prepared:
+            needs_update = False
+            changes = []
+            
+            # Check display title
+            new_display_title = g.get("display_title", g["title"])
+            if new_display_title != grp.display_title:
+                needs_update = True
+                changes.append("display_title")
+            
+            # Check description
+            if g["description"] != grp.description:
+                needs_update = True
+                changes.append("description")
+            
+            # Check is_reusable
+            new_is_reusable = g.get("is_reusable", True)
+            if new_is_reusable != grp.is_reusable:
+                needs_update = True
+                changes.append("is_reusable")
+            
+            # Check verification_function
+            new_verification_function = g.get("verification_function")
+            if new_verification_function != grp.verification_function:
+                needs_update = True
+                changes.append("verification_function")
+            
+            # Check is_auto_submit
+            new_is_auto_submit = g.get("is_auto_submit", False)
+            if new_is_auto_submit != grp.is_auto_submit:
+                needs_update = True
+                changes.append("is_auto_submit")
+            
+            # Check question order
+            current_order = QuestionGroupService.get_question_order(grp.id, sess)
+            if current_order != q_ids:
+                needs_update = True
+                changes.append("question_order")
+            
+            # Check archive status
+            if "is_archived" in g and g["is_archived"] != grp.is_archived:
+                needs_update = True
+                changes.append("archive_status")
+            
+            if needs_update:
+                to_update.append((g, q_ids, grp, changes))
+            else:
+                skipped.append({"title": g["title"], "id": grp.id})
+
+        # ── Phase 3: verify ALL edits first ─────────────────────────────────
+        for g, q_ids, grp, changes in to_update:
             QuestionGroupService.verify_edit_group(
                 group_id=grp.id,
                 new_display_title=g.get("display_title", g["title"]),
@@ -520,8 +763,8 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 session=sess,
             )
 
-        # ── Phase 3: apply edits after all verifications passed ─────────────
-        for g, q_ids, grp in prepared:
+        # ── Phase 4: apply edits after all verifications passed ─────────────
+        for g, q_ids, grp, changes in to_update:
             QuestionGroupService.edit_group(
                 group_id=grp.id,
                 new_display_title=g.get("display_title", g["title"]),
@@ -533,23 +776,29 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
             )
             
             # Handle question order updates
-            if q_ids:  # Only if questions are provided
-                # Get current question order
-                current_order = QuestionGroupService.get_question_order(grp.id, sess)
-                
-                # Check if order has changed
-                if current_order != q_ids:
-                    QuestionGroupService.update_question_order(grp.id, q_ids, sess)
+            if "question_order" in changes:
+                QuestionGroupService.update_question_order(grp.id, q_ids, sess)
             
             # Handle archiving/unarchiving
-            if "is_archived" in g and g["is_archived"] != grp.is_archived:
+            if "archive_status" in changes:
                 if g["is_archived"]:
                     QuestionGroupService.archive_group(grp.id, sess)
                 else:
                     QuestionGroupService.unarchive_group(grp.id, sess)
-            updated.append({"title": g["title"], "id": grp.id})
+            
+            updated.append({"title": g["title"], "id": grp.id, "changes": changes})
 
         sess.commit()
+    
+    # Print summary
+    if skipped:
+        print(f"⏭️  Skipped {len(skipped)} group(s) (no changes needed)")
+    
+    if updated:
+        print(f"✅ Updated {len(updated)} group(s)")
+        for item in updated:
+            print(f"   • {item['title']}: {', '.join(item['changes'])}")
+    
     return updated
 
 # --------------------------------------------------------------------------- #
@@ -736,6 +985,8 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
         raise TypeError("schemas must be list[dict]")
 
     updated: List[Dict] = []
+    skipped: List[Dict] = []
+    
     with SessionLocal() as sess:
         # ── Phase 0: existence check ───────────────────────────────────────
         missing = []
@@ -752,9 +1003,10 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
         if missing:
             raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
 
-        # ── Phase 1: prepare each schema (get question group IDs) ───────────
+        # ── Phase 1: prepare each schema and validate question group sets ───
         prepared: List[Tuple[Dict, List[int], object]] = []  # (schema_data, group_ids, schema_record)
         missing_groups = []
+        question_group_set_errors = []
         
         for s in schemas:
             sch = SchemaService.get_schema_by_name(s["schema_name"], sess)
@@ -773,14 +1025,70 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
                         # Question group doesn't exist
                         missing_groups.append(g["title"])
             
+            # Check if question group set has changed (before any database modifications)
+            current_group_ids = set(SchemaService.get_question_group_order(sch.id, sess))
+            new_group_ids = set(group_ids)
+            
+            if current_group_ids != new_group_ids:
+                missing_groups_in_set = current_group_ids - new_group_ids
+                extra_groups_in_set = new_group_ids - current_group_ids
+                question_group_set_errors.append(
+                    f"Schema '{s['schema_name']}': Question group set must remain the same. "
+                    f"Missing groups: {missing_groups_in_set}. "
+                    f"Extra groups: {extra_groups_in_set}"
+                )
+            
             prepared.append((s, group_ids, sch))
         
         # Check for any missing question groups and abort if found
         if missing_groups:
             raise ValueError("Update aborted – question groups not found in DB: " + ", ".join(missing_groups))
+        
+        # Check for question group set changes and abort if found
+        if question_group_set_errors:
+            raise ValueError("Update aborted – question group sets changed: " + "; ".join(question_group_set_errors))
 
-        # ── Phase 2: verify ALL edits first ─────────────────────────────────
+        # ── Phase 2: check for differences and skip if no changes ───────────
+        to_update = []
         for s, group_ids, sch in prepared:
+            needs_update = False
+            changes = []
+            
+            # Check name
+            if s.get("schema_name") != sch.name:
+                needs_update = True
+                changes.append("name")
+            
+            # Check instructions_url
+            new_instructions_url = s.get("instructions_url")
+            if new_instructions_url != sch.instructions_url:
+                needs_update = True
+                changes.append("instructions_url")
+            
+            # Check has_custom_display
+            new_has_custom_display = s.get("has_custom_display", False)
+            if new_has_custom_display != sch.has_custom_display:
+                needs_update = True
+                changes.append("has_custom_display")
+            
+            # Check is_archived
+            if "is_archived" in s and s["is_archived"] != sch.is_archived:
+                needs_update = True
+                changes.append("archive_status")
+            
+            # Check question group order
+            current_order = SchemaService.get_question_group_order(sch.id, sess)
+            if current_order != group_ids:
+                needs_update = True
+                changes.append("question_group_order")
+            
+            if needs_update:
+                to_update.append((s, group_ids, sch, changes))
+            else:
+                skipped.append({"name": s["schema_name"], "id": sch.id})
+
+        # ── Phase 3: verify ALL edits first ─────────────────────────────────
+        for s, group_ids, sch, changes in to_update:
             SchemaService.verify_edit_schema(
                 schema_id=sch.id,
                 name=s.get("schema_name"),
@@ -790,35 +1098,41 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
                 session=sess,
             )
 
-        # ── Phase 3: apply edits after all verifications passed ─────────────
-        for s, group_ids, sch in prepared:
+        # ── Phase 4: apply edits after all verifications passed ─────────────
+        for s, group_ids, sch, changes in to_update:
             SchemaService.edit_schema(
                 schema_id=sch.id,
                 name=s.get("schema_name"),
                 instructions_url=s.get("instructions_url"),
                 has_custom_display=s.get("has_custom_display"),
+                is_archived=s.get("is_archived"),
                 session=sess,
             )
             
             # Handle question group order updates
-            if group_ids:  # Only if question groups are provided
-                # Get current question group order
-                current_order = SchemaService.get_question_group_order(sch.id, sess)
-                
-                # Check if order has changed
-                if current_order != group_ids:
-                    SchemaService.update_question_group_order(sch.id, group_ids, sess)
+            if "question_group_order" in changes:
+                SchemaService.update_question_group_order(sch.id, group_ids, sess)
             
             # Handle archiving/unarchiving
-            if "is_archived" in s and s["is_archived"] != sch.is_archived:
+            if "archive_status" in changes:
                 if s["is_archived"]:
                     SchemaService.archive_schema(sch.id, sess)
                 else:
                     SchemaService.unarchive_schema(sch.id, sess)
             
-            updated.append({"name": s["schema_name"], "id": sch.id})
+            updated.append({"name": s["schema_name"], "id": sch.id, "changes": changes})
 
         sess.commit()
+    
+    # Print summary
+    if skipped:
+        print(f"⏭️  Skipped {len(skipped)} schema(s) (no changes needed)")
+    
+    if updated:
+        print(f"✅ Updated {len(updated)} schema(s)")
+        for item in updated:
+            print(f"   • {item['name']}: {', '.join(item['changes'])}")
+    
     return updated
 
 # --------------------------------------------------------------------------- #
@@ -1057,190 +1371,322 @@ def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str,
 # Creation logic                                                               #
 # --------------------------------------------------------------------------- #
 
-@staticmethod
-def add_projects(projects: List[Dict]) -> List[Dict]:
-    """Create brand‑new projects (verify → create → display sync)."""
-    if not isinstance(projects, list):
-        raise TypeError("projects must be list[dict]")
-
-    output: List[Dict] = []
+def _process_project_validation(project_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Validate single project creation in a thread-safe manner."""
     with SessionLocal() as sess:
-        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
-        # Check for duplicates
-        duplicates: List[str] = []
-        for cfg in projects:
-            try:
-                ProjectService.get_project_by_name(cfg["project_name"], sess)
-                duplicates.append(cfg["project_name"])
-            except ValueError:
-                pass  # Project doesn't exist, which is good
-                
-        if duplicates:
-            raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
-
-        # ── Phase 1: verify ALL operations first ───────────────────────────
-        for cfg in projects:
-            project_name = cfg["project_name"]
+        try:
+            project_name = project_data["project_name"]
             
             # Get schema ID
-            schema_id = SchemaService.get_schema_id_by_name(cfg["schema_name"], sess)
+            schema_id = SchemaService.get_schema_id_by_name(project_data["schema_name"], sess)
             
             # Get video IDs
-            video_uids = list(_normalize_video_data(cfg["videos"]).keys())
+            video_uids = list(_normalize_video_data(project_data["videos"]).keys())
             video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
-            description = cfg.get("description", "")
+            description = project_data.get("description", "")
             
             # Verify creation parameters
             ProjectService.verify_create_project(project_name, description, schema_id, video_ids, sess)
+            
+            return project_name, True, None
+        except ValueError as err:
+            if "already exists" in str(err):
+                return project_data["project_name"], False, "already exists"
+            else:
+                return project_data["project_name"], False, str(err)
+        except Exception as e:
+            return project_data["project_name"], False, str(e)
 
-        # ── Phase 2: apply operations after all verifications passed ──────
-        # Prepare and create projects with progress bar
-        with tqdm(total=len(projects), desc="Adding projects", unit="project") as pbar:
-            for cfg in projects:
-                project_name = cfg["project_name"]
-                pbar.set_description(f"Adding project: {project_name}")
-                
-                # Get schema ID (we already verified this exists)
-                schema_id = SchemaService.get_schema_id_by_name(cfg["schema_name"], sess)
-                
-                # Get video IDs (we already verified these exist)
-                video_uids = list(_normalize_video_data(cfg["videos"]).keys())
-                video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
-                description = cfg.get("description", "")
-                
-                # Create the project (verification already done)
-                ProjectService.create_project(
-                    name=project_name, 
-                    description=description, 
-                    schema_id=schema_id, 
-                    video_ids=video_ids, 
-                    session=sess
-                )
-                
-                # Get the created project by name to get its ID
-                proj = ProjectService.get_project_by_name(project_name, sess)
-                
-                # Handle archive status
-                if cfg.get("is_archived", False):
-                    ProjectService.archive_project(proj.id, sess)
-                
-                tqdm.write(f"✅ Created project '{project_name}' (ID: {proj.id})")
-                
-                # Sync custom displays
-                stats = _sync_custom_displays(proj.id, cfg["videos"], sess)
-                
-                output.append({
-                    "name": proj.name, 
-                    "id": proj.id, 
-                    **stats
-                })
-                
-                pbar.update(1)
+def _create_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
+    """Create single project in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            project_name = project_data["project_name"]
+            
+            # Get schema ID
+            schema_id = SchemaService.get_schema_id_by_name(project_data["schema_name"], sess)
+            
+            # Get video IDs
+            video_uids = list(_normalize_video_data(project_data["videos"]).keys())
+            video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
+            description = project_data.get("description", "")
+            
+            # Create the project
+            ProjectService.create_project(
+                name=project_name, 
+                description=description, 
+                schema_id=schema_id, 
+                video_ids=video_ids, 
+                session=sess
+            )
+            
+            # Get the created project by name to get its ID
+            proj = ProjectService.get_project_by_name(project_name, sess)
+            
+            # Handle archive status
+            if project_data.get("is_archived", False):
+                ProjectService.archive_project(proj.id, sess)
+            
+            # Sync custom displays
+            stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
+            
+            result = {
+                "name": proj.name, 
+                "id": proj.id, 
+                **stats
+            }
+            
+            return project_name, True, None, result
+            
+        except Exception as e:
+            return project_data["project_name"], False, str(e), {}
 
-        sess.commit()
-    return output
-
-# --------------------------------------------------------------------------- #
-# Sync logic (display overrides + archive toggle)                              #
-# --------------------------------------------------------------------------- #
-
-@staticmethod
-def update_projects(projects: List[Dict]) -> List[Dict]:
-    """Synchronise custom displays & archived flag for existing projects."""
+def add_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[Dict]:
+    """Create projects using ThreadPool for parallel processing."""
     if not isinstance(projects, list):
         raise TypeError("projects must be list[dict]")
 
-    output: List[Dict] = []
-    with SessionLocal() as sess:
-        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
-        missing = []
-        for cfg in projects:
-            try:
-                ProjectService.get_project_by_name(cfg["project_name"], sess)
-            except ValueError as err:
-                # Only treat "not found" as missing, re-raise other errors
-                if "not found" not in str(err).lower():
-                    raise
-                # Project doesn't exist
-                missing.append(cfg["project_name"])
-        
-        if missing:
-            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
-
-        # ── Phase 1: verify ALL operations first ───────────────────────────
-        for cfg in projects:
-            proj = ProjectService.get_project_by_name(cfg["project_name"], sess)
+    # Phase 1: Verify all projects
+    duplicates = []
+    errors = []
+    
+    print("🔍 Verifying project creation parameters...")
+    with tqdm(total=len(projects), desc="Verifying projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_project_validation, p): p for p in projects}
             
-            # Handle archive flag (is_active has priority for backwards compatibility)
-            desired_archived = cfg["is_archived"]
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "already exists":
+                        duplicates.append(project_name)
+                    else:
+                        errors.append(f"{project_name}: {error_msg}")
+                pbar.update(1)
+
+    if duplicates:
+        raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+    
+    if errors:
+        raise ValueError("Add aborted – verification errors: " + "; ".join(errors))
+
+    # Phase 2: Create all projects
+    output = []
+    print("📤 Creating projects...")
+    with tqdm(total=len(projects), desc="Creating projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_create_single_project, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg, result = future.result()
+                if not success:
+                    raise ValueError(f"Failed to create project {project_name}: {error_msg}")
+                
+                output.append(result)
+                pbar.set_postfix(name=project_name[:20] + "..." if len(project_name) > 20 else project_name)
+                pbar.update(1)
+                
+    print(f"✔ Added {len(projects)} new project(s)")
+    return output
+
+def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Validate single project update in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            proj = ProjectService.get_project_by_name(project_data["project_name"], sess)
+            
+            # Handle archive flag
+            desired_archived = project_data["is_archived"]
             
             # Verify archive/unarchive operations
             if desired_archived is not None and desired_archived != proj.is_archived:
                 if desired_archived:
-                    # Verify we can archive this project
                     ProjectService.verify_archive_project(proj.id, sess)
                 else:
-                    # Verify we can unarchive this project
                     ProjectService.verify_unarchive_project(proj.id, sess)
             
             # Verify description updates if provided
-            if "description" in cfg:
-                ProjectService.verify_update_project_description(proj.id, cfg["description"], sess)
+            if "description" in project_data:
+                ProjectService.verify_update_project_description(proj.id, project_data["description"], sess)
+            
+            return project_data["project_name"], True, None
+            
+        except ValueError as err:
+            if "not found" in str(err).lower():
+                return project_data["project_name"], False, "not found"
+            else:
+                return project_data["project_name"], False, str(err)
+        except Exception as e:
+            return project_data["project_name"], False, str(e)
 
-        # ── Phase 2: apply operations after all verifications passed ──────
-        # Process each project with progress bar
-        with tqdm(total=len(projects), desc="Syncing projects", unit="project") as pbar:
-            for cfg in projects:
-                project_name = cfg["project_name"]
-                pbar.set_description(f"Syncing project: {project_name}")
+def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
+    """Update single project in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            project_name = project_data["project_name"]
+            proj = ProjectService.get_project_by_name(project_name, sess)
+            
+            # Check if any information has changed
+            needs_update = False
+            changes = []
+            
+            # Check archive status
+            desired_archived = None
+            if "is_active" in project_data:
+                desired_archived = not project_data["is_active"]
+            elif "is_archived" in project_data:
+                desired_archived = project_data["is_archived"]
                 
-                proj = ProjectService.get_project_by_name(project_name, sess)
-                
-                # Handle archive flag (is_active has priority for backwards compatibility)
-                desired_archived = None
-                if "is_active" in cfg:
-                    desired_archived = not cfg["is_active"]
-                elif "is_archived" in cfg:
-                    desired_archived = cfg["is_archived"]
+            if desired_archived is not None and desired_archived != proj.is_archived:
+                needs_update = True
+                changes.append("archive_status")
+            
+            # Check description
+            if "description" in project_data and project_data["description"] != proj.description:
+                needs_update = True
+                changes.append("description")
+            
+            # Check if custom displays need updating (only if schema supports it)
+            custom_displays_changed = False
+            if "videos" in project_data:
+                # Check if schema supports custom displays
+                schema = SchemaService.get_schema_by_id(proj.schema_id, sess)
+                if schema.has_custom_display:
+                    # Get current custom displays for comparison
+                    current_custom_displays = CustomDisplayService.get_all_custom_displays_for_project(proj.id, sess)
                     
-                if desired_archived is not None and desired_archived != proj.is_archived:
+                    # Normalize the new video data for comparison
+                    cfg = _normalize_video_data(project_data["videos"])
+                    proj_q = {q["id"]: q["text"] for q in ProjectService.get_project_questions(proj.id, sess)}
+                    proj_v = {v["id"]: v["uid"] for v in VideoService.get_project_videos(proj.id, sess)}
+                    
+                    # Check if any custom displays have actually changed
+                    for vid_id, uid in proj_v.items():
+                        json_q_cfg = {qc["question_text"]: qc for qc in cfg.get(uid, [])}
+                        
+                        for q_id, q_text in proj_q.items():
+                            db_rec = CustomDisplayService.get_custom_display(q_id, proj.id, vid_id, sess)
+                            json_cfg = json_q_cfg.get(q_text)
+                            
+                            if db_rec and not json_cfg:
+                                # Custom display exists in DB but not in JSON - will be removed
+                                custom_displays_changed = True
+                                break
+                            elif json_cfg:
+                                # Check if content has changed
+                                same_text = db_rec and db_rec.get("display_text") == json_cfg["display_text"]
+                                same_map = db_rec and db_rec.get("display_values") == json_cfg["option_map"]
+                                
+                                if not (db_rec and same_text and same_map):
+                                    custom_displays_changed = True
+                                    break
+                            elif not db_rec and json_cfg:
+                                # New custom display will be created
+                                custom_displays_changed = True
+                                break
+                        
+                        if custom_displays_changed:
+                            break
+            
+            if needs_update or custom_displays_changed:
+                # Apply changes
+                if "archive_status" in changes:
                     if desired_archived:
                         ProjectService.archive_project(proj.id, sess)
-                        tqdm.write(f"📦 Archived project '{project_name}'")
                     else:
                         ProjectService.unarchive_project(proj.id, sess)
-                        tqdm.write(f"📂 Unarchived project '{project_name}'")
                 
-                # Update description if provided
-                if "description" in cfg:
-                    ProjectService.update_project_description(proj.id, cfg["description"], sess)
-                    tqdm.write(f"📝 Updated description for project '{project_name}'")
-                            
-                # Sync custom displays
-                stats = _sync_custom_displays(proj.id, cfg["videos"], sess)
+                if "description" in changes:
+                    ProjectService.update_project_description(proj.id, project_data["description"], sess)
                 
-                output.append({
+                # Sync custom displays only if schema supports it and there are changes
+                stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
+                if custom_displays_changed:
+                    stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
+                
+                result = {
                     "name": proj.name, 
                     "id": proj.id, 
+                    "changes": changes,
                     **stats
-                })
+                }
                 
-                tqdm.write(f"🔄 Synced project '{project_name}' - "
-                          f"created: {stats['created']}, updated: {stats['updated']}, "
-                          f"removed: {stats['removed']}, skipped: {stats['skipped']}")
+                return project_name, True, None, result
+            else:
+                # No changes needed
+                result = {
+                    "name": proj.name, 
+                    "id": proj.id, 
+                    "changes": [],
+                    "created": 0,
+                    "updated": 0,
+                    "removed": 0,
+                    "skipped": 0
+                }
                 
+                return project_name, True, "No changes needed", result
+            
+        except Exception as e:
+            return project_data["project_name"], False, str(e), {}
+
+def update_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[Dict]:
+    """Update projects using ThreadPool for parallel processing."""
+    if not isinstance(projects, list):
+        raise TypeError("projects must be list[dict]")
+
+    # Phase 1: Verify all project updates
+    missing = []
+    errors = []
+    
+    print("🔍 Verifying project update parameters...")
+    with tqdm(total=len(projects), desc="Verifying project updates", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_project_update_validation, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "not found":
+                        missing.append(project_name)
+                    else:
+                        errors.append(f"{project_name}: {error_msg}")
                 pbar.update(1)
 
-        sess.commit()
+    if missing:
+        raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+    
+    if errors:
+        raise ValueError("Update aborted – verification errors: " + "; ".join(errors))
+
+    # Phase 2: Update all projects
+    output = []
+    updated_count = 0
+    skipped_count = 0
+    
+    print("📤 Updating projects...")
+    with tqdm(total=len(projects), desc="Updating projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_update_single_project, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg, result = future.result()
+                if not success:
+                    raise ValueError(f"Failed to update project {project_name}: {error_msg}")
+                
+                if error_msg == "No changes needed":
+                    skipped_count += 1
+                else:
+                    updated_count += 1
+                
+                output.append(result)
+                pbar.set_postfix(name=project_name[:20] + "..." if len(project_name) > 20 else project_name)
+                pbar.update(1)
+
+    print(f"✔ Updated {updated_count} project(s), skipped {skipped_count} project(s) (no changes)")
     return output
 
-# --------------------------------------------------------------------------- #
-# Orchestrator                                                                 #
-# --------------------------------------------------------------------------- #
-
-@staticmethod
-def sync_projects(*, projects_path: str | Path | None = None, projects_data: List[Dict] | None = None) -> None:
-    """Add new projects or sync existing ones based on JSON input."""
+def sync_projects(*, projects_path: str | Path | None = None, projects_data: List[Dict] | None = None, max_workers: int = 10) -> None:
+    """Sync projects using ThreadPool for parallel processing."""
     if projects_path is None and projects_data is None:
         raise ValueError("Provide either projects_path or projects_data")
         
@@ -1253,9 +1699,9 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
 
     print("\n🚀 Starting project upload pipeline...")
     
-    # Validate and normalize project data with progress bar
+    # Validate and normalize project data
     processed: List[Dict] = []
-    with tqdm(total=len(projects_data), desc="Validating projects", unit="project") as pbar:
+    with tqdm(total=len(projects_data), desc="Validating project data", unit="project") as pbar:
         for idx, cfg in enumerate(projects_data, 1):
             # Validate required fields
             for key in ("project_name", "schema_name", "is_active", "videos"):
@@ -1270,14 +1716,29 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
 
     # Separate projects to add vs sync
     to_add, to_sync = [], []
-    with SessionLocal() as sess:
-        print("\n📊 Categorizing projects...")
-        for cfg in tqdm(processed, desc="Checking existing projects", unit="project"):
+    
+    def _check_project_exists(project_data: Dict) -> Tuple[str, bool]:
+        """Check if project exists in a thread-safe manner."""
+        with SessionLocal() as sess:
             try:
-                ProjectService.get_project_by_name(cfg["project_name"], sess)
-                to_sync.append(cfg)  # exists → sync
+                ProjectService.get_project_by_name(project_data["project_name"], sess)
+                return project_data["project_name"], True
             except ValueError:
-                to_add.append(cfg)  # not found → add
+                return project_data["project_name"], False
+    
+    print("\n📊 Categorizing projects...")
+    with tqdm(total=len(processed), desc="Checking existing projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_check_project_exists, p): p for p in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, exists = future.result()
+                project_data = futures[future]
+                if exists:
+                    to_sync.append(project_data)  # exists → sync
+                else:
+                    to_add.append(project_data)  # not found → add
+                pbar.update(1)
 
     print(f"\n📈 Summary: {len(to_add)} projects to add, {len(to_sync)} projects to sync")
 
@@ -1287,11 +1748,11 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     
     if to_add:
         print(f"\n➕ Adding {len(to_add)} new projects...")
-        add_results = add_projects(to_add)
+        add_results = add_projects_parallel(to_add, max_workers)
             
     if to_sync:
         print(f"\n🔄 Syncing {len(to_sync)} existing projects...")
-        sync_results = update_projects(to_sync)
+        sync_results = update_projects_parallel(to_sync, max_workers)
 
     # Final summary
     print("\n🎉 Project pipeline complete!")
@@ -1381,6 +1842,8 @@ def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
         raise TypeError("groups must be list[(filename, dict)]")
 
     updated: List[Dict] = []
+    skipped: List[Dict] = []
+    
     with SessionLocal() as sess:
         # ── Phase 0: existence check (cheap, read‑only) ────────────────────
         missing = []
@@ -1397,7 +1860,7 @@ def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
         if missing:
             raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
 
-        # ── Phase 1: prepare each group (get project IDs and group record) ──────────────────
+        # ── Phase 1: prepare each group and check for changes ──────────────────
         prepared: List[Tuple[Dict, List[int], object]] = []  # (group_data, project_ids, group_record)
         missing_projects = []
         
@@ -1423,8 +1886,43 @@ def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
         if missing_projects:
             raise ValueError("Update aborted – projects not found in DB: " + ", ".join(missing_projects))
 
-        # ── Phase 2: verify ALL edits first ─────────────────────────────────
+        # ── Phase 2: check for changes and skip if no changes ────────────────
+        to_update = []
         for g, project_ids, grp in prepared:
+            # Get current project IDs using ProjectGroupService instead of direct SQL
+            group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
+            current_project_ids = set(p["id"] for p in group_info["projects"])
+            current_description = group_info.get("description", "")
+            
+            new_project_ids = set(project_ids)
+            new_description = g.get("description", "")
+            
+            # Check if any changes are needed
+            needs_update = False
+            changes = []
+            
+            # Check description
+            if new_description != current_description:
+                needs_update = True
+                changes.append("description")
+            
+            # Check project list
+            if new_project_ids != current_project_ids:
+                needs_update = True
+                changes.append("projects")
+            
+            if needs_update:
+                to_update.append((g, project_ids, grp, changes))
+            else:
+                # No changes needed
+                skipped.append({
+                    "name": g["project_group_name"], 
+                    "id": grp.id,
+                    "changes": []
+                })
+
+        # ── Phase 3: verify ALL edits first ─────────────────────────────────
+        for g, project_ids, grp, changes in to_update:
             # Get current project IDs using ProjectGroupService instead of direct SQL
             group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
             current_project_ids = set(p["id"] for p in group_info["projects"])
@@ -1444,8 +1942,8 @@ def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 session=sess,
             )
 
-        # ── Phase 3: apply edits after all verifications passed ─────────────
-        for g, project_ids, grp in prepared:
+        # ── Phase 4: apply edits after all verifications passed ─────────────
+        for g, project_ids, grp, changes in to_update:
             # Get current project IDs using ProjectGroupService instead of direct SQL
             group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
             current_project_ids = set(p["id"] for p in group_info["projects"])
@@ -1465,10 +1963,21 @@ def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 session=sess,
             )
             
-            updated.append({"name": g["project_group_name"], "id": grp.id})
+            updated.append({
+                "name": g["project_group_name"], 
+                "id": grp.id,
+                "changes": changes
+            })
 
         sess.commit()
-    return updated
+    
+    # Print summary
+    if skipped:
+        print(f"⏭️  Skipped {len(skipped)} groups with no changes")
+    if updated:
+        print(f"🔄 Updated {len(updated)} groups")
+    
+    return updated + skipped
 
 
 def sync_project_groups(
@@ -1546,8 +2055,92 @@ def sync_project_groups(
     print(f"   • Groups updated: {len(updated)}")
 
 
-def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None) -> None:
-    """Bulk assign users to projects with roles."""
+def _process_assignment_validation(assignment_data: Dict) -> Tuple[int, Dict, Optional[str]]:
+    """Process a single assignment validation in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            # Validate required fields
+            if 'user_email' in assignment_data and 'user_name' not in assignment_data:
+                try:
+                    user = AuthService.get_user_by_email(assignment_data['user_email'], sess)
+                    assignment_data['user_name'] = user.user_id_str
+                except ValueError:
+                    return assignment_data.get('_index', 0), {}, f"User email '{assignment_data['user_email']}' not found"
+            
+            required = {'user_name', 'project_name', 'role'}
+            if missing := required - set(assignment_data.keys()):
+                return assignment_data.get('_index', 0), {}, f"Missing fields: {', '.join(missing)}"
+            
+            # Validate role
+            valid_roles = {'annotator', 'reviewer', 'admin', 'model'}
+            if assignment_data['role'] not in valid_roles:
+                return assignment_data.get('_index', 0), {}, f"Invalid role '{assignment_data['role']}'"
+            
+            # Validate entities exist and aren't archived
+            user = AuthService.get_user_by_name(assignment_data['user_name'], sess)
+            project = ProjectService.get_project_by_name(assignment_data['project_name'], sess)
+            
+            if user.is_archived:
+                return assignment_data.get('_index', 0), {}, f"User '{assignment_data['user_name']}' is archived"
+            if project.is_archived:
+                return assignment_data.get('_index', 0), {}, f"Project '{assignment_data['project_name']}' is archived"
+                
+            processed = {
+                **assignment_data,
+                'is_active': assignment_data.get('is_active', True),
+                'user_id': user.id,
+                'project_id': project.id
+            }
+            
+            return assignment_data.get('_index', 0), processed, None
+            
+        except ValueError as e:
+            if "not found" in str(e).lower():
+                return assignment_data.get('_index', 0), {}, str(e)
+            raise
+
+
+def _apply_single_assignment(assignment_data: Dict) -> Tuple[str, str, bool, Optional[str]]:
+    """Apply a single assignment in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            # Check existing assignment using service method
+            if assignment_data['role'] == 'model':
+                existing = False
+            else:
+                user_projects = AuthService.get_user_projects_by_role(assignment_data['user_id'], sess)
+                existing = any(
+                    assignment_data['project_id'] in [p['id'] for p in projects] 
+                    for projects in user_projects.values()
+                )
+            
+            if assignment_data['is_active']:
+                ProjectService.add_user_to_project(
+                    project_id=assignment_data['project_id'],
+                    user_id=assignment_data['user_id'],
+                    role=assignment_data['role'],
+                    session=sess,
+                    user_weight=assignment_data.get('user_weight')
+                )
+                operation = "updated" if existing else "created"
+                return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", operation, True, None
+            elif existing:
+                # Use remove_user_from_project instead of archive_user_from_project
+                AuthService.remove_user_from_project(
+                    assignment_data['user_id'], 
+                    assignment_data['project_id'], 
+                    assignment_data['role'], 
+                    sess
+                )
+                return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "removed", True, None
+            else:
+                return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "skipped", True, None
+                
+        except Exception as e:
+            return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "error", False, str(e)
+
+def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None, max_workers: int = 20) -> None:
+    """Bulk assign users to projects with roles using thread pool and progress tracking."""
     
     # Load and validate input
     if assignment_path is None and assignments_data is None:
@@ -1560,96 +2153,149 @@ def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: l
     if not isinstance(assignments_data, list):
         raise TypeError("assignments_data must be a list of dictionaries")
 
-    # Process and validate assignments
+    if not assignments_data:
+        print("ℹ️  No assignments to process")
+        return
+
+    # Add index for tracking
+    for idx, assignment in enumerate(assignments_data):
+        assignment['_index'] = idx + 1
+
+    # Process and validate assignments with ThreadPoolExecutor
     processed = []
     seen_pairs = set()
-    valid_roles = {'annotator', 'reviewer', 'admin', 'model'}
+    validation_errors = []
     
-    with SessionLocal() as session:
-        for idx, assignment in enumerate(assignments_data, 1):
-            # Validate required fields
-            if 'user_email' in assignment and 'user_name' not in assignment:
-                try:
-                    user = AuthService.get_user_by_email(assignment['user_email'], session)
-                    assignment['user_name'] = user.user_id_str
-                except ValueError:
-                    raise ValueError(f"#{idx}: User email '{assignment['user_email']}' not found")
+    print("🔍 Validating assignments...")
+    with tqdm(total=len(assignments_data), desc="Validating assignments", unit="assignment") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_assignment_validation, a): a for a in assignments_data}
             
-            required = {'user_name', 'project_name', 'role'}
-            if missing := required - set(assignment.keys()):
-                raise ValueError(f"#{idx}: Missing fields: {', '.join(missing)}")
-            
-            # Validate role and duplicates
-            if assignment['role'] not in valid_roles:
-                raise ValueError(f"#{idx}: Invalid role '{assignment['role']}'")
-            
-            pair = (assignment['user_name'], assignment['project_name'])
-            if pair in seen_pairs:
-                raise ValueError(f"#{idx}: Duplicate assignment {pair[0]} -> {pair[1]}")
-            seen_pairs.add(pair)
-            
-            # Validate entities exist and aren't archived
-            try:
-                user = AuthService.get_user_by_name(assignment['user_name'], session)
-                project = ProjectService.get_project_by_name(assignment['project_name'], session)
+            for future in concurrent.futures.as_completed(futures):
+                assignment = futures[future]
+                idx, processed_data, error_msg = future.result()
                 
-                if user.is_archived:
-                    raise ValueError(f"#{idx}: User '{assignment['user_name']}' is archived")
-                if project.is_archived:
-                    raise ValueError(f"#{idx}: Project '{assignment['project_name']}' is archived")
-                    
-                processed.append({
-                    **assignment,
-                    'is_active': assignment.get('is_active', True),
-                    'user_id': user.id,
-                    'project_id': project.id
-                })
-                
-            except ValueError as e:
-                if "not found" in str(e).lower():
-                    raise ValueError(f"#{idx}: {str(e)}")
-                raise
-
-    # Apply assignments
-    created = updated = removed = 0
-    
-    with SessionLocal() as session:
-        try:
-            for assignment in processed:
-                # Check existing assignment using service method
-                if assignment['role'] == 'model':
-                    existing = False
+                if error_msg:
+                    validation_errors.append(f"#{idx}: {error_msg}")
                 else:
-                    user_projects = AuthService.get_user_projects_by_role(assignment['user_id'], session)
-                    existing = any(
-                        assignment['project_id'] in [p['id'] for p in projects] 
-                        for projects in user_projects.values()
-                    )
-                
-                if assignment['is_active']:
-                    ProjectService.add_user_to_project(
-                        project_id=assignment['project_id'],
-                        user_id=assignment['user_id'],
-                        role=assignment['role'],
-                        session=session,
-                        user_weight=assignment.get('user_weight')
-                    )
-                    if existing:
-                        updated += 1
+                    # Check for duplicates
+                    pair = (processed_data['user_name'], processed_data['project_name'])
+                    if pair in seen_pairs:
+                        validation_errors.append(f"#{idx}: Duplicate assignment {pair[0]} -> {pair[1]}")
                     else:
-                        created += 1
-                elif existing:
-                    AuthService.archive_user_from_project(
-                        assignment['user_id'], assignment['project_id'], session
-                    )
-                    removed += 1
+                        seen_pairs.add(pair)
+                        processed.append(processed_data)
+                
+                pbar.update(1)
+                pbar.set_postfix(valid=len(processed), errors=len(validation_errors))
+
+    if validation_errors:
+        error_summary = f"Validation failed for {len(validation_errors)} assignments:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = validation_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(validation_errors) > 5:
+            error_summary += f"\n  ... and {len(validation_errors) - 5} more errors"
+        raise ValueError(error_summary)
+
+    print(f"✅ Validation passed for {len(processed)} assignments")
+
+    # Verify all operations before applying them
+    print("🔍 Verifying all operations...")
+    verification_errors = []
+    
+    with tqdm(total=len(processed), desc="Verifying operations", unit="operation") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_verify_single_assignment, a): a for a in processed}
             
-            session.commit()
-            print(f"✅ Completed: {created} created, {updated} updated, {removed} removed")
+            for future in concurrent.futures.as_completed(futures):
+                assignment = futures[future]
+                assignment_name, error_msg = future.result()
+                
+                if error_msg:
+                    verification_errors.append(f"{assignment_name}: {error_msg}")
+                
+                pbar.update(1)
+                pbar.set_postfix(errors=len(verification_errors))
+
+    if verification_errors:
+        error_summary = f"Verification failed for {len(verification_errors)} operations:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = verification_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(verification_errors) > 5:
+            error_summary += f"\n  ... and {len(verification_errors) - 5} more errors"
+        raise ValueError(error_summary)
+
+    print("✅ All operations verified")
+
+    # Apply assignments with ThreadPoolExecutor
+    created = updated = removed = skipped = 0
+    application_errors = []
+    
+    print("📤 Applying assignments...")
+    with tqdm(total=len(processed), desc="Applying assignments", unit="assignment") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_apply_single_assignment, a): a for a in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                assignment = futures[future]
+                assignment_name, operation, success, error_msg = future.result()
+                
+                if success:
+                    if operation == "created":
+                        created += 1
+                    elif operation == "updated":
+                        updated += 1
+                    elif operation == "removed":
+                        removed += 1
+                    elif operation == "skipped":
+                        skipped += 1
+                else:
+                    application_errors.append(f"{assignment_name}: {error_msg}")
+                
+                pbar.update(1)
+                pbar.set_postfix(created=created, updated=updated, removed=removed, skipped=skipped, errors=len(application_errors))
+
+    if application_errors:
+        error_summary = f"Application failed for {len(application_errors)} assignments:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = application_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(application_errors) > 5:
+            error_summary += f"\n  ... and {len(application_errors) - 5} more errors"
+        raise RuntimeError(error_summary)
+
+    print(f"✅ Completed: {created} created, {updated} updated, {removed} removed, {skipped} skipped")
+
+def _verify_single_assignment(assignment_data: Dict) -> Tuple[str, Optional[str]]:
+    """Verify a single assignment operation in a thread-safe manner."""
+    with SessionLocal() as sess:
+        try:
+            assignment_name = f"{assignment_data['user_name']} -> {assignment_data['project_name']}"
+            
+            if assignment_data['is_active']:
+                # Verify adding user to project
+                ProjectService.verify_add_user_to_project(
+                    project_id=assignment_data['project_id'],
+                    user_id=assignment_data['user_id'],
+                    role=assignment_data['role'],
+                    session=sess,
+                )
+            else:
+                # Verify removing user from project
+                AuthService.verify_remove_user_from_project(
+                    assignment_data['user_id'],
+                    assignment_data['project_id'],
+                    assignment_data['role'],
+                    sess
+                )
+            
+            return assignment_name, None
             
         except Exception as e:
-            session.rollback()
-            raise RuntimeError(f"Assignment failed: {e}")
+            assignment_name = f"{assignment_data['user_name']} -> {assignment_data['project_name']}"
+            return assignment_name, str(e)
 
 
 def sync_annotations(annotations_path: str = None, annotations_data: list[dict] = None) -> None:
@@ -1884,7 +2530,7 @@ def sync_reviews(reviews_path: str = None, reviews_data: list[dict] = None) -> N
 
 def batch_sync_annotations(annotations_folder: str = None, 
                            annotations_data: list[list[dict]] = None, 
-                           max_workers: int = 5) -> None:
+                           max_workers: int = 15) -> None:
     """Batch upload annotations from folder or data list."""
     import concurrent.futures
     import glob
@@ -1924,7 +2570,7 @@ def batch_sync_annotations(annotations_folder: str = None,
 
 def batch_sync_reviews(reviews_folder: str = None, 
                         reviews_data: list[list[dict]] = None, 
-                        max_workers: int = 3) -> None:
+                        max_workers: int = 15) -> None:
     """Batch upload reviews from folder or data list."""
     import concurrent.futures
     import glob

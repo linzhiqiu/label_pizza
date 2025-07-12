@@ -1,0 +1,847 @@
+[
+  {
+    "question": "Select if there is obvious lens distortion (otherwise, leave as Regular):",
+    "name": "select_if_there_is_obvious_lens_distortion_otherwise_leave_as_regular",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "Regular Lens",
+        "data_value": "regular",
+        "data_category": "CameraSetupData.lens_distortion"
+      },
+      {
+        "value": "Barrel Distortion (e.g., Wide-angle lens)",
+        "data_value": "barrel",
+        "data_category": "CameraSetupData.lens_distortion"
+      },
+      {
+        "value": "Fisheye Distortion (e.g., Fisheye lens)",
+        "data_value": "fisheye",
+        "data_category": "CameraSetupData.lens_distortion"
+      }
+    ],
+    "default": "Regular Lens",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Does this video include any added text or watermarks, such as titles, subtitles, captions, icons, heads-up displays (for video games), or framing elements?",
+    "name": "are_there_artificially_added_texts_or_watermarks_in_this_video",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "No",
+        "data_value": false,
+        "data_category": "CameraSetupData.has_overlays"
+      },
+      {
+        "value": "Yes",
+        "data_value": true,
+        "data_category": "CameraSetupData.has_overlays"
+      }
+    ],
+    "default": "No",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the video speed:",
+    "name": "video_speed",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "Time-lapse",
+        "data_value": "time_lapse",
+        "data_category": "CameraSetupData.video_speed"
+      },
+      {
+        "value": "Fast-Motion",
+        "data_value": "fast_motion",
+        "data_category": "CameraSetupData.video_speed"
+      },
+      {
+        "value": "Regular",
+        "data_value": "regular",
+        "data_category": "CameraSetupData.video_speed"
+      },
+      {
+        "value": "Slow-Motion",
+        "data_value": "slow_motion",
+        "data_category": "CameraSetupData.video_speed"
+      },
+      {
+        "value": "Stop-Motion",
+        "data_value": "stop_motion",
+        "data_category": "CameraSetupData.video_speed"
+      },
+      {
+        "value": "Speed-Ramp",
+        "data_value": "speed_ramp",
+        "data_category": "CameraSetupData.video_speed"
+      },
+      {
+        "value": "Time-Reversed",
+        "data_value": "time_reversed",
+        "data_category": "CameraSetupData.video_speed"
+      }
+    ],
+    "default": "Regular",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the camera point-of-view:",
+    "name": "select_the_camera_point_of_view",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "First-person POV",
+        "data_value": "first_person",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Drone POV",
+        "data_value": "drone_pov",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Third-person Full-body POV (Gaming only)",
+        "data_value": "third_person_full_body",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Third-person Over-the-shoulder POV (Gaming / Film)",
+        "data_value": "third_person_over_shoulder",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Third-person Over-the-hip POV (Gaming only)",
+        "data_value": "third_person_over_hip",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Third-person Side view POV (Gaming only)",
+        "data_value": "third_person_side_view",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Third-person Isometric POV (Gaming only)",
+        "data_value": "third_person_isometric",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Third-person Top-down/Oblique POV (Gaming only)",
+        "data_value": "third_person_top_down",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Broadcast POV (Television station)",
+        "data_value": "broadcast_pov",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Overhead POV (Hands-on demonstration)",
+        "data_value": "overhead_pov",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Selfie POV",
+        "data_value": "selfie_pov",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Screen Recording (software tutorials, zoom calls)",
+        "data_value": "screen_recording",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Dashcam POV",
+        "data_value": "dashcam_pov",
+        "data_category": "CameraSetupData.camera_pov"
+      },
+      {
+        "value": "Locked-on POV",
+        "data_value": "locked_on_pov",
+        "data_category": "CameraSetupData.camera_pov"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "What is the shot type?",
+    "name": "what_is_the_shot_type",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "Clear human subject(s)",
+        "data_value": "human",
+        "data_category": "CameraSetupData.shot_type"
+      },
+      {
+        "value": "Clear non-human subject(s)",
+        "data_value": "non_human",
+        "data_category": "CameraSetupData.shot_type"
+      },
+      {
+        "value": "Change of subject(s)",
+        "data_value": "change_of_subject",
+        "data_category": "CameraSetupData.shot_type"
+      },
+      {
+        "value": "Scenery shot",
+        "data_value": "scenery",
+        "data_category": "CameraSetupData.shot_type"
+      },
+      {
+        "value": "Complex shot",
+        "data_value": "complex",
+        "data_category": "CameraSetupData.shot_type"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select if the shot is complex:",
+    "name": "complex_shot_type",
+    "type": "radio",
+    "required": false,
+    "options": [
+      {
+        "value": "Clear Subject with Dynamic Size (subject)",
+        "data_value": "clear_subject_dynamic_size",
+        "data_category": "CameraSetupData.complex_shot_type"
+      },
+      {
+        "value": "Different Subjects in Focus (subject)",
+        "data_value": "different_subject_in_focus",
+        "data_category": "CameraSetupData.complex_shot_type"
+      },
+      {
+        "value": "Clear yet Atypical Subject (subject)",
+        "data_value": "clear_subject_atypical",
+        "data_category": "CameraSetupData.complex_shot_type"
+      },
+      {
+        "value": "Many Subject(s) with One Clear Focus (subject)",
+        "data_value": "many_subject_one_focus",
+        "data_category": "CameraSetupData.complex_shot_type"
+      },
+      {
+        "value": "Many Subject(s) with No Clear Focus (scenery)",
+        "data_value": "many_subject_no_focus",
+        "data_category": "CameraSetupData.complex_shot_type"
+      },
+      {
+        "value": "Description (text)",
+        "data_value": "description",
+        "data_category": "CameraSetupData.complex_shot_type"
+      },
+      {
+        "value": "N/A (e.g., abstract/FPS with body parts/screenshot/etc.)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.complex_shot_type"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "If you provide a text description, select the reason:",
+    "name": "complex_shot_description_reason",
+    "type": "radio",
+    "required": false,
+    "options": [
+      {
+        "value": "Subject-Scene Size Mismatch",
+        "data_value": "subject_scene_mismatch",
+        "data_category": "CameraSetupData.shot_size_description_type"
+      },
+      {
+        "value": "Back-and-Forth Size Changes",
+        "data_value": "back_and_forth_change",
+        "data_category": "CameraSetupData.shot_size_description_type"
+      },
+      {
+        "value": "Others",
+        "data_value": "others",
+        "data_category": "CameraSetupData.shot_size_description_type"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the initial shot size:",
+    "name": "select_shot_size_at_start_of_video",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A (no subject)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Extreme wide/long shot",
+        "data_value": "extreme_wide",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Wide/long shot",
+        "data_value": "wide",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Full shot (Subject Shot Only)",
+        "data_value": "full",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Medium-Full shot (Human Subject Shot Only)",
+        "data_value": "medium_full",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Medium shot (Subject Shot Only)",
+        "data_value": "medium",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Medium Close-up shot (Human Subject Shot Only)",
+        "data_value": "medium_close_up",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Close-up shot",
+        "data_value": "close_up",
+        "data_category": "CameraSetupData.shot_size_start"
+      },
+      {
+        "value": "Extreme Close-up shot",
+        "data_value": "extreme_close_up",
+        "data_category": "CameraSetupData.shot_size_start"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the ending shot size:",
+    "name": "select_shot_size_at_end_of_video",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A (no subject / no change)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Extreme wide/long shot",
+        "data_value": "extreme_wide",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Wide/long shot",
+        "data_value": "wide",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Full shot (Subject Shot Only)",
+        "data_value": "full",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Medium-Full shot (Human Subject Shot Only)",
+        "data_value": "medium_full",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Medium shot (Subject Shot Only)",
+        "data_value": "medium",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Medium Close-up shot (Human Subject Shot Only)",
+        "data_value": "medium_close_up",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Close-up shot",
+        "data_value": "close_up",
+        "data_category": "CameraSetupData.shot_size_end"
+      },
+      {
+        "value": "Extreme Close-up shot",
+        "data_value": "extreme_close_up",
+        "data_category": "CameraSetupData.shot_size_end"
+      }
+    ],
+    "default": "N/A (e.g., no subject / too many subjects)",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Describe complex shot size in the text box below:",
+    "name": "shot_size_text_box",
+    "type": "text",
+    "required": false,
+    "options": [],
+    "default": null,
+    "data_category": "CameraSetupData.shot_size_description",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the initial camera height relative to the subject(s):",
+    "name": "select_camera_height_relative_to_subject_at_start",
+    "type": "radio", 
+    "required": true,
+    "options": [
+      {
+        "value": "N/A (no subject)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.subject_height_start"
+      },
+      {
+        "value": "Above the subject",
+        "data_value": "above_subject",
+        "data_category": "CameraSetupData.subject_height_start"
+      },
+      {
+        "value": "At the subject",
+        "data_value": "at_subject",
+        "data_category": "CameraSetupData.subject_height_start"
+      },
+      {
+        "value": "Below the subject",
+        "data_value": "below_subject",
+        "data_category": "CameraSetupData.subject_height_start"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the ending camera height relative to the subject(s):",
+    "name": "select_camera_height_relative_to_subject_at_end",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A (no subject / no change)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.subject_height_end"
+      },
+      {
+        "value": "Above the subject",
+        "data_value": "above_subject",
+        "data_category": "CameraSetupData.subject_height_end"
+      },
+      {
+        "value": "At the subject",
+        "data_value": "at_subject",
+        "data_category": "CameraSetupData.subject_height_end"
+      },
+      {
+        "value": "Below the subject",
+        "data_value": "below_subject",
+        "data_category": "CameraSetupData.subject_height_end"
+      }
+    ],
+    "default": "N/A (e.g., no subject / subject changes)",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Describe complex relative camera height in the text box below:",
+    "name": "relative_camera_height_text_box",
+    "type": "text",
+    "required": false,
+    "options": [],
+    "default": null,
+    "data_category": "CameraSetupData.subject_height_description",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the initial overall camera height:",
+    "name": "select_overall_camera_height_at_start",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Aerial-level",
+        "data_value": "aerial_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Overhead-level",
+        "data_value": "overhead_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Eye-level",
+        "data_value": "eye_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Hip-level",
+        "data_value": "hip_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Ground-level",
+        "data_value": "ground_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Water-level",
+        "data_value": "water_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      },
+      {
+        "value": "Underwater",
+        "data_value": "underwater_level",
+        "data_category": "CameraSetupData.overall_height_start"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the ending overall camera height:",
+    "name": "select_overall_camera_height_at_end",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A (e.g., no changes)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Aerial-level",
+        "data_value": "aerial_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Overhead-level",
+        "data_value": "overhead_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Eye-level",
+        "data_value": "eye_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Hip-level",
+        "data_value": "hip_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Ground-level",
+        "data_value": "ground_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Water-level",
+        "data_value": "water_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      },
+      {
+        "value": "Underwater",
+        "data_value": "underwater_level",
+        "data_category": "CameraSetupData.overall_height_end"
+      }
+    ],
+    "default": "N/A (e.g., no changes)",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Describe complex overall camera height in the text box below:",
+    "name": "overall_camera_height_text_box",
+    "type": "text",
+    "required": false,
+    "options": null,
+    "default": null,
+    "data_category": "CameraSetupData.overall_height_description",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the initial camera angle:",
+    "name": "select_camera_angle_at_start",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.camera_angle_start"
+      },
+      {
+        "value": "Bird's eye",
+        "data_value": "bird_eye_angle",
+        "data_category": "CameraSetupData.camera_angle_start"
+      },
+      {
+        "value": "High angle (Looking down)",
+        "data_value": "high_angle",
+        "data_category": "CameraSetupData.camera_angle_start"
+      },
+      {
+        "value": "Level Angle",
+        "data_value": "level_angle",
+        "data_category": "CameraSetupData.camera_angle_start"
+      },
+      {
+        "value": "Low angle (Looking up)",
+        "data_value": "low_angle",
+        "data_category": "CameraSetupData.camera_angle_start"
+      },
+      {
+        "value": "Worm's eye",
+        "data_value": "worm_eye_angle",
+        "data_category": "CameraSetupData.camera_angle_start"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the ending camera angle:",
+    "name": "select_camera_angle_at_end",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "N/A (e.g., no change)",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.camera_angle_end"
+      },
+      {
+        "value": "Bird's eye",
+        "data_value": "bird_eye_angle",
+        "data_category": "CameraSetupData.camera_angle_end"
+      },
+      {
+        "value": "High angle (Looking down)",
+        "data_value": "high_angle",
+        "data_category": "CameraSetupData.camera_angle_end"
+      },
+      {
+        "value": "Level Angle",
+        "data_value": "level_angle",
+        "data_category": "CameraSetupData.camera_angle_end"
+      },
+      {
+        "value": "Low angle (Looking up)",
+        "data_value": "low_angle",
+        "data_category": "CameraSetupData.camera_angle_end"
+      },
+      {
+        "value": "Worm's eye",
+        "data_value": "worm_eye_angle",
+        "data_category": "CameraSetupData.camera_angle_end"
+      }
+    ],
+    "default": "N/A (e.g., no change)",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Describe complex camera angle in the text box below:",
+    "name": "camera_angle_text_box",
+    "type": "text",
+    "required": false,
+    "options": [],
+    "default": null,
+    "data_category": "CameraSetupData.camera_angle_description",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Is there an obvious Dutch (canted) angle (>15 degrees) throughout the video?",
+    "name": "is_there_dutch_angle",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "No",
+        "data_value": "no",
+        "data_category": "CameraSetupData.dutch_angle"
+      },
+      {
+        "value": "Varying",
+        "data_value": "varying",
+        "data_category": "CameraSetupData.dutch_angle"
+      },
+      {
+        "value": "Yes",
+        "data_value": "yes",
+        "data_category": "CameraSetupData.dutch_angle"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the type of camera focus:",
+    "name": "select_type_of_camera_focus",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "Deep focus",
+        "data_value": "deep_focus",
+        "data_category": "CameraSetupData.camera_focus"
+      },
+      {
+        "value": "Shallow focus",
+        "data_value": "shallow_focus",
+        "data_category": "CameraSetupData.camera_focus"
+      },
+      {
+        "value": "Ultra shallow focus",
+        "data_value": "ultra_shallow_focus",
+        "data_category": "CameraSetupData.camera_focus"
+      },
+      {
+        "value": "N/A",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.camera_focus"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the depth of camera focus (start of video):",
+    "name": "select_depth_of_camera_focus_at_start",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "Foreground",
+        "data_value": "foreground",
+        "data_category": "CameraSetupData.focus_plane_start"
+      },
+      {
+        "value": "Middleground",
+        "data_value": "middle_ground",
+        "data_category": "CameraSetupData.focus_plane_start"
+      },
+      {
+        "value": "Background",
+        "data_value": "background",
+        "data_category": "CameraSetupData.focus_plane_start"
+      },
+      {
+        "value": "Out of focus",
+        "data_value": "out_of_focus",
+        "data_category": "CameraSetupData.focus_plane_start"
+      },
+      {
+        "value": "N/A",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.focus_plane_start"
+      }
+    ],
+    "default": null,
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Select the depth of camera focus (end of video):",
+    "name": "select_depth_of_camera_focus_at_end",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "Foreground",
+        "data_value": "foreground",
+        "data_category": "CameraSetupData.focus_plane_end"
+      },
+      {
+        "value": "Middleground",
+        "data_value": "middle_ground",
+        "data_category": "CameraSetupData.focus_plane_end"
+      },
+      {
+        "value": "Background",
+        "data_value": "background",
+        "data_category": "CameraSetupData.focus_plane_end"
+      },
+      {
+        "value": "Out of focus",
+        "data_value": "out_of_focus",
+        "data_category": "CameraSetupData.focus_plane_end"
+      },
+      {
+        "value": "N/A",
+        "data_value": "unknown",
+        "data_category": "CameraSetupData.focus_plane_end"
+      }
+    ],
+    "default": "N/A",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "If the focus plane changes, is it due to:",
+    "name": "focus_plane_change_reason",
+    "type": "radio",
+    "required": true,
+    "options": [
+      {
+        "value": "No Change",
+        "data_value": "no_change",
+        "data_category": "CameraSetupData.focus_change_reason"
+      },
+      {
+        "value": "Camera or Subject Movement",
+        "data_value": "camera_subject_movement",
+        "data_category": "CameraSetupData.focus_change_reason"
+      },
+      {
+        "value": "Rack Focus",
+        "data_value": "rack_focus",
+        "data_category": "CameraSetupData.focus_change_reason"
+      },
+      {
+        "value": "Pull Focus",
+        "data_value": "pull_focus",
+        "data_category": "CameraSetupData.focus_change_reason"
+      },
+      {
+        "value": "Focus Tracking",
+        "data_value": "focus_tracking",
+        "data_category": "CameraSetupData.focus_change_reason"
+      },
+      {
+        "value": "Others (please specify)",
+        "data_value": "others",
+        "data_category": "CameraSetupData.focus_change_reason"
+      }
+    ],
+    "default": "No Change",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  },
+  {
+    "question": "Describe complex camera focus in the text box below:",
+    "name": "camera_focus_text_box",
+    "type": "text",
+    "required": false,
+    "options": [],
+    "default": null,
+    "data_category": "CameraSetupData.camera_focus_description",
+    "group": "Video Segment Classification (Camera Settings and Shot compositions)"
+  }
+]

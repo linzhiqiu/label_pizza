@@ -1,0 +1,103 @@
+{
+  "title": "Camera Focus",
+  "description": "Label focus type, plane, changes, and complex cases.",
+  "is_reusable": false,
+  "is_auto_submit": false,
+  "is_active": true,
+  "verification_function": "",
+  "questions": [
+    {
+      "text": "Focus type:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Deep focus",
+        "Shallow focus",
+        "Ultra shallow focus",
+        "N/A"
+      ],
+      "display_values": [
+        "Deep focus",
+        "Shallow focus",
+        "Ultra shallow focus",
+        "N/A"
+      ],
+      "default_option": "Deep focus",
+      "display_text": "Focus type:"
+    },
+    {
+      "text": "Focus depth (start):",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Foreground",
+        "Middleground",
+        "Background",
+        "Out of focus",
+        "N/A"
+      ],
+      "display_values": [
+        "Foreground",
+        "Middleground",
+        "Background",
+        "Out of focus",
+        "N/A"
+      ],
+      "default_option": "N/A",
+      "display_text": "Focus depth (start):"
+    },
+    {
+      "text": "Focus depth (end):",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Foreground",
+        "Middleground",
+        "Background",
+        "Out of focus",
+        "N/A"
+      ],
+      "display_values": [
+        "Foreground",
+        "Middleground",
+        "Background",
+        "Out of focus",
+        "N/A"
+      ],
+      "default_option": "N/A",
+      "display_text": "Focus depth (end):"
+    },
+    {
+      "text": "Reason for focus change:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "No Change",
+        "Camera or Subject Movement",
+        "Rack Focus",
+        "Pull Focus",
+        "Focus Tracking",
+        "Others (please specify)"
+      ],
+      "display_values": [
+        "No Change",
+        "Camera or Subject Movement",
+        "Rack Focus",
+        "Pull Focus",
+        "Focus Tracking",
+        "Others (please specify)"
+      ],
+      "default_option": "No Change",
+      "display_text": "Reason for focus change:"
+    },
+    {
+      "text": "Describe complex focus:",
+      "qtype": "description",
+      "required": false,
+      "options": null,
+      "display_values": null,
+      "default_option": null,
+      "display_text": "Describe complex focus:"
+    }
+  ]
+}

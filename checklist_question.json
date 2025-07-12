@@ -1,0 +1,40 @@
+{
+    "what_is_the_major_light_source": {
+        "sunlight":  "Sunlight?",
+        "moonlight_starlight": "Moonlight / starlight? (moon/star visible)",
+        "firelight": "Firelight?",
+        "artificial_lighting_practical_visible": "Artificial / Practical light?",
+        "non_visible_light_sources": "Non-visible light source?",
+        "n_a_abstract": "Abstract light source / N/A?",
+        "complex_others": "Light source complex (others)?"
+    },
+    "select_light_directions": {
+        "back_light": "Back light?",
+        "front_light": "Front light?",
+        "top_light": "Top light?",
+        "bottom_light": "Bottom light?",
+        "right_side_light": "Right-side light?",
+        "left_side_light": "Left-side light?",
+        "no_dominant_direction": "Ambient / no dominant side?"
+    },
+    "special_lighting_on_subject_s_is": {
+        "rembrandt_lighting": "Rembrandt lighting?",
+        "silhouette_lighting_subject_not_always_required": "Subject lit as a silhouette?",
+        "rim_light_subject_not_always_required": "Rim lighting on the subject?"
+    },
+    "select_the_type_of_tracking_shot": {
+        "side_moving_alongside_the_subject": "Is the camera side-tracking (moving alongside the subject)?",
+        "tail_following_behind_the_subject": "Is the camera tail-tracking (following behind the subject)?",
+        "lead_moving_ahead_of_the_subject": "Is the camera lead-tracking (moving ahead of the subject)?",
+        "aerial_tracking_from_above_usually_with_a_drone_or_crane": "Is the camera aerial-tracking (from above, e.g., drone or crane)?",
+        "arc_moving_around_the_subject": "Is the camera arc-tracking (arcing around the subject)?",
+        "pan_panning_to_follow_the_subject": "Is the camera pan-tracking (panning to follow the subject)?",
+        "tilt_tilting_to_follow_the_subject": "Is the camera tilt-tracking (tilting to follow the subject)?"
+    },
+    "are_there_any_of_the_following_camera_motion_effects": {
+        "frame_freezing": "Is there a frame-freezing effect in this video?",
+        "dolly_zoom": "Is there a dolly-zoom effect in this video?",
+        "motion_blur": "Is there a motion blur effect in this video?",
+        "cinemagraph": "Is there a cinemagraph effect in this video?"
+    }
+}

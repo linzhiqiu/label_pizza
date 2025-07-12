@@ -1,0 +1,120 @@
+{
+  "title": "Camera Height",
+  "description": "Label relative and overall camera height start/end; complex cases.",
+  "is_reusable": false,
+  "is_auto_submit": false,  
+  "is_active": true,
+  "verification_function": "",
+  "questions": [
+    {
+      "text": "Initial relative height:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "N/A (no subject)",
+        "Above the subject",
+        "At the subject",
+        "Below the subject"
+      ],
+      "display_values": [
+        "N/A (no subject)",
+        "Above the subject",
+        "At the subject",
+        "Below the subject"
+      ],
+      "default_option": "N/A (no subject)",
+      "display_text": "Initial relative height:"
+    },
+    {
+      "text": "Ending relative height:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "N/A (no subject / no change)",
+        "Above the subject",
+        "At the subject",
+        "Below the subject"
+      ],
+      "display_values": [
+        "N/A (no subject / no change)",
+        "Above the subject",
+        "At the subject",
+        "Below the subject"
+      ],
+      "default_option": "N/A (no subject / no change)",
+      "display_text": "Ending relative height:"
+    },
+    {
+      "text": "Describe complex relative height:",
+      "qtype": "description",
+      "required": false,
+      "options": null,
+      "display_values": null,
+      "default_option": null,
+      "display_text": "Describe complex relative height:"
+    },
+    {
+      "text": "Initial overall height:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "N/A",
+        "Aerial-level",
+        "Overhead-level",
+        "Eye-level",
+        "Hip-level",
+        "Ground-level",
+        "Water-level",
+        "Underwater"
+      ],
+      "display_values": [
+        "N/A",
+        "Aerial-level",
+        "Overhead-level",
+        "Eye-level",
+        "Hip-level",
+        "Ground-level",
+        "Water-level",
+        "Underwater"
+      ],
+      "default_option": "N/A",
+      "display_text": "Initial overall height:"
+    },
+    {
+      "text": "Ending overall height:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "N/A (e.g., no changes)",
+        "Aerial-level",
+        "Overhead-level",
+        "Eye-level",
+        "Hip-level",
+        "Ground-level",
+        "Water-level",
+        "Underwater"
+      ],
+      "display_values": [
+        "N/A (e.g., no changes)",
+        "Aerial-level",
+        "Overhead-level",
+        "Eye-level",
+        "Hip-level",
+        "Ground-level",
+        "Water-level",
+        "Underwater"
+      ],
+      "default_option": "N/A (e.g., no changes)",
+      "display_text": "Ending overall height:"
+    },
+    {
+      "text": "Describe complex overall height:",
+      "qtype": "description",
+      "required": false,
+      "options": null,
+      "display_values": null,
+      "default_option": null,
+      "display_text": "Describe complex overall height:"
+    }
+  ]
+}

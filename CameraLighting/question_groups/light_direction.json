@@ -1,0 +1,151 @@
+{
+  "title": "Light Direction",
+  "description": "Identify lighting directions on the subject, special lighting setups, overall lighting consistency, and contrast. Add free-text notes if needed.",
+  "is_reusable": false,
+  "is_auto_submit": false,
+  "verification_function": "",
+  "questions": [
+    {
+      "text": "Dominant light direction on subject(s) is?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Unclear",
+        "Changing (temporal)",
+        "Mixed (spatial)",
+        "Changing + Mixed",
+        "Consistent"
+      ],
+      "display_values": [
+        "Unclear",
+        "Changing (temporal)",
+        "Mixed (spatial)",
+        "Changing + Mixed",
+        "Consistent"
+      ],
+      "default_option": "Unclear",
+      "display_text": "Dominant light direction on subject(s) is?"
+    },
+    {
+      "text": "Back light?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Back light?"
+    },
+    {
+      "text": "Front light?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Front light?"
+    },
+    {
+      "text": "Top light?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Top light?"
+    },
+    {
+      "text": "Bottom light?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Bottom light?"
+    },
+    {
+      "text": "Right-side light?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Right-side light?"
+    },
+    {
+      "text": "Left-side light?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Left-side light?"
+    },
+    {
+      "text": "Ambient / no dominant side?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Ambient / no dominant side?"
+    }
+  ],
+  "is_active": true,
+  "display_title": "Light Direction"
+}

@@ -1,0 +1,512 @@
+[
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-GxPS6ucD5Bg_5130_5700.0.1.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-GxPS6ucD5Bg_5130_5700.0.2.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-h4qYFqoGWec_510_780.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Changing + Mixed",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hEQEOPvuRtU_0_150.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "Yes",
+      "Top light?": "Yes",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hgtcGDkaisY_2910_3480.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hgtcGDkaisY_2910_3480.1.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-HGUKRHTmki0_90_930.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "Yes",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "Yes",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.0.4.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Mixed (spatial)",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.1.1.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "Yes",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "Yes",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hJjIf7nwx6U_full.4.5.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hkQxSVI5Dks_0_900.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "Yes",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_0_2700.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_0_2700.0.8.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.0.3.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "Yes",
+      "Front light?": "No",
+      "Top light?": "Yes",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "Yes",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.0.4.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_2700_5400.1.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "Yes",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.2.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "Yes",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.4.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "Yes",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.0.7.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Mixed (spatial)",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_10800_13500.1.2.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-hp_Pxmvuc3A_13500_16200.0.1.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "Yes",
+      "Front light?": "Yes",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-oiNiHSptuw0_4470_5400.1.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_1230_1380.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "Yes",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "Yes",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_7650_7830.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-omsgfpbUrmA_15900_16170.1.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "Yes",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "Yes",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-OnvQggy3Ezw_360_600.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Changing (temporal)",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-oQTU0-Fwgzs_6180_6600.0.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-OUIZUkFpPpg_2640_2880.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Consistent",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "Yes"
+    },
+    "is_ground_truth": false
+  },
+  {
+    "question_group_title": "Light Direction",
+    "project_name": "Subject Lighting 4",
+    "user_name": "Han Wang",
+    "video_uid": "light-oVQi84_fqeI_720_1350.0.mp4",
+    "answers": {
+      "Dominant light direction on subject(s) is?": "Unclear",
+      "Back light?": "No",
+      "Front light?": "No",
+      "Top light?": "No",
+      "Bottom light?": "No",
+      "Right-side light?": "No",
+      "Left-side light?": "No",
+      "Ambient / no dominant side?": "No"
+    },
+    "is_ground_truth": false
+  }
+]

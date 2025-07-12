@@ -1,0 +1,122 @@
+{
+  "title": "Artistic & Special",
+  "description": "Detect and describe all artistic and special lighting effects, including lighting changes, lighting patterns, and lighting dynamics in the shot.",
+  "is_reusable": false,
+  "is_auto_submit": true,
+  "verification_function": "",
+  "questions": [
+    {
+      "text": "Professional or portrait lighting?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Professional or portrait lighting?"
+    },
+    {
+      "text": "Colored or neon lighting?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Colored or neon lighting?"
+    },
+    {
+      "text": "Headlight or flashlight?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Headlight or flashlight?"
+    },
+    {
+      "text": "Vignette?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Vignette?"
+    },
+    {
+      "text": "City light?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "City light?"
+    },
+    {
+      "text": "Street light?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Street light?"
+    },
+    {
+      "text": "Describe special lighting effects",
+      "qtype": "description",
+      "required": false,
+      "options": null,
+      "display_values": null,
+      "default_option": "",
+      "display_text": "Describe special lighting effects"
+    }
+  ],
+  "is_active": true,
+  "display_title": "Artistic and Special Effects"
+}

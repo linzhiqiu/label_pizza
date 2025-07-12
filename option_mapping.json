@@ -1,0 +1,522 @@
+{
+    "Initial camera angle:": {
+        "n/a": "N/A",
+        "birds_eye": "Bird's eye",
+        "high_angle": "High angle (Looking down)",
+        "level_angle": "Level Angle",
+        "low_angle": "Low angle (Looking up)",
+        "worms_eye": "Worm's eye"
+    },
+
+    "Ending camera angle:": {
+        "n/a_no_change": "N/A (e.g., no change)",
+        "birds_eye": "Bird's eye",
+        "high_angle": "High angle (Looking down)",
+        "level_angle": "Level Angle",
+        "low_angle": "Low angle (Looking up)",
+        "worms_eye": "Worm's eye"
+    },
+
+    "Dutch angle (>15) present?": {
+        "no": "No",
+        "varying": "Varying",
+        "yes": "Yes"
+    },
+
+    "Focus type:": {
+        "deep_focus": "Deep focus",
+        "shallow_focus": "Shallow focus",
+        "ultra_shallow_focus": "Ultra shallow focus",
+        "n_a": "N/A"
+    },
+
+    "Focus depth (start):": {
+        "foreground": "Foreground",
+        "middleground": "Middleground",
+        "background": "Background",
+        "out_of_focus": "Out of focus",
+        "n_a": "N/A"
+    },
+
+    "Focus depth (end):": {
+        "foreground": "Foreground",
+        "middleground": "Middleground",
+        "background": "Background",
+        "out_of_focus": "Out of focus",
+        "n_a": "N/A"
+    },
+
+    "Reason for focus change:": {
+        "no_change": "No Change",
+        "camera_or_subject_movement": "Camera or Subject Movement",
+        "rack_focus": "Rack Focus",
+        "pull_focus": "Pull Focus",
+        "focus_tracking": "Focus Tracking",
+        "others_please_specify": "Others (please specify)"
+    },
+
+    "Initial relative height:": {
+        "n/a_no_subject": "N/A (no subject)",
+        "above_subject": "Above the subject",
+        "at_subject": "At the subject",
+        "below_subject": "Below the subject"
+    },
+
+    "Ending relative height:": {
+        "n/a_no_change_subject_changes": "N/A (no subject / no change)",
+        "above_subject": "Above the subject",
+        "at_subject": "At the subject",
+        "below_subject": "Below the subject"
+    },
+
+    "Initial overall height:": {
+        "n_a": "N/A",
+        "aerial_level": "Aerial-level",
+        "overhead_level": "Overhead-level",
+        "eye_level": "Eye-level",
+        "body_level": "Hip-level",
+        "ground_level": "Ground-level",
+        "water_level": "Water-level",
+        "underwater": "Underwater"
+    },
+
+    "Ending overall height:": {
+        "n_a_e_g_no_changes": "N/A (e.g., no changes)",
+        "aerial_level": "Aerial-level",
+        "overhead_level": "Overhead-level",
+        "eye_level": "Eye-level",
+        "body_level": "Hip-level",
+        "ground_level": "Ground-level",
+        "water_level": "Water-level",
+        "underwater": "Underwater"
+    },
+
+    "Camera POV:": {
+        "n/a": "N/A",
+        "first_person_pov": "First-person POV",
+        "drone_pov": "Drone POV",
+        "third_person_full_body_pov_gaming_only": "Third-person Full-body POV (Gaming only)",
+        "third_person_over_the_shoulder_pov_gaming_film": "Third-person Over-the-shoulder POV (Gaming / Film)",
+        "third_person_over_the_hip_pov_gaming_only": "Third-person Over-the-hip POV (Gaming only)",
+        "third_person_side_view_pov_gaming_only": "Third-person Side view POV (Gaming only)",
+        "third_person_isometric_pov_gaming_only": "Third-person Isometric POV (Gaming only)",
+        "third_person_top_down_pov_gaming_only": "Third-person Top-down/Oblique POV (Gaming only)",
+        "broadcast_pov_television_station": "Broadcast POV (Television station)",
+        "overhead_pov_hands_on_demonstration": "Overhead POV (Hands-on demonstration)",
+        "selfie_pov": "Selfie POV",
+        "screen_recording_software_tutorials_zoom_calls": "Screen Recording (software tutorials, zoom calls)",
+        "dashcam_pov": "Dashcam POV",
+        "locked_on_pov": "Locked-on POV"
+    },
+
+    "Shot type:": {
+        "clear_human_subject_s": "Clear human subject(s)",
+        "clear_non_human_subject_s": "Clear non-human subject(s)",
+        "change_of_subject_s": "Change of subject(s)",
+        "scenery_shot": "Scenery shot",
+        "complex_shot": "Complex shot"
+    },
+
+    "Complex shot:": {
+        "clear_subject_with_dynamic_size_subject": "Clear Subject with Dynamic Size (subject)",
+        "different_subjects_in_focus_subject": "Different Subjects in Focus (subject)",
+        "clear_yet_atypical_subject_subject": "Clear yet Atypical Subject (subject)",
+        "many_subject_s_with_one_clear_focus_subject": "Many Subject(s) with One Clear Focus (subject)",
+        "many_subject_s_with_no_clear_focus_scenery": "Many Subject(s) with No Clear Focus (scenery)",
+        "description_text": "Description (text)",
+        "n_a_e_g_abstract_fps_with_body_parts_screenshot_etc": "N/A (e.g., abstract/FPS with body parts/screenshot/etc.)"
+    },
+
+    "Reason for text description:": {
+        "partial_subjects_in_wide_shots": "Subject-Scene Size Mismatch",
+        "back_and_forth_size_changes": "Back-and-Forth Size Changes",
+        "others": "Others"
+    },
+
+    "Initial shot size:": {
+        "n_a_e_g_no_subject_too_many_subjects": "N/A (no subject)",
+        "extreme_wide_shot": "Extreme wide/long shot",
+        "wide_shot": "Wide/long shot",
+        "full_shot": "Full shot (Subject Shot Only)",
+        "medium_full_shot_human_only": "Medium-Full shot (Human Subject Shot Only)",
+        "medium_shot": "Medium shot (Subject Shot Only)",
+        "medium_close_up_shot_human_only": "Medium Close-up shot (Human Subject Shot Only)",
+        "close_up_shot": "Close-up shot",
+        "extreme_close_up_shot": "Extreme Close-up shot"
+    },
+
+    "Ending shot size:": {
+        "n_a_e_g_no_subject_too_many_subjects": "N/A (no subject / no change)",
+        "extreme_wide_shot": "Extreme wide/long shot",
+        "wide_shot": "Wide/long shot",
+        "full_shot": "Full shot (Subject Shot Only)",
+        "medium_full_shot_human_only": "Medium-Full shot (Human Subject Shot Only)",
+        "medium_shot": "Medium shot (Subject Shot Only)",
+        "medium_close_up_shot_human_only": "Medium Close-up shot (Human Subject Shot Only)",
+        "close_up_shot": "Close-up shot",
+        "extreme_close_up_shot": "Extreme Close-up shot"
+    },
+
+    "Lens distortion:": {
+        "regular_lens": "Regular Lens",
+        "barrel_distortion_e_g_wide_angle_lens": "Barrel Distortion (e.g., Wide-angle lens)",
+        "fisheye_distortion_e_g_fisheye_lens": "Fisheye Distortion (e.g., Fisheye lens)"
+    },
+
+    "Text/watermarks present?": {
+        "no": "No",
+        "yes": "Yes"
+    },
+
+    "Video speed:": {
+        "time_lapse": "Time-lapse",
+        "fast_motion": "Fast-Motion",
+        "regular": "Regular",
+        "slow_motion": "Slow-Motion",
+        "stop_motion": "Stop-Motion",
+        "speed_ramp": "Speed-Ramp",
+        "reversed": "Time-Reversed"
+    },
+    
+    "What is the camera steadiness?": {
+        "static_fixed_camera": "Static (Fixed Camera)",
+        "very_smooth_drone_shot": "Very Smooth / No Shaking (e.g., Drone shot with no shaking at all)",
+        "smooth_steadicam_stabilized_handheld_shot": "Smooth / Minimal Shaking (e.g., Steadicam shot or stabilized handheld shot)",
+        "unsteady_somewhat_shaky_handheld_shot": "Unsteady (e.g., Somewhat shaky handheld shot)",
+        "very_unsteady_extreme_shaky_found_footage_style": "Very Unsteady (e.g., Shaky shot)"
+    },
+    "Is there any camera movement other than shaking?": {
+        "yes_major_complex_motion": "Yes with major, complex motion",
+        "yes_major_simple_motion": "Yes with major, simple motion",
+        "yes_minor_motion": "Yes with minor motion",
+        "no": "No"
+    },
+    "How fast is the camera movement? (e.g., crash zoom, whip pan)?": {
+        "slow": "Slow",
+        "regular": "Regular",
+        "fast": "Fast"
+    },
+    "Does the camera track the moving subject(s)?": {
+        "no": "No",
+        "yes": "Yes"
+    },
+    "Is the camera moving forward or backward?": {
+        "no": "No",
+        "forward_e_g_dolly_in_push_in": "Forward (e.g., Dolly-in / Push-in)",
+        "backward_e_g_dolly_out_pull_out": "Backward (e.g., Dolly-out / Pull-out)"
+    },
+    "Is the camera zooming?": {
+        "no": "No",
+        "zooming_in": "Zooming In",
+        "zooming_out": "Zooming Out"
+    },
+    "Is the camera moving (trucking) to the left or right?": {
+        "no": "No",
+        "left_to_right_panning": "Left-to-Right (--->)",
+        "right_to_left_panning": "Right-to-Left (<---)"
+    },
+    "Is the camera panning?": {
+        "no": "No",
+        "left_to_right_panning": "Left-to-Right (-->)",
+        "right_to_left_panning": "Right-to-Left (<--)"
+    },
+    "Is the camera moving up or down?": {
+        "no": "No",
+        "up_pedestal_up": "Up (e.g., Pedestal up)",
+        "down_pedestal_down": "Down (e.g., Pedestal down)"
+    },
+    "Is the camera tilting?": {
+        "no": "No",
+        "up": "Up",
+        "down": "Down"
+    },
+    "Is the camera moving in an arc?": {
+        "no": "No",
+        "clockwise_arc_clockwise": "Clockwise (e.g., Arc clockwise)",
+        "counter_clockwise_arc_counter_clockwise": "Counter-clockwise (e.g., Arc counter-clockwise)",
+        "crane_up": "Crane Up",
+        "crane_down": "Crane Down"
+    },
+    "Is the camera rolling?": {
+        "no": "No",
+        "clockwise": "Clockwise",
+        "counter_clockwise": "Counter-clockwise"
+    },
+    "Color tones?": {
+        "n_a_black_white": "N/A (black-white)",
+        "warm": "Warm",
+        "cool": "Cool",
+        "changing": "Changing",
+        "contrasting": "Contrast",
+        "changing_and_contrasting": "Changing and Contrasting",
+        "neither_warm_nor_cool": "Neither Warm nor Cool"
+    },
+    "Colorfulness?": {
+        "n_a_black_white": "N/A (black-white)",
+        "changing_and_contrast": "Changing + Contrast",
+        "changing": "Changing",
+        "contrast": "Contrast",
+        "low_colorfulness": "Low colorfulness",
+        "high_colorfulness": "High colorfulness",
+        "neither_low_nor_high_colorfulness": "Neither low nor high colorfulness"
+    },
+    "Brightness and Exposure?": {
+        "changing_and_contrasts": "Changing + Contrast",
+        "changing": "Changing",
+        "contrasting": "Contrast",
+        "overexposed_very_bright": "Overexposed / Very Bright",
+        "underexposed_very_dark": "Underexposed / Very Dark",
+        "neither_too_bright_nor_too_dark": "Neither too bright nor too dark"
+    },
+    "Indoors or outdoors?": {
+        "interior": "Interior",
+        "exterior": "Exterior",
+        "synthetic_unrealistic": "Synthetic / Unrealistic",
+        "complex_others": "Complex (others)"
+    },
+    "Light quality across the entire scene?": {
+        "soft_light": "Soft Light",
+        "hard_light": "Hard Light",
+        "changing_temporal": "Changing (temporal)",
+        "unclear": "Unclear"
+    },
+    "Sunlight level?": {
+        "normal_sunlight": "Normal Sunlight",
+        "hard_sunlight_e_g_sunny": "Hard Sunlight (e.g., Sunny)",
+        "soft_sunlight_e_g_overcast_dusk_dawn": "Soft Sunlight (e.g., Overcast / Dusk / Dawn)",
+        "sunset_sunrise": "Sunset / Sunrise",
+        "n_a_e_g_indoors_or_changing_sunlight_conditions": "N/A (indoors or changing sunlight conditions)"
+    },
+    "Subject lighting apply?": {
+        "unclear_or_light_emitting_subject": "Unclear or light-emitting subject",
+        "non_physically_realistic_lighting_on_subjects": "Non-physically realistic lighting on Subjects",
+        "inconsistent_subject": "Inconsistent subject",
+        "consistent_subject": "Consistent subject"
+    },
+    "Light contrast?": {
+        "unclear": "Unclear",
+        "changing_temporal": "Changing (temporal)",
+        "mixed_spatial": "Mixed (spatial)",
+        "changing_mixed": "Changing + Mixed",
+        "high_contrast": "High contrast",
+        "normal_contrast_below_1_8_and_above_1_4": "Normal contrast",
+        "no_contrast_flat_lighting_below_1_2": "Low contrast"
+    },
+    "Dominant light direction on subject(s) is?": {
+        "unclear": "Unclear",
+        "changing_temporal": "Changing (temporal)",
+        "mixed_spatial": "Mixed (spatial)",
+        "changing_mixed": "Changing + Mixed",
+        "consistent": "Consistent"
+    },
+    "Regular lens flares?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Anamorphic lens flares?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Mist diffusion?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Bokeh?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Water reflection?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Glossy surface reflection?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Mirror reflection?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Aerial / atmospheric Perspective?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Rainbow?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Aurora?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Heat waves or heat haze?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Lightning?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Volumetric beam light?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Volumetric spot light?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "God rays?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Volumetric light through medium?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Volumetric light (others)?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Venetian blinds?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Subject shape?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Window frame?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Foliage?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Gobo lighting (others)?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Color shifting (smooth)?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Color shifting (sudden)?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Flashing?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Moving light?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Pulsing or flickering?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Vignette?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Wave light or water caustics?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "City light?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Street light?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Revealing shot?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Transformation or morphing?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Levitation or floating?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Explosion?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Shattering or breaking?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Diffusion?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Splashing or waves?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Does the size of the subject change during tracking?": {
+        "no": "No",
+        "subject_gets_larger": "Subject gets larger",
+        "subject_gets_smaller": "Subject gets smaller"
+    },
+    "Professional or portrait lighting?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    },
+    "Colored or neon lighting?": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Unsure"
+    },
+    "Headlight or flashlight?": {
+        "no": "No",
+        "yes": "Yes",
+        "unsure": "Unsure"
+    }
+}

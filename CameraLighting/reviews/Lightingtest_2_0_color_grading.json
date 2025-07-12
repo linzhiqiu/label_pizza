@@ -1,0 +1,392 @@
+[
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "bME1yNFRwBI_53490_54810.1.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "tQfWbmftHBA_4710_5100.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Changing",
+      "Describe the color grading": "The video is shot from a first-person perspective inside a transparent underwater tunnel. A light source above provides natural\nillumination, maintaining a balanced brightness.\nWhen the recorder wipes the lens to remove\nwater, the scene momentarily blacks out before returning to its neutral brightness."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "qo__6MZIg6U_1110_2610.4.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Changing",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": "This scene shows a flight sequence from Star Wars. It begins with low saturation, but once the blue lightsaber appears, the colorfulness shifts to a neutral level, neither low nor high."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "ePbK0tiVWKY_0_300.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "CZ76u0WHXXI_11520_11880.0.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "5ZMi2aq_TR8_4410_4710.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "fS2y2QqLdhc_360_1380.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "ZnZqB5Z75zI_0_450.0.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "O9Hngn4Zcbk_5460_5850.0.1.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "2Bk_BEEfG5I_9390_9600.0.mp4",
+    "answers": {
+      "Color tones?": "Contrast",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": "The color composition of this scene contrasts warm and cool lighting to create a striking visual effect. A golden light from the open door casts warm tones and deep shaows on the polished marble floor. In contrast, the cool blue light, likely from an external source, adds and eerie atmosphere. This interplay of warm and cool tones enhances depth, guiding attention toward the doorway."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "hgtcGDkaisY_2910_3480.1.mp4",
+    "answers": {
+      "Color tones?": "Changing and Contrasting",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": "The color composition of this cinematic space shot contrasts warm and cool tones. Fiery oranges and yellows form the explosions create a high-energy focal point, radiating heat and destruction against the deep blues and grays of Earth's atmosphere and space, emphasizing the planet's vastness and isolation. Most of the frame remains in neutral, dark tones, with a subtle glimpse of sunlight at the upper-left edge. As yellow explosion-like effects emrge on Earth's surface, the scene gradually brightens, culminating in a larger eruption in the lower-left corner, heightening the sense of devastation and scale."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "0sMUF4ULb14_20250_20490.0.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "ICxC5ekWnUc_1080_1380.0.0.mp4",
+    "answers": {
+      "Color tones?": "Changing",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": "This video features a blue-gold object floating in the center, gradually covered by diffused magenta and white ink. Initially, the overall color tone is neutral—neither warm nor cool—but as the ink spreads, the scene transitions into a distinctly warm tone."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "oiNiHSptuw0_4470_5400.1.mp4",
+    "answers": {
+      "Color tones?": "Changing and Contrasting",
+      "Colorfulness?": "Contrast",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": "The scene features a high-contrast, glowing color scheme with intensely saturated red and green hues against a deep black background. The glowing red figure radiates extreme warmth, while the green figure provides a stark cool contrast. As the scene progresses, the red figure morphs and the green figure disappears, adding to the surreal transformation. The high saturation enhances the graphics, resembling a thermal or hallucinatory effect. With no midtones or desaturation, the colors remain strikingly vivid."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "FyWuwZBxS5A_4200_4500.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "m4_9TFeMfJE_240_420.0.mp4",
+    "answers": {
+      "Color tones?": "N/A (black-white)",
+      "Colorfulness?": "N/A (black-white)",
+      "Brightness and Exposure?": "Underexposed / Very Dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "7aRChtt7SVU_2550_3630.1.mp4",
+    "answers": {
+      "Color tones?": "Changing and Contrasting",
+      "Colorfulness?": "Changing + Contrast",
+      "Brightness and Exposure?": "Changing + Contrast",
+      "Describe the color grading": "A futuristic, neon-lit scene glows with saturated blues and reds, accented by intense moving beams. The characters' black and red suits stand out sharply against the vivd lighting. As the beams shift between blue and intense red, they amplify the action and tension. When the beam light turns white and the background light turns on, the scene brightens, creating a balanced color temperature. However, when the beams shift to red and the background light turns off, the scene darkens, casting a warmer, more intense tone."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "tA1s65o_kYM_570_960.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "oVXs1Lo_4pk_2400_4200.0.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "MY07V24n5cE_4260_4410.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Underexposed / Very Dark",
+      "Describe the color grading": "This video features a blue-gold object floating in the center, gradually covered by diffused magenta and white ink. Initially, the overall color tone is neutral—neither warm nor cool—but as the ink spreads, the scene transitions into a distinctly warm tone."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "DgMJq67ZOwE_39000_39180.0.mp4",
+    "answers": {
+      "Color tones?": "Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "liUd2tukV3E_10650_11580.2.mp4",
+    "answers": {
+      "Color tones?": "Warm",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "Tou0A46OLBY_300_510.0.1.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "901qPlHt97U_3270_3480.0.mp4",
+    "answers": {
+      "Color tones?": "Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "6iCJ7FlkaB8_0_180.0.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "3Aos1Z2htDU_840_1080.0.mp4",
+    "answers": {
+      "Color tones?": "Changing",
+      "Colorfulness?": "Changing + Contrast",
+      "Brightness and Exposure?": "Changing + Contrast",
+      "Describe the color grading": "The video transitions through distinct color and lighting changes. It starts with a saturated red background and even frontal lighting, clearly illuminating the subjects. Then the background turns pale, and strong directional lighting creates angular shadows that partially obscure their aces. Lastly, it shfts to a dark background with minimal light, rendering the subjects as silhouettes."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "v5JcOzlfHE8_180_630.0.1.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Changing + Contrast",
+      "Brightness and Exposure?": "Neither too bright nor too dark",
+      "Describe the color grading": "The color composition features a post-edited effect where the subject remains in black and white while the background gradually transitions from monochrome to color. Initially, both the subject and the interior are desaturated, creating a uniform black-and-white aesthetic. As the scene progresses, a magical effect brings warm hues into the background, highlighting elements like wood furniture, red curtains, and soft ambient lighting, while the subject remains grayscale, enhancing the contrast between them and their surroundings."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "7ckTdwZqP90_4290_4470.0.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Neither low nor high colorfulness",
+      "Brightness and Exposure?": "Changing",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "1VbPEaqQ3Yo_3120_3450.0.mp4",
+    "answers": {
+      "Color tones?": "Cool",
+      "Colorfulness?": "Low colorfulness",
+      "Brightness and Exposure?": "Underexposed / Very Dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Color Grading",
+    "project_name": "Color Grading 1",
+    "user_name": "Yu Tong Tiffany Ling",
+    "video_uid": "1VbPEaqQ3Yo_0_210.1.mp4",
+    "answers": {
+      "Color tones?": "Neither Warm nor Cool",
+      "Colorfulness?": "Low colorfulness",
+      "Brightness and Exposure?": "Underexposed / Very Dark",
+      "Describe the color grading": ""
+    },
+    "is_ground_truth": true
+  }
+]

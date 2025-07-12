@@ -1,0 +1,11 @@
+[
+  {
+    "schema_name": "Shot Composition",
+    "instructions_url": "",
+    "has_custom_display": false,
+    "is_active": true,
+    "question_group_names": [
+      "Video Quality", "Shot Basics", "Camera Height", "Camera Angle", "Camera Focus", "Shot Transition"
+    ]
+  }
+]

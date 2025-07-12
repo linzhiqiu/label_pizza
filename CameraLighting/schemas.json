@@ -1,0 +1,47 @@
+[
+    {
+        "schema_name": "Visual Phenomena",
+        "instructions_url": "",
+        "has_custom_display": false,
+        "is_active": true,
+        "question_group_names": [
+          "Dynamic Effects", "Lens and Optical", "Light Reflection", "Natural and Atmospheric Effects", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Color Grading",
+        "instructions_url": "",
+        "has_custom_display": false,
+        "is_active": true,
+        "question_group_names": [
+            "Color Grading", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Lighting Setup",
+        "instructions_url": "",
+        "has_custom_display": false,
+        "is_active": true,
+        "question_group_names": [
+            "Light Setup", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Special Lighting",
+        "instructions_url": "",
+        "has_custom_display": false,
+        "is_active": true,
+        "question_group_names": [
+          "Artistic & Special", "Volumetric Light", "Shadow Patterns and Gobo Lighting", "Color and Brightness Dynamics", "Shot Transition"
+        ]
+    },
+    {
+        "schema_name": "Subject Lighting",
+        "instructions_url": "",
+        "has_custom_display": false,
+        "is_active": true,
+        "question_group_names": [
+            "Subject Contrast", "Light Direction", "Subject Light Effect", "Shot Transition"
+        ]
+    }
+]

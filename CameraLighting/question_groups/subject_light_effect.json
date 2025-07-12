@@ -1,0 +1,71 @@
+{
+  "title": "Subject Light Effect",
+  "description": "Identify lighting effect on the subject, special lighting setups, overall lighting consistency, and contrast. Add free-text notes if needed.",
+  "is_reusable": false,
+  "is_auto_submit": false,
+  "verification_function": "",
+  "questions": [
+    {
+      "text": "Subject lit as a silhouette?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Subject lit as a silhouette?"
+    },
+    {
+      "text": "Rim lighting on the subject?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Rim lighting on the subject?"
+    },
+    {
+      "text": "Rembrandt lighting?",
+      "qtype": "single",
+      "required": false,
+      "options": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "display_values": [
+        "Yes",
+        "No",
+        "Unsure"
+      ],
+      "default_option": "No",
+      "display_text": "Rembrandt lighting?"
+    },
+    {
+      "text": "Describe the subject lighting",
+      "qtype": "description",
+      "required": false,
+      "options": null,
+      "display_values": null,
+      "default_option": null,
+      "display_text": "Describe the subject lighting"
+    }
+  ],
+  "is_active": true,
+  "display_title": "Subject Light Effect"
+}

@@ -1,0 +1,82 @@
+{
+  "title": "Camera Angle",
+  "description": "Label start/end angle, Dutch angle, and complex cases.",
+  "is_reusable": false,
+  "is_auto_submit": false,
+  "is_active": true,
+  "verification_function": "",
+  "questions": [
+    {
+      "text": "Initial camera angle:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "N/A",
+        "Bird's eye",
+        "High angle (Looking down)",
+        "Level Angle",
+        "Low angle (Looking up)",
+        "Worm's eye"
+      ],
+      "display_values": [
+        "N/A",
+        "Bird's eye",
+        "High angle (Looking down)",
+        "Level Angle",
+        "Low angle (Looking up)",
+        "Worm's eye"
+      ],
+      "default_option": "N/A",
+      "display_text": "Initial camera angle:"
+    },
+    {
+      "text": "Ending camera angle:",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "N/A (e.g., no change)",
+        "Bird's eye",
+        "High angle (Looking down)",
+        "Level Angle",
+        "Low angle (Looking up)",
+        "Worm's eye"
+      ],
+      "display_values": [
+        "N/A (e.g., no change)",
+        "Bird's eye",
+        "High angle (Looking down)",
+        "Level Angle",
+        "Low angle (Looking up)",
+        "Worm's eye"
+      ],
+      "default_option": "N/A (e.g., no change)",
+      "display_text": "Ending camera angle:"
+    },
+    {
+      "text": "Describe complex angle:",
+      "qtype": "description",
+      "required": false,
+      "options": null,
+      "display_values": null,
+      "default_option": null,
+      "display_text": "Describe complex angle:"
+    },
+    {
+      "text": "Dutch angle (>15) present?",
+      "qtype": "single",
+      "required": true,
+      "options": [
+        "No",
+        "Varying",
+        "Yes"
+      ],
+      "display_values": [
+        "No",
+        "Varying",
+        "Yes"
+      ],
+      "default_option": "No",
+      "display_text": "Dutch angle (>15) present?"
+    }
+  ]
+}

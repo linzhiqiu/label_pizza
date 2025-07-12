@@ -1,0 +1,11 @@
+[
+  {
+    "schema_name": "Test Schema",
+    "instructions_url": "",
+    "has_custom_display": true,
+    "is_active": true,
+    "question_group_names": [
+      "Camera Movement"
+    ]
+  }
+]

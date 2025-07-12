@@ -1,0 +1,11 @@
+[
+  {
+    "schema_name": "Camera Movement",
+    "instructions_url": "",
+    "has_custom_display": false,
+    "is_active": true,
+    "question_group_names": [
+      "Camera Movement", "Tracking Shot", "Camera Effects", "Shot Transition"
+    ]
+  }
+]

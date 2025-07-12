@@ -1,0 +1,170 @@
+[
+    {
+        "user_id": "Siyuan Cen",
+        "email": "siyuancen096@gmail.com",
+        "password": "siyuan",
+        "user_type": "admin"
+    },
+    {
+        "user_id": "Hewei Wang (cmu)",
+        "email": "stephenw@andrew.cmu.edu",
+        "password": "loveLBJ4ever",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Yu Tong Tiffany Ling",
+        "email": "ttiffanyyllingg@gmail.com",
+        "password": "ttiffanyyllingg",
+        "user_type": "admin"
+    },
+    {
+        "user_id": "Zhiqiu Lin",
+        "email": "zhiqiulin98@gmail.com",
+        "password": "zhiqiu",
+        "user_type": "admin"
+    },
+    {
+        "user_id": "Haochi Zhang",
+        "email": "zhanghaochi22@gmail.com",
+        "password": "zhanghaochi22",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Yuhan Huang",
+        "email": "huangyuhan1130@gmail.com",
+        "password": "huangyuhan1130",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Han Wang",
+        "email": "whan55751@gmail.com",
+        "password": "whan55751",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Yubo Wang",
+        "email": "hhwangyubo@gmail.com",
+        "password": "hhwangyubo",
+        "user_type": "human"
+    },
+    {
+        "user_id":"Sarah Chen",
+        "email": "sarahchenart@gmail.com",
+        "password": "sarahchenart",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Yang Wang",
+        "email": "thebluesoil@hotmail.com",
+        "password": "thebluesoil",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Kewen Wu",
+        "email": "wukw8016@gmail.com",
+        "password": "wukw8016",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Hewen Chi",
+        "email": "chwen.1@outlook.com",
+        "password": "chwen.1",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Yongbo Yang",
+        "email": "yangyongbo716@outlook.com",
+        "password": "yangyongbo716",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Daniel Jiang",
+        "email": "drjiang@andrew.cmu.edu",
+        "password": "drjiang",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.62",
+        "email": "rater.62@grandecenter.org",
+        "password": "rater.62",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.51",
+        "email": "rater.51@grandecenter.org",
+        "password": "rater.51",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.67",
+        "email": "rater.67@grandecenter.org",
+        "password": "rater.67",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.70",
+        "email": "rater.70@grandecenter.org",
+        "password": "rater.70",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Zhiqiu Lin (cmu)",
+        "email": "zhiqiul@andrew.cmu.edu",
+        "password": "zhiqiul",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Hewei Wang",
+        "email": "stephenw0516@gmail.com",
+        "password": "stephenw0516",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Kewen Wu (cmu)",
+        "email": "kewenwu@andrew.cmu.edu",
+        "password": "kewenwu",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.32",
+        "email": "rater.32@grandecenter.org",
+        "password": "rater.32",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.68",
+        "email": "rater.68@grandecenter.org",
+        "password": "rater.68",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.39",
+        "email": "rater.39@grandecenter.org",
+        "password": "rater.39",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Shaozhou Shi",
+        "email": "shi.4123123@gmail.com",
+        "password": "shi.4123123",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Jialin Wang",
+        "email": "w1831302677@gmail.com",
+        "password": "w1831302677",
+        "user_type": "human"
+    },
+    {
+        "user_id": "Shihang Zhu",
+        "email": "edzee1701@gmail.com",
+        "password": "edzee1701",
+        "user_type": "human"
+    },
+    {
+        "user_id": "rater.4",
+        "email": "rater.4@grandecenter.org",
+        "password": "rater.4",
+        "user_type": "human"
+    }
+]

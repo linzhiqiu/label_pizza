@@ -1,0 +1,233 @@
+{
+    "title": "Camera Movement",
+    "display_title": "Camera Movement",
+    "description": "Include the complexity level and whether the camera is in motion for each specific camera movement, and provide a description of the camera's movement.",
+    "is_reusable": true,
+    "is_auto_submit": false,
+    "is_active": true,
+    "verification_function": "",
+    "questions": [
+        {
+            "text": "How fast is the camera movement? (e.g., crash zoom, whip pan)?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Slow",
+                "Regular",
+                "Fast"
+            ],
+            "display_values": [
+                "Slow",
+                "Regular",
+                "Fast"
+            ],
+            "default_option": "Regular",
+            "display_text": "Camera Speed?"
+        },
+        {
+            "text": "Is the camera tilting?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Up",
+                "Down",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Up",
+                "Down",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Tilting?"
+        },
+        {
+            "text": "What is the camera steadiness?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Static (Fixed Camera)",
+                "Very Smooth / No Shaking (e.g., Drone shot with no shaking at all)",
+                "Smooth / Minimal Shaking (e.g., Steadicam shot or stabilized handheld shot)",
+                "Unsteady (e.g., Somewhat shaky handheld shot)",
+                "Very Unsteady (e.g., Shaky shot)"
+            ],
+            "display_values": [
+                "Static (Fixed Camera)",
+                "Very Smooth / No Shaking (e.g., Drone shot with no shaking at all)",
+                "Smooth / Minimal Shaking (e.g., Steadicam shot or stabilized handheld shot)",
+                "Unsteady (e.g., Somewhat shaky handheld shot)",
+                "Very Unsteady (e.g., Shaky shot)"
+            ],
+            "default_option": "Very Smooth / No Shaking (e.g., Drone shot with no shaking at all)",
+            "display_text": "Camera steadiness?"
+        },
+        {
+            "text": "Is the camera moving forward or backward?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Forward (e.g., Dolly-in / Push-in)",
+                "Backward (e.g., Dolly-out / Pull-out)",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Forward (e.g., Dolly-in / Push-in)",
+                "Backward (e.g., Dolly-out / Pull-out)",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Moving forward or backward?"
+        },
+        {
+            "text": "Is the camera zooming?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Zooming In",
+                "Zooming Out",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Zooming In",
+                "Zooming Out",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Zooming?"
+        },
+        {
+            "text": "Is the camera moving (trucking) to the left or right?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Left-to-Right (--->)",
+                "Right-to-Left (<---)",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Left-to-Right (--->)",
+                "Right-to-Left (<---)",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Trucking left or right?"
+        },
+        {
+            "text": "Is there any camera movement other than shaking?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes with major, complex motion",
+                "Yes with major, simple motion",
+                "Yes with minor motion",
+                "No"
+            ],
+            "display_values": [
+                "Yes with major, complex motion",
+                "Yes with major, simple motion",
+                "Yes with minor motion",
+                "No"
+            ],
+            "default_option": "No",
+            "display_text": "Any Camera Movement?"
+        },
+        {
+            "text": "Is the camera rolling?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Clockwise",
+                "Counter-clockwise",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Clockwise",
+                "Counter-clockwise",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Rolling?"
+        },
+        {
+            "text": "Is the camera panning?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Left-to-Right (-->)",
+                "Right-to-Left (<--)",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Left-to-Right (-->)",
+                "Right-to-Left (<--)",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Is the camera panning?"
+        },
+        {
+            "text": "Is the camera moving up or down?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Up (e.g., Pedestal up)",
+                "Down (e.g., Pedestal down)",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Up (e.g., Pedestal up)",
+                "Down (e.g., Pedestal down)",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Moving up or down?"
+        },
+        {
+            "text": "Is the camera moving in an arc?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "No",
+                "Clockwise (e.g., Arc clockwise)",
+                "Counter-clockwise (e.g., Arc counter-clockwise)",
+                "Crane Up",
+                "Crane Down",
+                "Unclear"
+            ],
+            "display_values": [
+                "No",
+                "Clockwise (e.g., Arc clockwise)",
+                "Counter-clockwise (e.g., Arc counter-clockwise)",
+                "Crane Up",
+                "Crane Down",
+                "Unclear"
+            ],
+            "default_option": "No",
+            "display_text": "Moving in an arc?"
+        },
+        {
+            "text": "If the camera motion is too complex, how would you describe it?",
+            "qtype": "description",
+            "required": false,
+            "options": null,
+            "display_values": null,
+            "default_option": null,
+            "display_text": "Describe the camera movement?"
+        }
+    ]
+}

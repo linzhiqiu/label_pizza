@@ -1,0 +1,4847 @@
+[
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "tpKEmBQieVo.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.1.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "X9_qzu2OCyA.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "This is a skiing video shot with a head-mounted camera. Due to the movement of the subject's head, the camera height shifts between being above the subject and at the same level as the subject.",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "v5wEjsCWVA8.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "qU7YXMAicK4.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.8.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "AHrCI9eSJGQ.5.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.2.4.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera begins at a slightly higher than the humans, then arcs around them and ends at the mid-body level."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.9.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "h5U50ZsFUaY.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "rGfDPpztcII.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "OAcF7HhYVyg.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "2WL4mIV48FA.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "39d6dWSdpLY.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera, facing the skiers, starts at eye level and transitions to an overhead angle while in mid-air. It then returns to eye level after the skier falls to the ground."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "39d6dWSdpLY.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "3esyihbPQm8.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.16.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.10.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "MQA15Yhymog.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.20.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "hmVHumNMEGw.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 1",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "qU7YXMAicK4.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "6PrdQBuXyxQ.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.11.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "hmVHumNMEGw.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9JBMpzW_B58.5.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "0XjaCd9gj98.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.10.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "JF58FPB0JHQ.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9JBMpzW_B58.5.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "HM5J6qAytJY.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera is locked on the tail of the racing car and the height is between the eye level and the hip level."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera starts at a height equal to that of two human subjects, then arcs around and moves above them, finally settling back on the subjects.",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "\"The camera begins at eye level with two human subjects, then arcs around them, rises to an overhead angle, and finally returns to eye level."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.2.9.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera locked on the top of the pole begins a little above the athlete and almost at the same height. Then when the pole turns to straight the camera is above the subject.",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.1.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Underwater",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "qU7YXMAicK4.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 2",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "X9_qzu2OCyA.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.2.5.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "rGfDPpztcII.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.17.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.7.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.17.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.9.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "6PrdQBuXyxQ.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "0XjaCd9gj98.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.23.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.8.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": "The camera begins at an overhead level, then arcs forward down around humans up-side-down and ends at a hip level."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 3",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "UIOdk3AhVA0.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "rGfDPpztcII.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "kjI2gyb2hR4.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.9.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera starts at the same height as the human subjects, then arcs upward around them, ending slightly above their heads.",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.26.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "qU7YXMAicK4.0.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.2.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.1.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "qU7YXMAicK4.0.15.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "Zp1FGa68mXI.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "iSTYnbRv4AQ.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.2.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.19.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.15.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.1.7.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "VYea_nN8thI.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Aerial-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "JF58FPB0JHQ.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera begins at the height of a cliff facing two women jumping into the sea and ends at a water level. "
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 4",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.2.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.16.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.10.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.1.6.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "iSTYnbRv4AQ.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9JBMpzW_B58.2.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "rrbrnWRiJ0Y.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.25.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "Below the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "Ground-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "iSTYnbRv4AQ.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "OAcF7HhYVyg.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.4.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 5",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera begins obviously above the rider on the ridge, then moves forward and lower  and ends a slightly lower than the human.",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera starts at knee height, then arcs beneath the subjects and ends focused on them.",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera starts at hip level, then arcs forward and upward around the humans, moving from eye level to overhead, and back to eye level by the end."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "0XjaCd9gj98.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.2.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "tpKEmBQieVo.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera locked on the flyer's chest facing his head is at the height of the body but below the head,",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "W4l_O9DZC3w.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "_ZMbJU4gh7w.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "hmVHumNMEGw.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.12.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.1.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.2.2.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.9.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "tpKEmBQieVo.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.8.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.4.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "Dd1VIeTMGQs.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera begins at an eye level, then it rolls clockwise about  3 rounds with gymnastics movements, undergoing ground level, hip level and eye level in the end."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Underwater",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 6",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.2.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "zR63m0JN5WY.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.1.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera is on the slope near the lake, an overhead level relative to the lake and a ground level relative to the slope."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera starts at hip level relative to a man, then arcs forward and upward, ending above one man and at eye level with another.",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.1.11.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.9.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "xhrAGJviQJA.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "e0HlqyYMna0.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The selfie camera begins a little above the skier's head and then turns higher above his head after the skier lets go it.",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera is on the snowy mountain's slope, which should be at an aerial level but along the slope."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "iSTYnbRv4AQ.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Ground-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.1.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "6PrdQBuXyxQ.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera is at the height of a woman's head but the surroundings are mountains, indicating the camera might also be at an aerial height."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "2WL4mIV48FA.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "2WL4mIV48FA.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "MQA15Yhymog.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 7",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "HM5J6qAytJY.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.3.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "hmVHumNMEGw.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.6.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera begins at mid-body level, then arcs forward and upward to eye level."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.9.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.9.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": "The camera begins at a level angle, then moves forward up, tilts up and ends at about three floors height level."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "HM5J6qAytJY.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.12.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.11.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera starts above a yacht, then zooms out to focus on the scenery, with no clear subject in view.",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "kjI2gyb2hR4.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.13.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Water-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "kjI2gyb2hR4.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "AHrCI9eSJGQ.3.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.5.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "Hip-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "6PrdQBuXyxQ.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.26.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "kjI2gyb2hR4.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "AHrCI9eSJGQ.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "39d6dWSdpLY.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "Below the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 8",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "39d6dWSdpLY.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "Below the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.1.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.11.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "iSTYnbRv4AQ.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.3.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "hmVHumNMEGw.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera is positioned at the height of the person's calf, just above the foot, with the focus centered precisely on the foot.",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "2WL4mIV48FA.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "T3OfWBxWRhE.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.1.6.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "Above the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "Overhead-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "HM5J6qAytJY.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9JBMpzW_B58.4.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "_eSeQ3Pzn60.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.5.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.24.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.22.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.3.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The camera begins at the skier's height, and after the skier falls, it ends up positioned above them.",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera starts at the skier’s chest height, then moves down to near ground level as the skier falls."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "yIxnb1SaT14.0.20.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "AHrCI9eSJGQ.6.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "AHrCI9eSJGQ.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.0.6.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 9",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "_eSeQ3Pzn60.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera moves up the mountain slope, first at an aerial level relative to the ground, then at ground level relative to the slope, and finally at an overhead level relative to the human."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "9P2zAwProxo.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "VYea_nN8thI.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "W4l_O9DZC3w.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "W4l_O9DZC3w.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Hip-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "vlDzYIIOYmM.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "pGtjz4v0EE8.0.18.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "W4l_O9DZC3w.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "LbY3DdzV0rA.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.2.5.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "BNzc6hG3yN4.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "OAcF7HhYVyg.0.5.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "hmVHumNMEGw.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "39d6dWSdpLY.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "IyTv_SR2uUo.2.4.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oJDzh2mVBms.0.3.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "HM5J6qAytJY.1.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.1.3.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "Qyw9uPO88E8.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "b9-cHk-7N8k.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "VYea_nN8thI.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "At the subject",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "Eye-level",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 10",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.5.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.2.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "OAcF7HhYVyg.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "nxrDoOUASFY.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "Dd1VIeTMGQs.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "6PrdQBuXyxQ.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "lkAGyeDKxG4.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Aerial-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "ocLJWCnMhTo.0.4.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "E8eNXv97YFY.1.2.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "W4l_O9DZC3w.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "rrbrnWRiJ0Y.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "The shot is at the height of the camera but above the skier.",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "XM2d9-l73xE.1.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "7zBUn2MT6D0.0.1.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.18.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "AHrCI9eSJGQ.4.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Overhead-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "jVtnuLL2Kqs.0.7.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "7zBUn2MT6D0.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera begins at  an aerial level relative to the ground and pool, and at an overhead level relative to the human."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "_eSeQ3Pzn60.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "Above the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": "The camera is at an aerial level relative to the ground and lakes, and at an overhead level relative to the human subject and slope."
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "W4l_O9DZC3w.0.2.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "XM2d9-l73xE.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "zR63m0JN5WY.0.0.mp4",
+    "answers": {
+      "Initial relative height:": "At the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Eye-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "XM2d9-l73xE.2.0.mp4",
+    "answers": {
+      "Initial relative height:": "Below the subject",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "Ground-level",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  },
+  {
+    "question_group_title": "Camera Height",
+    "project_name": "Shotcomp 11",
+    "user_email": "edzee1701@gmail.com",
+    "video_uid": "oagszCmJLpU.5.0.mp4",
+    "answers": {
+      "Initial relative height:": "N/A (no subject)",
+      "Ending relative height:": "N/A (no subject / no change)",
+      "Describe complex relative height:": "",
+      "Initial overall height:": "N/A",
+      "Ending overall height:": "N/A (e.g., no changes)",
+      "Describe complex overall height:": ""
+    },
+    "is_ground_truth": true
+  }
+]

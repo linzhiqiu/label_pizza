@@ -1,0 +1,79 @@
+{
+    "title": "Camera Effects",
+    "display_title": "Camera Effects",
+    "description": "Mark any special motion-related effects applied in the shot (optical or post-production).",
+    "is_reusable": false,
+    "is_auto_submit": true,
+    "is_active": true,
+    "verification_function": "",
+    "questions": [
+        {
+            "text": "Is there a frame-freezing effect in this video?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Frame-freezing?"
+        },
+        {
+            "text": "Is there a dolly-zoom effect in this video?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Dolly-zoom?"
+        },
+        {
+            "text": "Is there a motion blur effect in this video?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Motion blur?"
+        },
+        {
+            "text": "Is there a cinemagraph effect in this video?",
+            "qtype": "single",
+            "required": true,
+            "options": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "display_values": [
+                "Yes",
+                "No",
+                "Unsure"
+            ],
+            "default_option": "No",
+            "display_text": "Cinemagraph effect?"
+        }
+    ]
+}

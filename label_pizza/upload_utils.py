@@ -10,1109 +10,3214 @@ from label_pizza.services import (
     QuestionService,
     AuthService,
     AnnotatorService,
-    GroundTruthService
+    GroundTruthService,
+    CustomDisplayService,
+    ProjectGroupService
 )
-from label_pizza.db import SessionLocal, engine # Must have been initialized by init_database() before importing this file
-import hashlib
+from label_pizza.db import SessionLocal
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Set, Tuple
+import pandas as pd
+import os
+import concurrent.futures
+import threading
+from concurrent.futures import ThreadPoolExecutor
+import glob
 
+# --------------------------------------------------------------------------- #
+# Core operations                                                             #
+# --------------------------------------------------------------------------- #
 
-def add_videos(videos_data: list[dict]) -> None:
-    """
-    Add new videos from an in-memory list of dicts.  
-    Skips videos that already exist and prints info.
-
-    Args:
-        videos_data: A list of dictionaries, each with keys
-                     "url" (str) and "metadata" (dict).
-    """
-    if not isinstance(videos_data, list):
-        raise TypeError("videos_data must be a list of dictionaries")
-
-    # Validate and add inside one DB session
-    with SessionLocal() as session:
-        # 1️⃣ Pre-check for duplicates or other validation errors
-        duplicate_urls = []
-        valid_videos = []
-        
-        for video in tqdm(videos_data, desc="Verifying videos"):
-            try:
-                VideoService.verify_add_video(
-                    url=video["url"],
-                    session=session,
-                    metadata=video.get("metadata")
-                )
-                valid_videos.append(video)
-            except ValueError as e:
-                # Collect "already exists" errors, propagate the rest
-                if "already exists" in str(e):
-                    duplicate_urls.append(video["url"])
-                    print(f"⏭️  Skipped existing video: {video['url']}")
-                else:
-                    raise ValueError(
-                        f"Validation failed for {video['url']}: {e}"
-                    ) from None
-
-        if duplicate_urls:
-            print(f"ℹ️  Skipped {len(duplicate_urls)} existing videos")
-
-        # 2️⃣ Add only valid videos
-        if valid_videos:
-            for video in tqdm(valid_videos, desc="Adding videos", unit="video"):
-                VideoService.add_video(
-                    url=video["url"],
-                    session=session,
-                    metadata=video.get("metadata")
-                )
-                print(f"✓ Added new video: {video['url']}")
-
-            # 3️⃣ Commit once at the end
-            try:
-                session.commit()
-                print(f"✔ Successfully added {len(valid_videos)} new videos!")
-            except Exception as e:
-                session.rollback() 
-                raise RuntimeError(f"Error committing changes: {e}") from None
-        else:
-            print("ℹ️  No new videos to add - all videos already exist")
-
-def upload_videos(videos_path: str = None, videos_data: list[dict] = None) -> None:
-
-    # Check that at least one parameter is provided
-    if videos_path is None and videos_data is None:
-        raise ValueError("At least one parameter must be provided: video_path or videos_data")
+def _process_video_add(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Process and verify a single video addition in a thread-safe manner.
     
-    if videos_path is not None:
-        # Upload from file path
-        import glob
-
-        with open(videos_path, 'r') as f:
-            video_data = json.load(f)
-    add_videos(video_data)
-
-def update_videos(videos_data: list[dict]) -> None:
-    """
-    Update existing videos given an in-memory list of dicts.
-
     Args:
-        videos_data: A list of dictionaries, each containing
-                     "video_uid" (str), "url" (str), and "metadata" (dict).
+        video_data: Dictionary containing video_uid, url, and optional metadata
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
     """
-    if not isinstance(videos_data, list):
-        raise TypeError("videos_data must be a list of dictionaries")
-
-    with SessionLocal() as session:
-        # 1️⃣ Pre-check that every target video exists & the update is valid
-        missing_uids = []
-        for video in videos_data:
-            try:
-                VideoService.verify_update_video(
-                    video_uid=video["video_uid"],
-                    new_url=video["url"],
-                    new_metadata=video.get("metadata"),
-                    session=session
-                )
-            except ValueError as e:
-                if "not found" in str(e):
-                    missing_uids.append(video["video_uid"])
-                else:
-                    raise ValueError(
-                        f"Validation failed for {video['video_uid']}: {e}"
-                    ) from None
-
-        if missing_uids:
-            raise ValueError(
-                "Videos do not exist: " + ", ".join(missing_uids)
-            )
-
-        # 2️⃣ All good → perform the updates
-        for video in tqdm(videos_data, desc="Updating videos", unit="video"):
-            VideoService.update_video(
-                video_uid=video["video_uid"],
-                new_url=video["url"],
-                new_metadata=video.get("metadata"),
-                session=session
-            )
-            print(f"✓ Updated video: {video['video_uid']}")
-
-        # 3️⃣ Commit once at the end
+    with SessionLocal() as sess:
         try:
-            session.commit()
-            print("✔ All videos processed and committed!")
+            VideoService.verify_add_video(
+                video_uid=video_data["video_uid"],
+                url=video_data["url"],
+                metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            return video_data["video_uid"], True, None
+        except ValueError as err:
+            if "already exists" in str(err):
+                return video_data["video_uid"], False, "already exists"
+            else:
+                return video_data["video_uid"], False, str(err)
+
+def _add_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Add a single video in a thread-safe manner.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, and optional metadata
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
+    """
+    with SessionLocal() as sess:
+        try:
+            VideoService.add_video(
+                video_uid=video_data["video_uid"],
+                url=video_data["url"],
+                metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            return video_data["video_uid"], True, None
         except Exception as e:
-            session.rollback()
-            raise RuntimeError(f"Error committing changes: {e}") from None
+            return video_data["video_uid"], False, str(e)
 
-
-def import_question_group(group_data: dict) -> int:
-    """
-    Atomically import (or update) a Question-Group definition.
-
-    Parameters
-    ----------
-    group_data : dict
-        A dictionary with the structure below.
-
-        ──  Top-level keys  ───────────────────────────────────────────────
-        title                : str        # unique name of the group
-        description          : str        # human-readable description
-        is_reusable          : bool       # can be attached to multiple projects?
-        is_auto_submit       : bool       # UI may auto-submit when all required answered
-        verification_function: str | ""   # (optional) custom server-side checker
-        questions            : list[dict] # list of question definitions (see next)
-
-        ──  Each item in `questions`  ─────────────────────────────────────
-        text            : str                    # immutable, unique identifier
-        qtype           : "single" | "description" | "text"
-        required        : bool                   # must annotator answer?
-        options         : list[str] | None       # only for qtype == "single"
-        display_values  : list[str] | None       # parallel to options (UI labels)
-        default_option  : str | None             # must be in options
-        display_text    : str | None             # wording shown above control
-        option_weights  : list[float] | None     # numeric weight per option
-
-        • For qtype == "single": `options`, `display_values` (same length),
-          and, optionally, `option_weights` (same length) are **required**.
-        • For qtype == "description` or `"text"`: all list-based fields
-          *must* be None.
-
-    Returns
-    -------
-    int
-        ID of the created (or updated) question group.
-
-    Raises
-    ------
-    ValueError
-        If any verification step fails (duplicate title, bad options, etc.).
-    Exception
-        For unexpected DB errors (I/O, integrity, etc.).
-
-    Notes
-    -----
-    The helper runs in two passes:
-      1. Verification pass (read-only) — nothing is written unless every
-         question and the group itself validate.
-      2. Apply pass — create or update questions, then create the group,
-         all inside a single transaction. Any failure rolls back everything.
-    """
-    if not isinstance(group_data, dict):
-        raise TypeError("group_data must be a dictionary")
-
-    with SessionLocal() as session:
-        try:
-            # ──────────────  Phase 2: APPLY changes  ──────────────
-            question_ids = [QuestionService.get_question_by_text(q["text"], session)["id"] for q in group_data["questions"]]
-
-            qgroup = QuestionGroupService.create_group(
-                title=group_data["title"],
-                display_title=group_data["title"],
-                description=group_data["description"],
-                is_reusable=group_data["is_reusable"],
-                question_ids=question_ids,
-                verification_function=group_data.get("verification_function", None),
-                is_auto_submit=group_data.get("is_auto_submit", False),
-                session=session,
-            )
-
-            session.commit()
-            print(f"✔ Successfully created question group: {group_data['title']}")
-            return qgroup.id
-
-        except Exception:
-            session.rollback()
-            raise
-
-def import_question_groups(question_groups_folder: str = None, question_groups_data: list[dict] = None) -> None:
+def add_videos(videos_data: List[Dict], max_workers: int = 10) -> None:
+    """Insert videos that are not yet in database with parallel verification.
     
-    if question_groups_folder is None and question_groups_data is None:
-        raise ValueError("At least one parameter must be provided: question_groups_folder or question_groups_data")
-    
-    import glob
-    if question_groups_folder is not None:
-        question_groups_data = []
-        group_paths = glob.glob(question_groups_folder + '/*.json')
-        for group_path in group_paths:
-            with open(group_path, 'r') as f:
-                question_groups_data.append(json.load(f))
-
-    with SessionLocal() as session:
-        for question_group_data in tqdm(question_groups_data, desc="Importing question groups"):
-            questions = question_group_data['questions']
-            # Check whether all questions are existing in the Question table
-            for question in questions:
-                try:
-                    question = QuestionService.get_question_by_text(question.get("text", None), session)
-                except ValueError as e:
-                    if "not found" in str(e):
-                        print(f"Question {question.get('text', None)} not found in the Question table")
-                        print(f"Import Question: {question.get('text', None)}...")
-                        QuestionService.add_question(
-                            text=question["text"],
-                            qtype=question["qtype"],
-                            options=question.get("options", None),
-                            default=question.get("default_option", None),
-                            session=session,
-                            display_values=question.get("display_values", None),
-                            display_text=question.get("display_text", None),
-                            option_weights=question.get("option_weights", None),
-                        )
-                        print(f"✓ Imported question: {question.get('text', None)}")
-                    else:
-                        raise ValueError(f"Error occurs:{e}")
-            title = question_group_data['title']
-            try:
-                QuestionGroupService.get_group_by_name(title, session)
-                print(f"⏭️  Skipped existing question group: {title}")
-                continue
-            except ValueError:
-                # Question group doesn't exist, proceed with adding it
-                import_question_group(question_group_data)
-                pass
-        
-def update_questions(questions_data: list[dict]) -> None:
-    """
-    Bulk-update **existing** questions (free-text or single-choice).
-
-    Parameters
-    ----------
-    questions_data : list[dict]
-        A list where each element describes *one* question update:
-
-        ── Required keys ───────────────────────────────────────────────
-        text            : str                    # immutable identifier (must exist)
-        display_text    : str | None             # new UI wording / prompt
-
-        ── Only for single-choice questions ────────────────────────────
-        options         : list[str]   | None     # full set of options (must include old ones)
-        display_values  : list[str]   | None     # UI labels  (len == len(options))
-        default_option  : str         | None     # pre-selected option (must be in options)
-        option_weights  : list[float] | None     # numeric weights (len == len(options))
-
-    Notes
-    -----
-    * The helper **does not** add new questions; every `text`
-      must already exist in the DB.
-    * Runs in two passes:
-        1. Verify all updates (read-only).
-        2. Apply edits in a single transaction.
-      Any error aborts the whole batch.
-    """
-    if not isinstance(questions_data, list):
-        raise TypeError("questions_data must be a list of dictionaries")
-
-    with SessionLocal() as session:
-        try:
-            # ───────── Phase 1: VERIFY everything ─────────
-            missing = []
-            for q in questions_data:
-                try:
-                    existing = QuestionService.get_question_by_text(q["text"], session)
-                    QuestionService.verify_edit_question(
-                        question_id=existing["id"],
-                        new_display_text=q.get("display_text"),
-                        new_opts=q.get("options"),
-                        new_default=q.get("default_option"),
-                        new_display_values=q.get("display_values"),
-                        new_option_weights=q.get("option_weights"),
-                        session=session,
-                    )
-                except ValueError as e:
-                    if "not found" in str(e):
-                        missing.append(q["text"])
-                    else:
-                        raise ValueError(
-                            f"Validation failed for '{q['text']}': {e}"
-                        ) from None
-
-            if missing:
-                raise ValueError(f"Questions not found: {missing}")
-
-            # ───────── Phase 2: APPLY edits ─────────
-            for q in tqdm(questions_data, desc="Updating questions"):
-                existing = QuestionService.get_question_by_text(q["text"], session)
-                QuestionService.edit_question(
-                    question_id=existing["id"],
-                    new_display_text=q.get("display_text"),
-                    new_opts=q.get("options"),
-                    new_default=q.get("default_option"),
-                    new_display_values=q.get("display_values"),
-                    new_option_weights=q.get("option_weights"),
-                    session=session,
-                )
-                print(f"✓ Updated question: {q['text']}")
-
-            session.commit()
-        except Exception:
-            session.rollback()
-            raise
-
-def update_question_groups(groups_data: list[dict]) -> None:
-    """
-    Bulk-update **existing** question-groups.
-
-    Parameters
-    ----------
-    groups_data : list[dict]
-        A list where each element describes one group update:
-
-        ── Required keys ───────────────────────────────────────────────
-        title                : str   # current (immutable) name of the group
-        description          : str   # new description shown in UI
-        is_reusable          : bool  # update the “reusable” flag
-        is_auto_submit       : bool  # update auto-submit behaviour
-
-        ── Optional key ────────────────────────────────────────────────
-        verification_function: str | ""   # new server-side validator (may be "")
-
-        Example
-        -------
-        [
-            {
-                "title": "SubjectLight",
-                "description": "This is the new description, hhh",
-                "is_reusable": true,
-                "verification_function": "",
-                "is_auto_submit": false
-            }
-        ]
-
-    Raises
-    ------
-    ValueError
-        If any group doesn’t exist or a validation step fails.
-    Exception
-        For unexpected DB errors (integrity, I/O, etc.).
-
-    Notes
-    -----
-    • This helper **does not** create new groups; each `title`
-      must already exist in the DB.
-    • Two-pass workflow:
-        1. Verify every edit (read-only).
-        2. Apply edits inside a single transaction.
-    """
-    if not isinstance(groups_data, list):
-        raise TypeError("groups_data must be a list of dictionaries")
-
-    with SessionLocal() as session:
-        try:
-            # ───────── Phase 1: VERIFY everything ─────────
-            missing, validation_errors = [], []
-            for g in groups_data:
-                try:
-                    grp = QuestionGroupService.get_group_by_name(g["title"], session)
-                    QuestionGroupService.verify_edit_group(
-                        group_id=grp.id,
-                        new_title=g["title"],                     # title is immutable
-                        new_description=g["description"],
-                        is_reusable=g["is_reusable"],
-                        verification_function=g.get("verification_function"),
-                        is_auto_submit=g.get("is_auto_submit", False),
-                        session=session,
-                    )
-                except ValueError as e:
-                    if "not found" in str(e):
-                        missing.append(g["title"])
-                    else:
-                        validation_errors.append(
-                            f"Group '{g['title']}': {e}"
-                        )
-
-            if missing:
-                raise ValueError(
-                    "Question groups do not exist: " + ", ".join(missing)
-                )
-            if validation_errors:
-                raise ValueError(
-                    "Validation errors:\n" + "\n".join(validation_errors)
-                )
-
-            # ───────── Phase 2: APPLY updates ─────────
-            for g in tqdm(groups_data, desc="Updating question groups"):
-                grp = QuestionGroupService.get_group_by_name(g["title"], session)
-                QuestionGroupService.edit_group(
-                    group_id=grp.id,
-                    new_title=g["title"],
-                    new_description=g["description"],
-                    is_reusable=g["is_reusable"],
-                    verification_function=g.get("verification_function"),
-                    is_auto_submit=g.get("is_auto_submit", False),
-                    session=session,
-                )
-                print(f"✓ Updated question group: {g['title']}")
-
-            session.commit()
-
-        except Exception:   # catches ValueError and generic Exception
-            session.rollback()
-            raise
-
-
-def create_schema(schema_data: dict) -> int:
-    """
-    Create a new Schema from existing Question-Groups.
-
-    Parameters
-    ----------
-    schema_data : dict
-        Required keys:
-
-        ── Top-level ───────────────────────────────────────────────
-        schema_name           : str        # name of the new schema
-        question_group_names  : list[str]  # titles of the groups to include
-
-        Example
-        -------
-        schema_data = {
-            "schema_name": "My Schema",
-            "question_group_names": ["Group 1", "Group 2", "Group 3"]
-        }
-
-    Returns
-    -------
-    int
-        ID of the newly created schema.
-
-    Raises
-    ------
-    ValueError
-        • Any referenced question-group is missing  
-        • Validation fails inside `SchemaService.verify_create_schema`
-    Exception
-        Unexpected database errors (integrity, I/O, etc.).
-    """
-    if not isinstance(schema_data, dict):
-        raise TypeError("schema_data must be a dictionary")
-
-    name   = schema_data.get("schema_name")
-    groups = schema_data.get("question_group_names")
-
-    if not name or not isinstance(groups, list) or not groups:
-        raise ValueError(
-            "schema_data must contain 'schema_name' (str) and "
-            "'question_group_names' (non-empty list[str])"
-        )
-
-    with SessionLocal() as session:
-        try:
-            # ── Resolve group names → IDs ────────────────────────────
-            qgroup_ids = []
-            for gname in groups:
-                grp = QuestionGroupService.get_group_by_name(gname, session)
-                if not grp:
-                    raise ValueError(f"Question group '{gname}' not found")
-                qgroup_ids.append(grp.id)
-
-            # ── Verify schema creation ───────────────────────────────
-            SchemaService.verify_create_schema(name, qgroup_ids, session)
-
-            # ── Create schema ────────────────────────────────────────
-            schema = SchemaService.create_schema(
-                name=name,
-                question_group_ids=qgroup_ids,
-                session=session,
-            )
-            session.commit()
-            print(f"✓ Successfully created schema: {schema.name}")
-            return schema.id
-
-        except Exception:
-            session.rollback()
-            raise
-
-def create_schemas(schemas_path: str = None, schemas_data: list[dict] = None, question_groups_folder: str = None, question_groups_data: list[dict] = None) -> None:
-    if schemas_path is None and schemas_data is None:
-        raise ValueError("At least one parameter must be provided: schemas_path or schemas_data")
-    
-    if schemas_path is not None:
-        with open(schemas_path, 'r') as f:
-            schemas_data = json.load(f)
-    import_question_groups(question_groups_folder, question_groups_data)
-    with SessionLocal() as session:
-        for schema_data in schemas_data:
-            schema_name = schema_data.get('schema_name', None)
-            try:
-                SchemaService.get_schema_id_by_name(schema_name, session)
-            except ValueError as e:
-                if "not found" in str(e):
-                    create_schema(schema_data)
-                else:
-                    pass
-
-def upload_users(users_path: str = None, users_data: list[dict] = None):
-    """
-    Batch upload users from a JSON file.
-
     Args:
-        json_path (str): Path to the user JSON file.
-
-    JSON format:
-        [
-            {
-                "user_id": "alice",
-                "email": "alice@example.com",
-                "password": "alicepassword",
-                "user_type": "human"
-            },
-            ...
-        ]
+        videos_data: List of video dictionaries with video_uid, url, metadata
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        TypeError: If videos_data is not a list of dictionaries
+        ValueError: If videos already exist or verification fails
     """
-    if users_path is None and users_data is None:
-        raise ValueError("At least one parameter must be provided: users_path or users_data")
+    if not isinstance(videos_data, list):
+        raise TypeError("videos_data must be a list[dict]")
+
+    # Verify all videos with ThreadPoolExecutor
+    duplicates = []
+    errors = []
     
-    if users_path is not None:
-        with open(users_path, 'r') as f:
-            users_data = json.load(f)
+    with tqdm(total=len(videos_data), desc="Verifying videos for addition", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_video_add, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "already exists":
+                        duplicates.append(video_uid)
+                    else:
+                        errors.append(f"{video_uid}: {error_msg}")
+                pbar.update(1)
 
-    with SessionLocal() as session:
-        existing_users = AuthService.get_all_users(session)
-        existing_user_ids = set(existing_users['User ID'].tolist())
+    if duplicates:
+        raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+    
+    if errors:
+        raise ValueError("Add aborted – verification errors: " + "; ".join(errors))
 
-        for user in users_data:
-            user_id = user.get('user_id', None)
-            email = user.get('email', None)
-            password = user['password']
-            user_type = user.get('user_type', 'human')
+    # Add videos with ThreadPoolExecutor
+    with tqdm(total=len(videos_data), desc="Adding videos", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_add_single_video, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    raise ValueError(f"Failed to add video {video_uid}: {error_msg}")
+                pbar.set_postfix(uid=video_uid[:20] + "..." if len(video_uid) > 20 else video_uid)
+                pbar.update(1)
+                
+    print(f"✔ Added {len(videos_data)} new video(s)")
 
-            if user_id in existing_user_ids:
-                print(f"User {user_id} already exists, skipping.")
-                continue
 
-            # Hash the password (sha256)
-            password_hash = password
-
-            try:
-                AuthService.create_user(
-                    user_id=user_id,
-                    email=email,
-                    password_hash=password_hash,
-                    user_type=user_type,
-                    session=session
-                )
-                print(f"Successfully created user {user_id}")
-            except Exception as e:
-                print(f"Failed to create user {user_id}: {e}")
-
-# ---------------------------------------------------------------------------
-# 0. helper – assert that all UIDs exist in DB
-# ---------------------------------------------------------------------------
-def _assert_all_videos_exist(video_uids: List[str], session: Session) -> None:
+def _process_video_update(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Process and verify a single video update in a thread-safe manner.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, and optional metadata
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
     """
-    Raise ValueError listing *all* missing video_uids (if any).
+    with SessionLocal() as sess:
+        try:
+            VideoService.verify_update_video(
+                video_uid=video_data["video_uid"],
+                new_url=video_data["url"],
+                new_metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            return video_data["video_uid"], True, None
+        except ValueError as err:
+            if "not found" in str(err):
+                return video_data["video_uid"], False, "not found"
+            else:
+                return video_data["video_uid"], False, str(err)
+
+def _update_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Update a single video in a thread-safe manner with change detection.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, metadata, optional is_archived
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
     """
-    missing: List[str] = [
-        uid for uid in video_uids
-        if VideoService.get_video_by_uid(uid, session) is None
-    ]
+    with SessionLocal() as sess:
+        try:
+            # Get existing video info
+            existing_video = VideoService.get_video_by_uid(video_data["video_uid"], sess)
+            if not existing_video:
+                return video_data["video_uid"], False, "Video not found"
+            
+            # Check if any information has changed
+            needs_update = False
+            
+            # Check URL
+            if video_data["url"] != existing_video.url:
+                needs_update = True
+            
+            # Check metadata
+            new_metadata = video_data.get("metadata", {})
+            existing_metadata = existing_video.video_metadata or {}
+            if new_metadata != existing_metadata:
+                needs_update = True
+            
+            # Check archive status
+            if "is_archived" in video_data:
+                if video_data["is_archived"] != existing_video.is_archived:
+                    needs_update = True
+            
+            # If no changes needed, skip update
+            if not needs_update:
+                return video_data["video_uid"], True, "No changes needed"
+            
+            # Perform the update
+            VideoService.update_video(
+                video_uid=video_data["video_uid"],
+                new_url=video_data["url"],
+                new_metadata=video_data.get("metadata"),
+                session=sess,
+            )
+            
+            # Handle archive status if present
+            if "is_archived" in video_data:
+                rec = VideoService.get_video_by_uid(video_data["video_uid"], sess)
+                if rec and video_data["is_archived"] != rec.is_archived:
+                    if video_data["is_archived"]:
+                        VideoService.archive_video(rec.id, sess)
+                    else:
+                        rec.is_archived = False
+            
+            return video_data["video_uid"], True, None
+        except Exception as e:
+            return video_data["video_uid"], False, str(e)
+
+def update_videos(videos_data: List[Dict], max_workers: int = 10) -> None:
+    """Update videos that must exist in database with parallel verification.
+    
+    Args:
+        videos_data: List of video dictionaries with video_uid, url, metadata
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        TypeError: If videos_data is not a list of dictionaries
+        ValueError: If videos not found or verification fails
+    """
+    if not isinstance(videos_data, list):
+        raise TypeError("videos_data must be a list[dict]")
+
+    # Verify all videos with ThreadPoolExecutor
+    missing = []
+    errors = []
+    
+    with tqdm(total=len(videos_data), desc="Verifying videos for update", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_video_update, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "not found":
+                        missing.append(video_uid)
+                    else:
+                        errors.append(f"{video_uid}: {error_msg}")
+                pbar.update(1)
 
     if missing:
-        msg = (
-            f"[ABORT] {len(missing)} videos are not present in the database.\n"
-            f"First 10 missing: {missing[:10]}"
-        )
-        raise ValueError(msg)
+        raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+    
+    if errors:
+        raise ValueError("Update aborted – verification errors: " + "; ".join(errors))
 
-# ──────────────────────────────────────────────────────────────────────
-# 1. Collect UIDs and verify they exist as we go
-# ──────────────────────────────────────────────────────────────────────
-def _collect_existing_uids(ndjson_path: str | Path, session: Session) -> List[str]:
-    """
-    Read the NDJSON and return a list of unique video_uids that already
-    exist in the DB.  If *any* uid is missing we raise immediately.
-    """
-    ndjson_path = Path(ndjson_path)
-    existing: Set[str] = set()
+    # Update videos with ThreadPoolExecutor
+    updated_count = 0
+    skipped_count = 0
+    
+    with tqdm(total=len(videos_data), desc="Updating videos", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_update_single_video, v): v for v in videos_data}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, success, error_msg = future.result()
+                if not success:
+                    raise ValueError(f"Failed to update video {video_uid}: {error_msg}")
+                
+                if error_msg == "No changes needed":
+                    skipped_count += 1
+                else:
+                    updated_count += 1
+                
+                pbar.set_postfix(uid=video_uid[:20] + "..." if len(video_uid) > 20 else video_uid)
+                pbar.update(1)
 
-    with ndjson_path.open("r", encoding="utf-8") as fh:
-        for line_no, raw in enumerate(fh, 1):
-            blob = json.loads(raw)
-            try:
-                uid = blob["data_row"]["external_id"]
-            except KeyError:
-                raise ValueError(f"line {line_no}: missing data_row.external_id")
+    print(f"✔ Updated {updated_count} video(s), skipped {skipped_count} video(s) (no changes)")
 
-            # ----- existence check -------------------------------------
-            if not VideoService.get_video_by_uid(uid, session):
-                raise ValueError(
-                    f"[ABORT] Video '{uid}' (line {line_no}) does not exist in DB"
-                )
+# --------------------------------------------------------------------------- #
+# Orchestrator                                                                #
+# --------------------------------------------------------------------------- #
 
-            existing.add(uid)
-
-    return sorted(existing)
-
-# ──────────────────────────────────────────────────────────────────────
-# 3. Create projects from extracted annotations JSON
-# ──────────────────────────────────────────────────────────────────────
-def create_projects(
-    projects_path: str = None,
-    projects_data: list[dict] = None,
+def sync_videos(
+    *, videos_path: str | Path | None = None, videos_data: List[Dict] | None = None
 ) -> None:
+    """Load, validate, and route videos to add/update pipelines automatically.
+    
+    Args:
+        videos_path: Path to JSON file containing video list
+        videos_data: Pre-loaded list of video dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If videos_data is not a list of dictionaries
+        
+    Note:
+        Exactly one of videos_path or videos_data must be provided.
+        Each video dict requires: url, video_uid, metadata, is_active.
+    """
 
-    if projects_path is None and projects_data is None:
-        raise ValueError("At least one parameter must be provided: projects_path or projects_data")
+    if videos_path is None and videos_data is None:
+        raise ValueError("Provide either videos_path or videos_data")
+
+    # Load JSON if a path is provided
+    if videos_path:
+        print(f"📂 Loading videos from {videos_path}")
+        with open(videos_path, "r") as f:
+            videos_data = json.load(f)
+
+    if not isinstance(videos_data, list):
+        raise TypeError("videos_data must be a list[dict]")
+
+    print(f"\n🚀 Starting video sync pipeline with {len(videos_data)} videos...")
+
+    # Validate & enrich each record with progress bar
+    processed: List[Dict] = []
+    with tqdm(total=len(videos_data), desc="Validating video data", unit="video") as pbar:
+        for idx, item in enumerate(videos_data, 1):
+            required = {"url", "video_uid", "metadata", "is_active"}
+            if missing := required - set(item.keys()):
+                raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+
+            # optional active → archived conversion
+            if "is_active" in item:
+                item["is_archived"] = not item.pop("is_active")
+
+            processed.append(item)
+            pbar.update(1)
+
+    # Decide add vs update with a single read-only look‑up
+    print("\n📊 Categorizing videos...")
     
-    if projects_path is not None:
-        with open(projects_path, 'r') as f:
-            projects_data = json.load(f)
-    
-    with SessionLocal() as session:
-        for project_data in projects_data:
-            # Check schema existence
+    def _check_video_exists(video_data: Dict) -> Tuple[str, bool]:
+        """Check if a video exists in a thread-safe manner."""
+        with SessionLocal() as sess:
             try:
-                schema_id = SchemaService.get_schema_id_by_name(project_data.get('schema_name', None), session)
-            except ValueError as e:
-                if "not found" in str(e):
-                    raise ValueError(f"Schema {project_data.get('schema_name', None)} not found! Please create the schema first!")
-                else:
-                    raise e
-            # Check all videos exist
-            missing_videos = []
-            video_uids_list = project_data.get('videos', None)
-            project_name = project_data.get('project_name', None)
-            for uid in video_uids_list:
-                if not VideoService.get_video_by_uid(uid, session):
-                    missing_videos.append(uid)
-            if missing_videos:
-                raise ValueError(f"[WARNING] Project '{project_name}' has missing videos: {missing_videos}")
-                continue
-            video_ids = ProjectService.get_video_ids_by_uids(video_uids_list, session)
-            # Check if project already exists
-            try:
-                project = ProjectService.get_project_by_name(project_data.get('project_name', None), session)
-                print(f"Project {project.name} already exists")
+                existing = VideoService.get_video_by_uid(video_data["video_uid"], sess)
+                return video_data["video_uid"], existing is not None
             except Exception as e:
-                if ("not found" in str(e)):
-                    ProjectService.create_project(name = project_name, description = project_data.get('description', None), schema_id = schema_id, video_ids = video_ids, session = session)
-                else:
-                    raise ValueError(f"Error creating project {project_name}: {e}")
-
-def bulk_assign_users(assignment_path: str = None, assignments_data: list[dict] = None):
-    """
-    Bulk assign users to projects using only service functions.
-    """
-    if assignment_path is None and assignments_data is None:
-        raise ValueError("At least one parameter must be provided: assignment_path or assignments_data")
+                # If there's an error checking, assume it doesn't exist
+                return video_data["video_uid"], False
     
-    if assignment_path is not None:
+    to_add, to_update = [], []
+    with tqdm(total=len(processed), desc="Checking existing videos", unit="video") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(_check_video_exists, v): v for v in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                video_uid, exists = future.result()
+                video_data = futures[future]
+                if exists:
+                    to_update.append(video_data)
+                else:
+                    to_add.append(video_data)
+                pbar.update(1)
+    
+    print(f"\n📈 Summary: {len(to_add)} videos to add, {len(to_update)} videos to update")
+    
+    if to_add:
+        print(f"\n➕ Adding {len(to_add)} new videos...")
+        add_videos(to_add)
+        
+    if to_update:
+        print(f"\n🔄 Updating {len(to_update)} existing videos...")
+        update_videos(to_update)
+        
+    print("\n🎉 Video pipeline complete!")
+
+
+# --------------------------------------------------------------------------- #
+# Core operations                                                             #
+# --------------------------------------------------------------------------- #
+
+def add_users(users_data: List[Dict]) -> None:
+    """Insert users that are not yet in database with verification.
+    
+    Args:
+        users_data: List of user dictionaries with user_id, email, password, user_type
+        
+    Raises:
+        TypeError: If users_data is not a list of dictionaries
+        ValueError: If users already exist or verification fails
+    """
+    if not isinstance(users_data, list):
+        raise TypeError("users_data must be a list[dict]")
+
+    with SessionLocal() as sess:
+        duplicates = []
+        for u in users_data:
+            try:
+                AuthService.verify_create_user(
+                    user_id=u.get("user_id"),
+                    email=u.get("email"),
+                    password_hash=u.get("password"),
+                    user_type=u.get("user_type", "human"),
+                    session=sess,
+                )
+            except ValueError as err:
+                if "already exists" in str(err):
+                    duplicates.append(u.get("user_id") or u.get("email"))
+                else:
+                    raise
+
+        if duplicates:
+            raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+
+        for u in users_data:
+            AuthService.create_user(
+                user_id=u.get("user_id"),
+                email=u.get("email"),
+                password_hash=u.get("password"),
+                user_type=u.get("user_type", "human"),
+                is_archived=u.get("is_archived", False),
+                session=sess,
+            )
+        sess.commit()
+        print(f"✔ Added {len(users_data)} new user(s)")
+
+
+def update_users(users_data: List[Dict]) -> None:
+    """Update users that must exist in database with change detection.
+    
+    Args:
+        users_data: List of user dictionaries with user_id/email and optional updates
+        
+    Raises:
+        TypeError: If users_data is not a list of dictionaries
+        ValueError: If users not found
+        RuntimeError: If update operation fails
+    """
+    if not isinstance(users_data, list):
+        raise TypeError("users_data must be a list[dict]")
+
+    # Process users in single session to avoid connection exhaustion
+    validated_entries = []
+    skipped_entries = []
+    
+    print("🔍 Validating and updating users...")
+    with SessionLocal() as session:
+        try:
+            # Validation phase with progress bar
+            for idx, user in enumerate(tqdm(users_data, desc="Validating", unit="users"), 1):
+                try:
+                    # Get existing user
+                    user_rec = None
+                    if user.get("user_id"):
+                        try:
+                            user_rec = AuthService.get_user_by_id(user["user_id"], session)
+                        except ValueError:
+                            pass
+                    
+                    if not user_rec and user.get("email"):
+                        try:
+                            user_rec = AuthService.get_user_by_email(user["email"], session)
+                        except ValueError:
+                            pass
+                    
+                    if not user_rec:
+                        raise ValueError(f"User not found: {user.get('user_id') or user.get('email')}")
+                    
+                    # Check if any information has changed
+                    needs_update = False
+                    changes = []
+                    
+                    # Check email
+                    if "email" in user and user["email"] != user_rec.email:
+                        needs_update = True
+                        changes.append("email")
+                    
+                    # Check password (we can't compare hashes, so we'll update if provided)
+                    if "password" in user:
+                        needs_update = True
+                        changes.append("password")
+                    
+                    # Check user_type
+                    if "user_type" in user and user["user_type"] != user_rec.user_type:
+                        needs_update = True
+                        changes.append("user_type")
+                    
+                    # Check user_id
+                    if "user_id" in user and user["user_id"] != user_rec.user_id_str:
+                        needs_update = True
+                        changes.append("user_id")
+                    
+                    # Check archive status
+                    if "is_archived" in user and user["is_archived"] != user_rec.is_archived:
+                        needs_update = True
+                        changes.append("archive_status")
+                    
+                    if not needs_update:
+                        skipped_entries.append({
+                            "user_id": user.get("user_id"),
+                            "email": user.get("email")
+                        })
+                    else:
+                        validated_entries.append({
+                            "user_rec": user_rec,
+                            "user_data": user,
+                            "changes": changes
+                        })
+                        
+                except Exception as e:
+                    raise ValueError(f"[Row {idx}] {user.get('user_id') or user.get('email')}: {e}")
+            
+            print(f"✅ Validation passed: {len(validated_entries)} to update, {len(skipped_entries)} skipped")
+            
+            # Update validated entries in same session with progress bar
+            if validated_entries:
+                print("📤 Updating users...")
+                for entry in tqdm(validated_entries, desc="Updating", unit="users"):
+                    user_rec = entry["user_rec"]
+                    user_data = entry["user_data"]
+                    changes = entry["changes"]
+                    
+                    # Apply only the changes that are needed
+                    if "email" in changes:
+                        AuthService.update_user_email(user_rec.id, user_data["email"], session)
+                    
+                    if "password" in changes:
+                        AuthService.update_user_password(user_rec.id, user_data["password"], session)
+                    
+                    if "user_type" in changes:
+                        AuthService.update_user_role(user_rec.id, user_data["user_type"], session)
+                    
+                    if "user_id" in changes:
+                        AuthService.update_user_id(user_rec.id, user_data["user_id"], session)
+                    
+                    if "archive_status" in changes:
+                        if user_data["is_archived"] != user_rec.is_archived:
+                            AuthService.toggle_user_archived(user_rec.id, session)
+                
+                session.commit()
+                print(f"🎉 Successfully updated {len(validated_entries)} users!")
+                
+        except Exception as e:
+            session.rollback()
+            raise RuntimeError(f"Update failed: {e}")
+
+# --------------------------------------------------------------------------- #
+# Orchestrator                                                                #
+# --------------------------------------------------------------------------- #
+
+def sync_users(
+    *, users_path: str | Path | None = None, users_data: List[Dict] | None = None
+) -> None:
+    """Load, validate, and route users to add/update pipelines automatically.
+    
+    Args:
+        users_path: Path to JSON file containing user list
+        users_data: Pre-loaded list of user dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If users_data is not a list of dictionaries
+        
+    Note:
+        Exactly one of users_path or users_data must be provided.
+        Each user dict requires: user_id, email, password, user_type, is_active.
+    """
+
+    if users_path is None and users_data is None:
+        raise ValueError("Provide either users_path or users_data")
+
+    if users_path:
+        with open(users_path, "r") as f:
+            users_data = json.load(f)
+
+    if not isinstance(users_data, list):
+        raise TypeError("users_data must be a list[dict]")
+
+    # Convert is_active → is_archived and validate required fields
+    processed: List[Dict] = []
+    for idx, user in enumerate(users_data, 1):
+        required = {"user_id", "email", "password", "user_type", "is_active"}
+        if missing := required - set(user.keys()):
+            raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+        if "is_active" in user:
+            user["is_archived"] = not user.pop("is_active")
+        processed.append(user)
+
+    # Separate users into add/update lists with proper error handling
+    to_add, to_update = [], []
+    
+    with SessionLocal() as sess:
+        for u in processed:
+            user_exists = False
+            
+            # Check if user exists by user_id first
+            if u.get("user_id"):
+                try:
+                    existing_user = AuthService.get_user_by_id(u["user_id"], sess)
+                    if existing_user:
+                        user_exists = True
+                except (ValueError, Exception) as e:
+                    # If error contains "not found", user doesn't exist
+                    if "not found" in str(e).lower():
+                        user_exists = False
+                    else:
+                        # Re-raise unexpected errors
+                        raise
+            
+            # If not found by user_id, check by email
+            if not user_exists and u.get("email"):
+                try:
+                    existing_user = AuthService.get_user_by_email(u["email"], sess)
+                    if existing_user:
+                        user_exists = True
+                except (ValueError, Exception) as e:
+                    # If error contains "not found", user doesn't exist
+                    if "not found" in str(e).lower():
+                        user_exists = False
+                    else:
+                        # Re-raise unexpected errors
+                        raise
+            
+            # Add to appropriate list based on existence
+            if user_exists:
+                to_update.append(u)
+            else:
+                to_add.append(u)
+
+    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+    
+    if to_add:
+        add_users(to_add)
+    if to_update:
+        update_users(to_update)
+    
+    print("🎉 User pipeline complete")
+
+
+# --------------------------------------------------------------------------- #
+# Core operations                                                             #
+# --------------------------------------------------------------------------- #
+
+
+def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], List[str]]:
+    """Create new question groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with question group data
+        
+    Returns:
+        Tuple of (created_groups, questions_created) with group info and new question texts
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups already exist or verification fails
+    """
+    if not isinstance(groups, list):
+        raise TypeError("groups must be list[(filename, dict)]")
+
+    created: List[Dict] = []
+    questions_created: List[str] = []
+
+    with SessionLocal() as sess:
+        # ── Phase 0: duplicate title check (cheap, read‑only) ───────────────
+        dup_titles = []
+        for _, g in groups:
+            try:
+                QuestionGroupService.get_group_by_name(g["title"], sess)
+                dup_titles.append(g["title"])
+            except ValueError as err:
+                # Only ignore "not found" errors, re-raise others
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist, which is what we want for adding
+        
+        if dup_titles:
+            raise ValueError("Add aborted – already in DB: " + ", ".join(dup_titles))
+
+        # ── Phase 1: prepare each group (create missing questions) ──────────
+        prepared: List[Tuple[Dict, List[int]]] = []  # (group_data, question_ids)
+        for _, g in groups:
+            q_ids: List[int] = []
+            for q in g["questions"]:
+                try:
+                    q_rec = QuestionService.get_question_by_text(q["text"], sess)
+                    q_ids.append(q_rec["id"])
+                except ValueError:
+                    # Question doesn't exist, create it
+                    q_rec = QuestionService.add_question(
+                        text=q["text"],
+                        qtype=q["qtype"],
+                        options=q.get("options"),
+                        default=q.get("default_option"),
+                        display_values=q.get("display_values"),
+                        display_text=q.get("display_text"),
+                        option_weights=q.get("option_weights"),
+                        session=sess,
+                    )
+                    questions_created.append(q["text"])
+                    q_ids.append(q_rec.id)
+            prepared.append((g, q_ids))
+
+        # ── Phase 2: verify ALL groups before any create_group ──────────────
+        for g, q_ids in prepared:
+            QuestionGroupService.verify_create_group(
+                title=g["title"],
+                display_title=g.get("display_title", g["title"]),
+                description=g["description"],
+                is_reusable=g.get("is_reusable", True),
+                question_ids=q_ids,
+                verification_function=g.get("verification_function"),
+                is_auto_submit=g.get("is_auto_submit", False),
+                session=sess,
+            )
+
+        # ── Phase 3: all verifications passed – perform creations ───────────
+        for g, q_ids in prepared:
+            grp = QuestionGroupService.create_group(
+                title=g["title"],
+                display_title=g.get("display_title", g["title"]),
+                description=g["description"],
+                is_reusable=g.get("is_reusable", True),
+                question_ids=q_ids,
+                verification_function=g.get("verification_function"),
+                is_auto_submit=g.get("is_auto_submit", False),
+                session=sess,
+            )
+            if g.get("is_archived", False):
+                QuestionGroupService.archive_group(grp.id, sess)
+            created.append({"title": g["title"], "id": grp.id})
+
+        sess.commit()
+    return created, list(set(questions_created))
+
+
+def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
+    """Update existing question groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with question group data
+        
+    Returns:
+        List of updated group information with changes made
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups not found or verification fails
+    """
+    if not isinstance(groups, list):
+        raise TypeError("groups must be list[(filename, dict)]")
+
+    updated: List[Dict] = []
+    skipped: List[Dict] = []
+    
+    with SessionLocal() as sess:
+        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
+        missing = []
+        for _, g in groups:
+            try:
+                QuestionGroupService.get_group_by_name(g["title"], sess)
+            except ValueError as err:
+                # Only treat "not found" as missing, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist
+                missing.append(g["title"])
+        
+        if missing:
+            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+
+        # ── Phase 1: prepare each group and validate question sets ──────────
+        prepared: List[Tuple[Dict, List[int], object]] = []  # (group_data, question_ids, group_record)
+        missing_questions = []
+        question_set_errors = []
+        duplicate_errors = []
+        
+        for _, g in groups:
+            grp = QuestionGroupService.get_group_by_name(g["title"], sess)
+            q_ids: List[int] = []
+            question_texts: List[str] = []
+            
+            # Get question IDs from the group data - all questions must exist
+            for q in g.get("questions", []):
+                try:
+                    q_rec = QuestionService.get_question_by_text(q["text"], sess)
+                    q_ids.append(q_rec["id"])
+                    question_texts.append(q["text"])
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Question doesn't exist - collect for error reporting
+                    missing_questions.append(q["text"])
+            
+            # Check for duplicates in new question list
+            if len(q_ids) != len(set(q_ids)):
+                # Find which questions are duplicated
+                from collections import Counter
+                question_counter = Counter(question_texts)
+                duplicates = [text for text, count in question_counter.items() if count > 1]
+                duplicate_errors.append(f"Group '{g['title']}': Duplicate questions found: {', '.join(duplicates)}")
+            
+            # Check if question set has changed (before any database modifications)
+            current_question_ids = set(QuestionGroupService.get_question_order(grp.id, sess))
+            new_question_ids = set(q_ids)
+            
+            if current_question_ids != new_question_ids:
+                missing_questions_in_set = current_question_ids - new_question_ids
+                extra_questions_in_set = new_question_ids - current_question_ids
+                question_set_errors.append(
+                    f"Group '{g['title']}': Question set must remain the same. "
+                    f"Missing questions: {missing_questions_in_set}. "
+                    f"Extra questions: {extra_questions_in_set}"
+                )
+            
+            prepared.append((g, q_ids, grp))
+        
+        # Check for any missing questions and abort if found
+        if missing_questions:
+            raise ValueError("Update aborted – questions not found in DB: " + ", ".join(missing_questions))
+        
+        # Check for duplicates and abort if found
+        if duplicate_errors:
+            raise ValueError("Update aborted – duplicate questions: " + "; ".join(duplicate_errors))
+        
+        # Check for question set changes and abort if found
+        if question_set_errors:
+            raise ValueError("Update aborted – question sets changed: " + "; ".join(question_set_errors))
+
+        # ── Phase 2: check for differences and skip if no changes ───────────
+        to_update = []
+        for g, q_ids, grp in prepared:
+            needs_update = False
+            changes = []
+            
+            # Check display title
+            new_display_title = g.get("display_title", g["title"])
+            if new_display_title != grp.display_title:
+                needs_update = True
+                changes.append("display_title")
+            
+            # Check description
+            if g["description"] != grp.description:
+                needs_update = True
+                changes.append("description")
+            
+            # Check is_reusable
+            new_is_reusable = g.get("is_reusable", True)
+            if new_is_reusable != grp.is_reusable:
+                needs_update = True
+                changes.append("is_reusable")
+            
+            # Check verification_function
+            new_verification_function = g.get("verification_function")
+            if new_verification_function != grp.verification_function:
+                needs_update = True
+                changes.append("verification_function")
+            
+            # Check is_auto_submit
+            new_is_auto_submit = g.get("is_auto_submit", False)
+            if new_is_auto_submit != grp.is_auto_submit:
+                needs_update = True
+                changes.append("is_auto_submit")
+            
+            # Check question order
+            current_order = QuestionGroupService.get_question_order(grp.id, sess)
+            if current_order != q_ids:
+                needs_update = True
+                changes.append("question_order")
+            
+            # Check archive status
+            if "is_archived" in g and g["is_archived"] != grp.is_archived:
+                needs_update = True
+                changes.append("archive_status")
+            
+            if needs_update:
+                to_update.append((g, q_ids, grp, changes))
+            else:
+                skipped.append({"title": g["title"], "id": grp.id})
+
+        # ── Phase 3: verify ALL edits first ─────────────────────────────────
+        for g, q_ids, grp, changes in to_update:
+            QuestionGroupService.verify_edit_group(
+                group_id=grp.id,
+                new_display_title=g.get("display_title", g["title"]),
+                new_description=g["description"],
+                is_reusable=g.get("is_reusable", True),
+                verification_function=g.get("verification_function"),
+                is_auto_submit=g.get("is_auto_submit", False),
+                session=sess,
+            )
+
+        # ── Phase 4: apply edits after all verifications passed ─────────────
+        for g, q_ids, grp, changes in to_update:
+            QuestionGroupService.edit_group(
+                group_id=grp.id,
+                new_display_title=g.get("display_title", g["title"]),
+                new_description=g["description"],
+                is_reusable=g.get("is_reusable", True),
+                verification_function=g.get("verification_function"),
+                is_auto_submit=g.get("is_auto_submit", False),
+                session=sess,
+            )
+            
+            # Handle question order updates
+            if "question_order" in changes:
+                QuestionGroupService.update_question_order(grp.id, q_ids, sess)
+            
+            # Handle archiving/unarchiving
+            if "archive_status" in changes:
+                if g["is_archived"]:
+                    QuestionGroupService.archive_group(grp.id, sess)
+                else:
+                    QuestionGroupService.unarchive_group(grp.id, sess)
+            
+            updated.append({"title": g["title"], "id": grp.id, "changes": changes})
+
+        sess.commit()
+    
+    # Print summary
+    if skipped:
+        print(f"⏭️  Skipped {len(skipped)} group(s) (no changes needed)")
+    
+    if updated:
+        print(f"✅ Updated {len(updated)} group(s)")
+        for item in updated:
+            print(f"   • {item['title']}: {', '.join(item['changes'])}")
+    
+    return updated
+
+# --------------------------------------------------------------------------- #
+# Orchestrator                                                                #
+# --------------------------------------------------------------------------- #
+
+def sync_question_groups(
+    question_groups_folder: str = None, 
+    question_groups_data: List[Dict] = None) -> None:
+    """Load, validate, and route question groups to add/update pipelines.
+    
+    Args:
+        question_groups_folder: Path to folder containing JSON group files
+        question_groups_data: Pre-loaded list of question group dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If question_groups_data is not a list of dictionaries
+        
+    Note:
+        Exactly one parameter must be provided.
+        Each group dict requires: title, description, questions, is_active.
+    """
+
+    if question_groups_folder and question_groups_data:
+        raise ValueError("Only one of question_groups_folder or question_groups_data can be provided")
+    
+    # Validate input parameters
+    if question_groups_folder is None and question_groups_data is None:
+        raise ValueError("Either question_groups_folder or question_groups_data must be provided")
+    
+    # 1️⃣ Load & JSON-level validation
+    loaded: List[Tuple[str, Dict]] = []
+    
+    if question_groups_folder is not None:
+        # Load from folder
+        folder = Path(question_groups_folder)
+        if not folder.exists() or not folder.is_dir():
+            raise ValueError(f"Invalid folder: {question_groups_folder}")
+
+        json_paths = list(folder.glob("*.json"))
+        if not json_paths:
+            raise ValueError(f"No JSON files in {question_groups_folder}")
+
+        for pth in json_paths:
+            with open(pth, "r") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                raise ValueError(f"{pth.name}: file must contain a JSON object")
+            
+            # Validate required fields
+            for fld in ("title", "description", "questions", "is_active"):
+                if fld not in data:
+                    raise ValueError(f"{pth.name}: missing required field '{fld}'")
+            
+            # Set defaults and normalize
+            data.setdefault("display_title", data["title"])
+            if "is_active" in data:
+                data["is_archived"] = not data.pop("is_active")
+            
+            if not isinstance(data["questions"], list):
+                raise ValueError(f"{pth.name}: 'questions' must be a list")
+            
+            loaded.append((pth.name, data))
+    
+    else:
+        # Load from data list
+        if not isinstance(question_groups_data, list):
+            raise TypeError("question_groups_data must be a list of dictionaries")
+        
+        for idx, data in enumerate(question_groups_data, 1):
+            if not isinstance(data, dict):
+                raise ValueError(f"Item #{idx}: must be a dictionary")
+            
+            # Create a copy to avoid modifying original data
+            data_copy = data.copy()
+            
+            # Validate required fields
+            for fld in ("title", "description", "questions", "is_active"):
+                if fld not in data_copy:
+                    raise ValueError(f"Item #{idx}: missing required field '{fld}'")
+            
+            # Set defaults and normalize
+            data_copy.setdefault("display_title", data_copy["title"])
+            if "is_active" in data_copy:
+                data_copy["is_archived"] = not data_copy.pop("is_active")
+            
+            if not isinstance(data_copy["questions"], list):
+                raise ValueError(f"Item #{idx}: 'questions' must be a list")
+            
+            # Use index as filename for data items
+            loaded.append((f"data_item_{idx}", data_copy))
+
+    print(f"✅ JSON validation passed for {len(loaded)} items")
+
+    # 2️⃣ Classify add vs update with one read-only session
+    to_add, to_update = [], []
+    with SessionLocal() as sess:
+        for fn, g in loaded:
+            group_exists = False
+            try:
+                QuestionGroupService.get_group_by_name(g["title"], sess)
+                group_exists = True
+            except ValueError as err:
+                # Only treat "not found" as non-existence, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist
+                group_exists = False
+            
+            if group_exists:
+                to_update.append((fn, g))
+            else:
+                to_add.append((fn, g))
+
+    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+
+    # 3️⃣ Execute operations
+    created, questions_created = [], []
+    updated = []
+    
+    if to_add:
+        c, qc = add_question_groups(to_add)
+        created.extend(c)
+        questions_created.extend(qc)
+    
+    if to_update:
+        updated.extend(update_question_groups(to_update))
+
+    print("🎉 Question-group pipeline complete")
+    print(f"   • Groups created: {len(created)}")
+    print(f"   • Groups updated: {len(updated)}")
+    print(f"   • New questions:  {len(questions_created)}")
+
+# --------------------------------------------------------------------------- #
+# Core operations                                                             #
+# --------------------------------------------------------------------------- #
+
+
+def add_schemas(schemas: List[Dict]) -> List[Dict]:
+    """Create new schemas with full verification and atomic transaction.
+    
+    Args:
+        schemas: List of schema dictionaries with schema_name, question_group_names
+        
+    Returns:
+        List of created schema information
+        
+    Raises:
+        TypeError: If schemas is not a list of dictionaries
+        ValueError: If schemas already exist or verification fails
+    """
+    if not isinstance(schemas, list):
+        raise TypeError("schemas must be list[dict]")
+
+    created: List[Dict] = []
+
+    with SessionLocal() as sess:
+        # ── Phase 0: duplicate name check (cheap, read‑only) ───────────────
+        dup_names = []
+        for s in schemas:
+            try:
+                SchemaService.get_schema_by_name(s["schema_name"], sess)
+                dup_names.append(s["schema_name"])
+            except ValueError as err:
+                # Only ignore "not found" errors, re-raise others
+                if "not found" not in str(err).lower():
+                    raise
+                # Schema doesn't exist, which is what we want for adding
+        
+        if dup_names:
+            raise ValueError("Add aborted – already in DB: " + ", ".join(dup_names))
+
+        # ── Phase 1: resolve group names → ids & run verify_create_schema ────
+        prepared: List[Tuple[Dict, List[int]]] = []
+        for s in schemas:
+            group_ids: List[int] = []
+            for gname in s["question_group_names"]:
+                group = QuestionGroupService.get_group_by_name(gname, sess)
+                group_ids.append(group.id)
+
+            SchemaService.verify_create_schema(
+                name=s["schema_name"],
+                question_group_ids=group_ids,
+                instructions_url=s.get("instructions_url"),
+                has_custom_display=s.get("has_custom_display", False),
+                session=sess,
+            )
+            prepared.append((s, group_ids))
+
+        # ── Phase 2: create after all verifications passed ──────────────────
+        for s, group_ids in prepared:
+            sch = SchemaService.create_schema(
+                name=s["schema_name"],
+                question_group_ids=group_ids,
+                instructions_url=s.get("instructions_url"),
+                has_custom_display=s.get("has_custom_display", False),
+                session=sess,
+            )
+            if s.get("is_archived", False):
+                SchemaService.archive_schema(sch.id, sess)
+            created.append({"name": s["schema_name"], "id": sch.id})
+
+        sess.commit()
+    return created
+
+
+def update_schemas(schemas: List[Dict]) -> List[Dict]:
+    """Update existing schemas with full verification and atomic transaction.
+    
+    Args:
+        schemas: List of schema dictionaries with schema_name and updates
+        
+    Returns:
+        List of updated schema information with changes made
+        
+    Raises:
+        TypeError: If schemas is not a list of dictionaries
+        ValueError: If schemas not found or verification fails
+    """
+    if not isinstance(schemas, list):
+        raise TypeError("schemas must be list[dict]")
+
+    updated: List[Dict] = []
+    skipped: List[Dict] = []
+    
+    with SessionLocal() as sess:
+        # ── Phase 0: existence check ───────────────────────────────────────
+        missing = []
+        for s in schemas:
+            try:
+                SchemaService.get_schema_by_name(s["schema_name"], sess)
+            except ValueError as err:
+                # Only treat "not found" as missing, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Schema doesn't exist
+                missing.append(s["schema_name"])
+        
+        if missing:
+            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+
+        # ── Phase 1: prepare each schema and validate question group sets ───
+        prepared: List[Tuple[Dict, List[int], object]] = []  # (schema_data, group_ids, schema_record)
+        missing_groups = []
+        question_group_set_errors = []
+        
+        for s in schemas:
+            sch = SchemaService.get_schema_by_name(s["schema_name"], sess)
+            group_ids: List[int] = []
+            
+        # Get question group IDs from the schema data using question_group_names
+        if "question_group_names" in s and s["question_group_names"]:
+            for gname in s["question_group_names"]:
+                try:
+                    group_rec = QuestionGroupService.get_group_by_name(gname, sess)
+                    group_ids.append(group_rec.id)
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Question group doesn't exist
+                    missing_groups.append(gname)
+            
+            # Check if question group set has changed (before any database modifications)
+            current_group_ids = set(SchemaService.get_question_group_order(sch.id, sess))
+            new_group_ids = set(group_ids)
+            
+            if current_group_ids != new_group_ids:
+                missing_groups_in_set = current_group_ids - new_group_ids
+                extra_groups_in_set = new_group_ids - current_group_ids
+                question_group_set_errors.append(
+                    f"Schema '{s['schema_name']}': Question group set must remain the same. "
+                    f"Missing groups: {missing_groups_in_set}. "
+                    f"Extra groups: {extra_groups_in_set}"
+                )
+            
+            prepared.append((s, group_ids, sch))
+        
+        # Check for any missing question groups and abort if found
+        if missing_groups:
+            raise ValueError("Update aborted – question groups not found in DB: " + ", ".join(missing_groups))
+        
+        # Check for question group set changes and abort if found
+        if question_group_set_errors:
+            raise ValueError("Update aborted – question group sets changed: " + "; ".join(question_group_set_errors))
+
+        # ── Phase 2: check for differences and skip if no changes ───────────
+        to_update = []
+        for s, group_ids, sch in prepared:
+            needs_update = False
+            changes = []
+            
+            # Check name
+            if s.get("schema_name") != sch.name:
+                needs_update = True
+                changes.append("name")
+            
+            # Check instructions_url
+            new_instructions_url = s.get("instructions_url")
+            if new_instructions_url != sch.instructions_url:
+                needs_update = True
+                changes.append("instructions_url")
+            
+            # Check has_custom_display
+            new_has_custom_display = s.get("has_custom_display", False)
+            if new_has_custom_display != sch.has_custom_display:
+                needs_update = True
+                changes.append("has_custom_display")
+            
+            # Check is_archived
+            if "is_archived" in s and s["is_archived"] != sch.is_archived:
+                needs_update = True
+                changes.append("archive_status")
+            
+            # Check question group order
+            current_order = SchemaService.get_question_group_order(sch.id, sess)
+            if current_order != group_ids:
+                needs_update = True
+                changes.append("question_group_order")
+            
+            if needs_update:
+                to_update.append((s, group_ids, sch, changes))
+            else:
+                skipped.append({"name": s["schema_name"], "id": sch.id})
+
+        # ── Phase 3: verify ALL edits first ─────────────────────────────────
+        for s, group_ids, sch, changes in to_update:
+            SchemaService.verify_edit_schema(
+                schema_id=sch.id,
+                name=s.get("schema_name"),
+                instructions_url=s.get("instructions_url"),
+                has_custom_display=s.get("has_custom_display"),
+                is_archived=s.get("is_archived"),
+                session=sess,
+            )
+
+        # ── Phase 4: apply edits after all verifications passed ─────────────
+        for s, group_ids, sch, changes in to_update:
+            SchemaService.edit_schema(
+                schema_id=sch.id,
+                name=s.get("schema_name"),
+                instructions_url=s.get("instructions_url"),
+                has_custom_display=s.get("has_custom_display"),
+                is_archived=s.get("is_archived"),
+                session=sess,
+            )
+            
+            # Handle question group order updates
+            if "question_group_order" in changes:
+                SchemaService.update_question_group_order(sch.id, group_ids, sess)
+            
+            # Handle archiving/unarchiving
+            if "archive_status" in changes:
+                if s["is_archived"]:
+                    SchemaService.archive_schema(sch.id, sess)
+                else:
+                    SchemaService.unarchive_schema(sch.id, sess)
+            
+            updated.append({"name": s["schema_name"], "id": sch.id, "changes": changes})
+
+        sess.commit()
+    
+    # Print summary
+    if skipped:
+        print(f"⏭️  Skipped {len(skipped)} schema(s) (no changes needed)")
+    
+    if updated:
+        print(f"✅ Updated {len(updated)} schema(s)")
+        for item in updated:
+            print(f"   • {item['name']}: {', '.join(item['changes'])}")
+    
+    return updated
+
+# --------------------------------------------------------------------------- #
+# Orchestrator                                                                #
+# --------------------------------------------------------------------------- #
+
+def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[Dict] | None = None) -> None:
+    """Load, validate, and route schemas to add/update pipelines automatically.
+    
+    Args:
+        schemas_path: Path to JSON file containing schema list
+        schemas_data: Pre-loaded list of schema dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If schemas_data is not a list of dictionaries
+        
+    Note:
+        Exactly one parameter must be provided.
+        Each schema dict requires: schema_name, question_group_names, instructions_url, has_custom_display, is_active.
+    """
+
+    if schemas_path and schemas_data:
+        raise ValueError("Only one of schemas_path or schemas_data can be provided")
+
+    if schemas_path is None and schemas_data is None:
+        raise ValueError("Provide either schemas_path or schemas_data")
+
+    # Load JSON if path provided
+    if schemas_path:
+        with open(schemas_path, "r") as f:
+            schemas_data = json.load(f)
+
+    if not isinstance(schemas_data, list):
+        raise TypeError("schemas_data must be list[dict]")
+
+    processed: List[Dict] = []
+    for idx, s in enumerate(schemas_data, 1):
+        required = {"schema_name", "question_group_names", "instructions_url", "has_custom_display", "is_active"}
+        if missing := required - set(s.keys()):
+            raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+        if not isinstance(s["question_group_names"], list):
+            raise ValueError(f"Entry #{idx}: 'question_group_names' must be list")
+        if "is_active" in s:
+            s["is_archived"] = not s.pop("is_active")
+        processed.append(s)
+
+    # Decide add vs update ---------------------------------------------------
+    to_add, to_update = [], []
+    with SessionLocal() as sess:
+        for s in processed:
+            schema_exists = False
+            try:
+                SchemaService.get_schema_by_name(s["schema_name"], sess)
+                schema_exists = True
+            except ValueError as err:
+                # Only treat "not found" as non-existence, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Schema doesn't exist
+                schema_exists = False
+            
+            if schema_exists:
+                to_update.append(s)
+            else:
+                to_add.append(s)
+
+    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+
+    created, updated = [], []
+    if to_add:
+        created.extend(add_schemas(to_add))
+    if to_update:
+        updated.extend(update_schemas(to_update))
+
+    print("🎉 Schema pipeline complete")
+    print(f"   • Schemas created: {len(created)}")
+    print(f"   • Schemas updated: {len(updated)}")
+
+
+
+# --------------------------------------------------------------------------- #
+# Helper utilities                                                             #
+# --------------------------------------------------------------------------- #
+
+def _normalize_video_data(videos: list[Any]) -> Dict[str, List[Dict]]:
+    """Convert video list formats into normalized dictionary structure.
+    
+    Args:
+        videos: List of video UIDs (strings) or video dictionaries with questions
+        
+    Returns:
+        Dictionary mapping video_uid to list of question configurations
+        
+    Raises:
+        TypeError: If videos is not a list
+        ValueError: If video entries have invalid format
+    """
+    if not isinstance(videos, list):
+        raise TypeError("'videos' must be a list")
+    out: Dict[str, List[Dict]] = {}
+    for item in videos:
+        if isinstance(item, str):
+            out[item] = []
+        elif isinstance(item, dict) and "video_uid" in item:
+            q_cfgs: List[Dict] = []
+            for q in item.get("questions", []):
+                q_cfgs.append(
+                    {
+                        "question_text": q.get("question_text"),
+                        "display_text": q.get("display_text") or q.get("custom_question"),
+                        "option_map": q.get("custom_option") or q.get("option_map"),
+                    }
+                )
+            out[item["video_uid"]] = q_cfgs
+        else:
+            raise ValueError(f"Invalid video entry: {item}")
+    return out
+
+# --------------------------------------------------------------------------- #
+# Custom‑display synchroniser                                                  #
+# --------------------------------------------------------------------------- #
+
+@staticmethod
+def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str, int]:
+    """Synchronize custom displays for project videos with verification.
+    
+    Args:
+        project_id: ID of the project
+        videos: List of video configurations with custom display settings
+        sess: Database session
+        
+    Returns:
+        Dictionary with operation counts (created, updated, removed, skipped)
+        
+    Raises:
+        ValueError: If verification fails for any custom display operation
+    """
+    stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
+
+    # Get project info including schema
+    project = ProjectService.get_project_by_id(project_id, sess)
+    schema_id = project.schema_id
+    
+    # Early exit if schema doesn't support custom displays
+    schema = SchemaService.get_schema_by_id(schema_id, sess)
+    if not schema.has_custom_display:
+        # Count all potential operations as skipped for reporting
+        proj_q = ProjectService.get_project_questions(project_id, sess)
+        proj_v = VideoService.get_project_videos(project_id, sess)
+        stats["skipped"] = len(proj_q) * len(proj_v)
+        return stats
+
+    cfg = _normalize_video_data(videos)
+    
+    # Get project questions and videos using service methods
+    proj_q = {q["id"]: q["text"] for q in ProjectService.get_project_questions(project_id, sess)}
+    proj_v = {v["id"]: v["uid"] for v in VideoService.get_project_videos(project_id, sess)}
+
+    # ── Phase 1: Plan all operations and verify them ──────────────────────
+    operations = []  # List of (operation_type, params) tuples
+    verification_errors = []
+    
+    print("🔍 Planning and verifying custom display operations...")
+    
+    with tqdm(total=len(proj_v) * len(proj_q), desc="Verifying operations", unit="operation") as pbar:
+        for vid_id, uid in proj_v.items():
+            json_q_cfg = {qc["question_text"]: qc for qc in cfg.get(uid, [])}
+
+            for q_id, q_text in proj_q.items():
+                # Get existing custom display
+                db_rec = CustomDisplayService.get_custom_display(q_id, project_id, vid_id, sess)
+                json_cfg = json_q_cfg.get(q_text)
+
+                if db_rec and not json_cfg:
+                    # Plan removal operation
+                    operations.append(("remove", {
+                        "project_id": project_id,
+                        "video_id": vid_id, 
+                        "question_id": q_id,
+                        "video_uid": uid,
+                        "question_text": q_text
+                    }))
+                elif json_cfg:
+                    # Check if we need to update or create
+                    same_text = db_rec and db_rec.get("display_text") == json_cfg["display_text"]
+                    same_map = db_rec and db_rec.get("display_values") == json_cfg["option_map"]
+                    
+                    if db_rec and same_text and same_map:
+                        # Plan skip operation
+                        operations.append(("skip", {
+                            "video_uid": uid,
+                            "question_text": q_text
+                        }))
+                    else:
+                        # Plan create/update operation and verify it
+                        operation_type = "update" if db_rec else "create"
+                        operation_params = {
+                            "project_id": project_id,
+                            "video_id": vid_id,
+                            "question_id": q_id,
+                            "custom_display_text": json_cfg["display_text"],
+                            "custom_option_display_map": json_cfg["option_map"],
+                            "video_uid": uid,
+                            "question_text": q_text
+                        }
+                        
+                        # Verify this operation
+                        try:
+                            CustomDisplayService.verify_set_custom_display(
+                                project_id=project_id,
+                                video_id=vid_id,
+                                question_id=q_id,
+                                custom_display_text=json_cfg["display_text"],
+                                custom_option_display_map=json_cfg["option_map"],
+                                session=sess
+                            )
+                            operations.append((operation_type, operation_params))
+                        except ValueError as e:
+                            verification_errors.append(f"Question '{q_text}' on video '{uid}': {e}")
+                else:
+                    # No operation needed - neither in DB nor JSON
+                    operations.append(("skip", {
+                        "video_uid": uid,
+                        "question_text": q_text
+                    }))
+                
+                pbar.update(1)
+    
+    # Check if any verifications failed
+    if verification_errors:
+        error_summary = f"Custom display verification failed for {len(verification_errors)} operations:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = verification_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(verification_errors) > 5:
+            error_summary += f"\n  ... and {len(verification_errors) - 5} more errors"
+        raise ValueError(error_summary)
+
+    # ── Phase 2: Execute all operations after verification passed ──────────
+    print(f"✅ All verifications passed. Executing {len(operations)} operations...")
+    
+    with tqdm(total=len(operations), desc="Executing operations", unit="operation") as pbar:
+        for operation_type, params in operations:
+            if operation_type == "remove":
+                CustomDisplayService.remove_custom_display(
+                    params["project_id"], 
+                    params["video_id"], 
+                    params["question_id"], 
+                    sess
+                )
+                stats["removed"] += 1
+                
+            elif operation_type in ["create", "update"]:
+                CustomDisplayService.set_custom_display(
+                    project_id=params["project_id"],
+                    video_id=params["video_id"],
+                    question_id=params["question_id"],
+                    custom_display_text=params["custom_display_text"],
+                    custom_option_display_map=params["custom_option_display_map"],
+                    session=sess
+                )
+                stats[operation_type + "d"] += 1
+                
+            elif operation_type == "skip":
+                stats["skipped"] += 1
+            
+            pbar.update(1)
+            pbar.set_postfix(created=stats["created"], updated=stats["updated"], 
+                            removed=stats["removed"], skipped=stats["skipped"])
+                        
+    return stats
+
+# --------------------------------------------------------------------------- #
+# Creation logic                                                               #
+# --------------------------------------------------------------------------- #
+
+def _process_project_validation(project_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Validate single project creation in a thread-safe manner.
+    
+    Args:
+        project_data: Dictionary containing project_name, schema_name, videos
+        
+    Returns:
+        Tuple of (project_name, success, error_message). Error message is None on success.
+    """
+    with SessionLocal() as sess:
+        try:
+            project_name = project_data["project_name"]
+            
+            # Get schema ID
+            schema_id = SchemaService.get_schema_id_by_name(project_data["schema_name"], sess)
+            
+            # Get video IDs
+            video_uids = list(_normalize_video_data(project_data["videos"]).keys())
+            video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
+            description = project_data.get("description", "")
+            
+            # Verify creation parameters
+            ProjectService.verify_create_project(project_name, description, schema_id, video_ids, sess)
+            
+            return project_name, True, None
+        except ValueError as err:
+            if "already exists" in str(err):
+                return project_data["project_name"], False, "already exists"
+            else:
+                return project_data["project_name"], False, str(err)
+        except Exception as e:
+            return project_data["project_name"], False, str(e)
+
+def _create_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
+    """Create single project in a thread-safe manner with custom displays.
+    
+    Args:
+        project_data: Dictionary containing project creation parameters
+        
+    Returns:
+        Tuple of (project_name, success, error_message, result_info)
+    """
+    with SessionLocal() as sess:
+        try:
+            project_name = project_data["project_name"]
+            
+            # Get schema ID
+            schema_id = SchemaService.get_schema_id_by_name(project_data["schema_name"], sess)
+            
+            # Get video IDs
+            video_uids = list(_normalize_video_data(project_data["videos"]).keys())
+            video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
+            description = project_data.get("description", "")
+            
+            # Create the project
+            ProjectService.create_project(
+                name=project_name, 
+                description=description, 
+                schema_id=schema_id, 
+                video_ids=video_ids, 
+                session=sess
+            )
+            
+            # Get the created project by name to get its ID
+            proj = ProjectService.get_project_by_name(project_name, sess)
+            
+            # Handle archive status
+            if project_data.get("is_archived", False):
+                ProjectService.verify_archive_project(proj.id, sess)
+                ProjectService.archive_project(proj.id, sess)
+            
+            if project_data.get("is_active") == True:
+                ProjectService.verify_unarchive_project(proj.id, sess)
+                ProjectService.unarchive_project(proj.id, sess)
+            
+            # Sync custom displays
+            stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
+            
+            result = {
+                "name": proj.name, 
+                "id": proj.id, 
+                **stats
+            }
+            
+            return project_name, True, None, result
+            
+        except Exception as e:
+            return project_data["project_name"], False, str(e), {}
+
+def add_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[Dict]:
+    """Create projects using parallel processing with full verification.
+    
+    Args:
+        projects: List of project dictionaries with project_name, schema_name, videos
+        max_workers: Number of parallel worker threads (default: 20)
+        
+    Returns:
+        List of created project information with custom display stats
+        
+    Raises:
+        TypeError: If projects is not a list of dictionaries
+        ValueError: If projects already exist or verification fails
+    """
+    if not isinstance(projects, list):
+        raise TypeError("projects must be list[dict]")
+
+    # Phase 1: Verify all projects
+    duplicates = []
+    errors = []
+    
+    print("🔍 Verifying project creation parameters...")
+    with tqdm(total=len(projects), desc="Verifying projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_project_validation, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "already exists":
+                        duplicates.append(project_name)
+                    else:
+                        errors.append(f"{project_name}: {error_msg}")
+                pbar.update(1)
+
+    if duplicates:
+        raise ValueError("Add aborted – already in DB: " + ", ".join(duplicates))
+    
+    if errors:
+        raise ValueError("Add aborted – verification errors: " + "; ".join(errors))
+
+    # Phase 2: Create all projects
+    output = []
+    print("📤 Creating projects...")
+    with tqdm(total=len(projects), desc="Creating projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_create_single_project, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg, result = future.result()
+                if not success:
+                    raise ValueError(f"Failed to create project {project_name}: {error_msg}")
+                
+                output.append(result)
+                pbar.set_postfix(name=project_name[:20] + "..." if len(project_name) > 20 else project_name)
+                pbar.update(1)
+                
+    print(f"✔ Added {len(projects)} new project(s)")
+    return output
+
+def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, Optional[str]]:
+    """Validate single project update in a thread-safe manner.
+    
+    Args:
+        project_data: Dictionary containing project update parameters
+        
+    Returns:
+        Tuple of (project_name, success, error_message). Error message is None on success.
+    """
+    with SessionLocal() as sess:
+        try:
+            proj = ProjectService.get_project_by_name(project_data["project_name"], sess)
+            
+            # Handle archive flag
+            desired_archived = project_data["is_archived"]
+            
+            # Verify archive/unarchive operations
+            if desired_archived is not None and desired_archived != proj.is_archived:
+                if desired_archived:
+                    ProjectService.verify_archive_project(proj.id, sess)
+                else:
+                    ProjectService.verify_unarchive_project(proj.id, sess)
+            
+            # Verify description updates if provided
+            if "description" in project_data:
+                ProjectService.verify_update_project_description(proj.id, project_data["description"], sess)
+            
+            return project_data["project_name"], True, None
+            
+        except ValueError as err:
+            if "not found" in str(err).lower():
+                return project_data["project_name"], False, "not found"
+            else:
+                return project_data["project_name"], False, str(err)
+        except Exception as e:
+            return project_data["project_name"], False, str(e)
+
+def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
+    """Update single project in a thread-safe manner with change detection.
+    
+    Args:
+        project_data: Dictionary containing project update parameters
+        
+    Returns:
+        Tuple of (project_name, success, error_message, result_info)
+    """
+    with SessionLocal() as sess:
+        try:
+            project_name = project_data["project_name"]
+            proj = ProjectService.get_project_by_name(project_name, sess)
+            
+            # Check if any information has changed
+            needs_update = False
+            changes = []
+            
+            # Check archive status
+            desired_archived = None
+            if "is_active" in project_data:
+                desired_archived = not project_data["is_active"]
+            elif "is_archived" in project_data:
+                desired_archived = project_data["is_archived"]
+                
+            if desired_archived is not None and desired_archived != proj.is_archived:
+                needs_update = True
+                changes.append("archive_status")
+            
+            # Check description
+            if "description" in project_data and project_data["description"] != proj.description:
+                needs_update = True
+                changes.append("description")
+            
+            # Check if custom displays need updating (only if schema supports it)
+            custom_displays_changed = False
+            if "videos" in project_data:
+                # Check if schema supports custom displays
+                schema = SchemaService.get_schema_by_id(proj.schema_id, sess)
+                if schema.has_custom_display:
+                    # Get current custom displays for comparison
+                    current_custom_displays = CustomDisplayService.get_all_custom_displays_for_project(proj.id, sess)
+                    
+                    # Normalize the new video data for comparison
+                    cfg = _normalize_video_data(project_data["videos"])
+                    proj_q = {q["id"]: q["text"] for q in ProjectService.get_project_questions(proj.id, sess)}
+                    proj_v = {v["id"]: v["uid"] for v in VideoService.get_project_videos(proj.id, sess)}
+                    
+                    # Check if any custom displays have actually changed
+                    for vid_id, uid in proj_v.items():
+                        json_q_cfg = {qc["question_text"]: qc for qc in cfg.get(uid, [])}
+                        
+                        for q_id, q_text in proj_q.items():
+                            db_rec = CustomDisplayService.get_custom_display(q_id, proj.id, vid_id, sess)
+                            json_cfg = json_q_cfg.get(q_text)
+                            
+                            if db_rec and not json_cfg:
+                                # Custom display exists in DB but not in JSON - will be removed
+                                custom_displays_changed = True
+                                break
+                            elif json_cfg:
+                                # Check if content has changed
+                                same_text = db_rec and db_rec.get("display_text") == json_cfg["display_text"]
+                                same_map = db_rec and db_rec.get("display_values") == json_cfg["option_map"]
+                                
+                                if not (db_rec and same_text and same_map):
+                                    custom_displays_changed = True
+                                    break
+                            elif not db_rec and json_cfg:
+                                # New custom display will be created
+                                custom_displays_changed = True
+                                break
+                        
+                        if custom_displays_changed:
+                            break
+            
+            if needs_update or custom_displays_changed:
+                # Apply changes
+                if "archive_status" in changes:
+                    if desired_archived:
+                        ProjectService.archive_project(proj.id, sess)
+                    else:
+                        ProjectService.unarchive_project(proj.id, sess)
+                
+                if "description" in changes:
+                    ProjectService.update_project_description(proj.id, project_data["description"], sess)
+                
+                # Sync custom displays only if schema supports it and there are changes
+                stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
+                if custom_displays_changed:
+                    stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
+                
+                result = {
+                    "name": proj.name, 
+                    "id": proj.id, 
+                    "changes": changes,
+                    **stats
+                }
+                
+                return project_name, True, None, result
+            else:
+                # No changes needed
+                result = {
+                    "name": proj.name, 
+                    "id": proj.id, 
+                    "changes": [],
+                    "created": 0,
+                    "updated": 0,
+                    "removed": 0,
+                    "skipped": 0
+                }
+                
+                return project_name, True, "No changes needed", result
+            
+        except Exception as e:
+            return project_data["project_name"], False, str(e), {}
+
+def update_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[Dict]:
+    """Update projects using parallel processing with full verification.
+    
+    Args:
+        projects: List of project dictionaries with updates
+        max_workers: Number of parallel worker threads (default: 20)
+        
+    Returns:
+        List of updated project information with changes and custom display stats
+        
+    Raises:
+        TypeError: If projects is not a list of dictionaries
+        ValueError: If projects not found or verification fails
+    """
+    if not isinstance(projects, list):
+        raise TypeError("projects must be list[dict]")
+
+    # Phase 1: Verify all project updates
+    missing = []
+    errors = []
+    
+    print("🔍 Verifying project update parameters...")
+    with tqdm(total=len(projects), desc="Verifying project updates", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_project_update_validation, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg = future.result()
+                if not success:
+                    if error_msg == "not found":
+                        missing.append(project_name)
+                    else:
+                        errors.append(f"{project_name}: {error_msg}")
+                pbar.update(1)
+
+    if missing:
+        raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+    
+    if errors:
+        raise ValueError("Update aborted – verification errors: " + "; ".join(errors))
+
+    # Phase 2: Update all projects
+    output = []
+    updated_count = 0
+    skipped_count = 0
+    
+    print("📤 Updating projects...")
+    with tqdm(total=len(projects), desc="Updating projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_update_single_project, p): p for p in projects}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, success, error_msg, result = future.result()
+                if not success:
+                    raise ValueError(f"Failed to update project {project_name}: {error_msg}")
+                
+                if error_msg == "No changes needed":
+                    skipped_count += 1
+                else:
+                    updated_count += 1
+                
+                output.append(result)
+                pbar.set_postfix(name=project_name[:20] + "..." if len(project_name) > 20 else project_name)
+                pbar.update(1)
+
+    print(f"✔ Updated {updated_count} project(s), skipped {skipped_count} project(s) (no changes)")
+    return output
+
+def sync_projects(*, projects_path: str | Path | None = None, projects_data: List[Dict] | None = None, max_workers: int = 10) -> None:
+    """Load, validate, and route projects to add/update pipelines with parallel processing.
+    
+    Args:
+        projects_path: Path to JSON file containing project list
+        projects_data: Pre-loaded list of project dictionaries
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If projects_data is not a list of dictionaries
+        
+    Note:
+        Exactly one path parameter must be provided.
+        Each project dict requires: project_name, schema_name, is_active, videos.
+    """
+    if projects_path is None and projects_data is None:
+        raise ValueError("Provide either projects_path or projects_data")
+        
+    if projects_path:
+        with open(projects_path, "r") as f:
+            projects_data = json.load(f)
+            
+    if not isinstance(projects_data, list):
+        raise TypeError("projects_data must be list[dict]")
+
+    print("\n🚀 Starting project upload pipeline...")
+    
+    # Validate and normalize project data
+    processed: List[Dict] = []
+    with tqdm(total=len(projects_data), desc="Validating project data", unit="project") as pbar:
+        for idx, cfg in enumerate(projects_data, 1):
+            # Validate required fields
+            for key in ("project_name", "schema_name", "is_active", "videos"):
+                if key not in cfg:
+                    raise ValueError(f"Entry #{idx}: missing '{key}'")
+                    
+            # Normalize is_active to is_archived
+            cfg["is_archived"] = not cfg.pop("is_active")
+                
+            processed.append(cfg)
+            pbar.update(1)
+
+    # Separate projects to add vs sync
+    to_add, to_sync = [], []
+    
+    def _check_project_exists(project_data: Dict) -> Tuple[str, bool]:
+        """Check if project exists in a thread-safe manner."""
+        with SessionLocal() as sess:
+            try:
+                ProjectService.get_project_by_name(project_data["project_name"], sess)
+                return project_data["project_name"], True
+            except ValueError:
+                return project_data["project_name"], False
+    
+    print("\n📊 Categorizing projects...")
+    with tqdm(total=len(processed), desc="Checking existing projects", unit="project") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_check_project_exists, p): p for p in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                project_name, exists = future.result()
+                project_data = futures[future]
+                if exists:
+                    to_sync.append(project_data)  # exists → sync
+                else:
+                    to_add.append(project_data)  # not found → add
+                pbar.update(1)
+
+    print(f"\n📈 Summary: {len(to_add)} projects to add, {len(to_sync)} projects to sync")
+
+    # Process projects
+    add_results = []
+    sync_results = []
+    
+    if to_add:
+        print(f"\n➕ Adding {len(to_add)} new projects...")
+        add_results = add_projects_parallel(to_add, max_workers)
+            
+    if to_sync:
+        print(f"\n🔄 Syncing {len(to_sync)} existing projects...")
+        sync_results = update_projects_parallel(to_sync, max_workers)
+
+    # Final summary
+    print("\n🎉 Project pipeline complete!")
+    print(f"✅ Added: {len(add_results)} projects")
+    print(f"🔄 Synced: {len(sync_results)} projects")
+    
+    total_custom_displays = 0
+    for result in add_results + sync_results:
+        total_custom_displays += result['created'] + result['updated']
+    
+    if total_custom_displays > 0:
+        print(f"🎨 Total custom displays processed: {total_custom_displays}")
+
+
+def add_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
+    """Create new project groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with project group data
+        
+    Returns:
+        List of created project group information
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups already exist or projects not found
+    """
+    if not isinstance(groups, list):
+        raise TypeError("groups must be list[(filename, dict)]")
+
+    created: List[Dict] = []
+
+    with SessionLocal() as sess:
+        # ── Phase 0: duplicate name check (cheap, read‑only) ───────────────
+        dup_names = []
+        for _, g in groups:
+            try:
+                ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+                dup_names.append(g["project_group_name"])
+            except ValueError as err:
+                # Only ignore "not found" errors, re-raise others
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist, which is what we want for adding
+        
+        if dup_names:
+            raise ValueError("Add aborted – already in DB: " + ", ".join(dup_names))
+
+        # ── Phase 1: prepare each group (get project IDs) ──────────
+        prepared: List[Tuple[Dict, List[int]]] = []  # (group_data, project_ids)
+        missing_projects = []
+        
+        for _, g in groups:
+            project_ids: List[int] = []
+            for project_name in g.get("projects", []):
+                try:
+                    project = ProjectService.get_project_by_name(project_name, sess)
+                    project_ids.append(project.id)
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Project doesn't exist - collect for error reporting
+                    missing_projects.append(project_name)
+            
+            prepared.append((g, project_ids))
+        
+        # Check for any missing projects and abort if found
+        if missing_projects:
+            raise ValueError("Add aborted – projects not found in DB: " + ", ".join(missing_projects))
+
+        # ── Phase 2: verify ALL groups before any create_group ──────────────
+        for g, project_ids in prepared:
+            ProjectGroupService.verify_create_project_group(
+                name=g["project_group_name"],
+                description=g.get("description", ""),
+                project_ids=project_ids if project_ids else None,
+                session=sess,
+            )
+
+        # ── Phase 3: all verifications passed – perform creations ───────────
+        for g, project_ids in prepared:
+            grp = ProjectGroupService.create_project_group(
+                name=g["project_group_name"],
+                description=g.get("description", ""),
+                project_ids=project_ids if project_ids else None,
+                session=sess,
+            )
+            created.append({"name": g["project_group_name"], "id": grp.id})
+
+        sess.commit()
+    return created
+
+
+def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
+    """Update existing project groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with project group data
+        
+    Returns:
+        List of updated project group information with changes made
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups not found or projects not found
+    """
+    if not isinstance(groups, list):
+        raise TypeError("groups must be list[(filename, dict)]")
+
+    updated: List[Dict] = []
+    skipped: List[Dict] = []
+    
+    with SessionLocal() as sess:
+        # ── Phase 0: existence check (cheap, read‑only) ────────────────────
+        missing = []
+        for _, g in groups:
+            try:
+                ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+            except ValueError as err:
+                # Only treat "not found" as missing, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist
+                missing.append(g["project_group_name"])
+        
+        if missing:
+            raise ValueError("Update aborted – not found in DB: " + ", ".join(missing))
+
+        # ── Phase 1: prepare each group and check for changes ──────────────────
+        prepared: List[Tuple[Dict, List[int], object]] = []  # (group_data, project_ids, group_record)
+        missing_projects = []
+        
+        for _, g in groups:
+            grp = ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+            project_ids: List[int] = []
+            
+            # Get project IDs from the group data - all projects must exist
+            for project_name in g.get("projects", []):
+                try:
+                    project = ProjectService.get_project_by_name(project_name, sess)
+                    project_ids.append(project.id)
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Project doesn't exist - collect for error reporting
+                    missing_projects.append(project_name)
+            
+            prepared.append((g, project_ids, grp))
+        
+        # Check for any missing projects and abort if found
+        if missing_projects:
+            raise ValueError("Update aborted – projects not found in DB: " + ", ".join(missing_projects))
+
+        # ── Phase 2: check for changes and skip if no changes ────────────────
+        to_update = []
+        for g, project_ids, grp in prepared:
+            # Get current project IDs using ProjectGroupService instead of direct SQL
+            group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
+            current_project_ids = set(p["id"] for p in group_info["projects"])
+            current_description = group_info.get("description", "")
+            
+            new_project_ids = set(project_ids)
+            new_description = g.get("description", "")
+            
+            # Check if any changes are needed
+            needs_update = False
+            changes = []
+            
+            # Check description
+            if new_description != current_description:
+                needs_update = True
+                changes.append("description")
+            
+            # Check project list
+            if new_project_ids != current_project_ids:
+                needs_update = True
+                changes.append("projects")
+            
+            if needs_update:
+                to_update.append((g, project_ids, grp, changes))
+            else:
+                # No changes needed
+                skipped.append({
+                    "name": g["project_group_name"], 
+                    "id": grp.id,
+                    "changes": []
+                })
+
+        # ── Phase 3: verify ALL edits first ─────────────────────────────────
+        for g, project_ids, grp, changes in to_update:
+            # Get current project IDs using ProjectGroupService instead of direct SQL
+            group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
+            current_project_ids = set(p["id"] for p in group_info["projects"])
+            
+            new_project_ids = set(project_ids)
+            
+            # Calculate what to add and remove
+            add_project_ids = list(new_project_ids - current_project_ids)
+            remove_project_ids = list(current_project_ids - new_project_ids)
+            
+            ProjectGroupService.verify_edit_project_group(
+                group_id=grp.id,
+                name=None,  # No name change in this implementation
+                description=g.get("description", ""),
+                add_project_ids=add_project_ids if add_project_ids else None,
+                remove_project_ids=remove_project_ids if remove_project_ids else None,
+                session=sess,
+            )
+
+        # ── Phase 4: apply edits after all verifications passed ─────────────
+        for g, project_ids, grp, changes in to_update:
+            # Get current project IDs using ProjectGroupService instead of direct SQL
+            group_info = ProjectGroupService.get_project_group_by_id(grp.id, sess)
+            current_project_ids = set(p["id"] for p in group_info["projects"])
+            
+            new_project_ids = set(project_ids)
+            
+            # Calculate what to add and remove
+            add_project_ids = list(new_project_ids - current_project_ids)
+            remove_project_ids = list(current_project_ids - new_project_ids)
+            
+            ProjectGroupService.edit_project_group(
+                group_id=grp.id,
+                name=None,  # No name change in this implementation
+                description=g.get("description", ""),
+                add_project_ids=add_project_ids if add_project_ids else None,
+                remove_project_ids=remove_project_ids if remove_project_ids else None,
+                session=sess,
+            )
+            
+            updated.append({
+                "name": g["project_group_name"], 
+                "id": grp.id,
+                "changes": changes
+            })
+
+        sess.commit()
+    
+    # Print summary
+    if skipped:
+        print(f"⏭️  Skipped {len(skipped)} groups with no changes")
+    if updated:
+        print(f"🔄 Updated {len(updated)} groups")
+    
+    return updated + skipped
+
+
+def sync_project_groups(
+    *, project_groups_path: str | Path | None = None, 
+    project_groups_data: List[Dict] | None = None) -> None:
+    """Load, validate, and route project groups to add/update pipelines.
+    
+    Args:
+        project_groups_path: Path to JSON file containing project group list
+        project_groups_data: Pre-loaded list of project group dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If project_groups_data is not a list of dictionaries
+        
+    Note:
+        Exactly one parameter must be provided.
+        Each group dict requires: project_group_name, projects.
+    """
+
+    if project_groups_path is None and project_groups_data is None:
+        raise ValueError("Provide either project_groups_path or project_groups_data")
+
+    # Load JSON if path provided
+    if project_groups_path:
+        with open(project_groups_path, "r") as f:
+            project_groups_data = json.load(f)
+
+    if not isinstance(project_groups_data, list):
+        raise TypeError("project_groups_data must be list[dict]")
+
+    # Validate and normalize project groups data
+    processed: List[Dict] = []
+    for idx, g in enumerate(project_groups_data, 1):
+        # Validate required fields
+        for fld in ("project_group_name", "projects"):
+            if fld not in g:
+                raise ValueError(f"Entry #{idx} missing: {fld}")
+        
+        # Set defaults and normalize
+        g.setdefault("description", "")
+        
+        if not isinstance(g["projects"], list):
+            raise ValueError(f"Entry #{idx}: 'projects' must be a list")
+        
+        processed.append(g)
+
+    print(f"✅ JSON validation passed for {len(processed)} items")
+
+    # Classify add vs update with one read-only session
+    to_add, to_update = [], []
+    with SessionLocal() as sess:
+        for g in processed:
+            group_exists = False
+            try:
+                ProjectGroupService.get_project_group_by_name(g["project_group_name"], sess)
+                group_exists = True
+            except ValueError as err:
+                # Only treat "not found" as non-existence, re-raise other errors
+                if "not found" not in str(err).lower():
+                    raise
+                # Group doesn't exist
+                group_exists = False
+            
+            if group_exists:
+                to_update.append(g)
+            else:
+                to_add.append(g)
+
+    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+
+    # Execute operations
+    created = []
+    updated = []
+    
+    if to_add:
+        # Convert to the format expected by add_project_groups
+        add_data = [(f"item_{i}", g) for i, g in enumerate(to_add)]
+        created.extend(add_project_groups(add_data))
+    
+    if to_update:
+        # Convert to the format expected by update_project_groups
+        update_data = [(f"item_{i}", g) for i, g in enumerate(to_update)]
+        updated.extend(update_project_groups(update_data))
+
+    print("🎉 Project-group pipeline complete")
+    print(f"   • Groups created: {len(created)}")
+    print(f"   • Groups updated: {len(updated)}")
+
+
+def _process_assignment_validation(assignment_data: Dict) -> Tuple[int, Dict, Optional[str]]:
+    """Process and validate a single assignment in a thread-safe manner.
+    
+    Args:
+        assignment_data: Dictionary containing assignment fields (user_name/user_email, project_name, role)
+        
+    Returns:
+        Tuple of (index, processed_data, error_message). Error message is None on success.
+        
+    Raises:
+        ValueError: If entity lookup fails with unhandled error
+    """
+    with SessionLocal() as sess:
+        try:
+            # Validate required fields
+            if 'user_email' in assignment_data and 'user_name' not in assignment_data:
+                try:
+                    user = AuthService.get_user_by_email(assignment_data['user_email'], sess)
+                    assignment_data['user_name'] = user.user_id_str
+                except ValueError:
+                    return assignment_data.get('_index', 0), {}, f"User email '{assignment_data['user_email']}' not found"
+            
+            required = {'user_name', 'project_name', 'role'}
+            if missing := required - set(assignment_data.keys()):
+                return assignment_data.get('_index', 0), {}, f"Missing fields: {', '.join(missing)}"
+            
+            # Validate role
+            valid_roles = {'annotator', 'reviewer', 'admin', 'model'}
+            if assignment_data['role'] not in valid_roles:
+                return assignment_data.get('_index', 0), {}, f"Invalid role '{assignment_data['role']}'"
+            
+            # Validate entities exist and aren't archived
+            user = AuthService.get_user_by_name(assignment_data['user_name'], sess)
+            project = ProjectService.get_project_by_name(assignment_data['project_name'], sess)
+            
+            if user.is_archived:
+                return assignment_data.get('_index', 0), {}, f"User '{assignment_data['user_name']}' is archived"
+            if project.is_archived:
+                return assignment_data.get('_index', 0), {}, f"Project '{assignment_data['project_name']}' is archived"
+                
+            processed = {
+                **assignment_data,
+                'is_active': assignment_data.get('is_active', True),
+                'user_id': user.id,
+                'project_id': project.id
+            }
+            
+            return assignment_data.get('_index', 0), processed, None
+            
+        except ValueError as e:
+            if "not found" in str(e).lower():
+                return assignment_data.get('_index', 0), {}, str(e)
+            raise
+
+
+def _apply_single_assignment(assignment_data: Dict) -> Tuple[str, str, bool, Optional[str]]:
+    """Apply a single assignment operation in a thread-safe manner.
+    
+    Args:
+        assignment_data: Validated assignment dictionary with user_id, project_id, role, is_active
+        
+    Returns:
+        Tuple of (assignment_name, operation, success, error_message). 
+        Operation is one of: "created", "updated", "removed", "skipped", "error".
+    """
+    with SessionLocal() as sess:
+        try:
+            # Check existing assignment using service method
+            if assignment_data['role'] == 'model':
+                existing = False
+            else:
+                user_projects = AuthService.get_user_projects_by_role(assignment_data['user_id'], sess)
+                existing = any(
+                    assignment_data['project_id'] in [p['id'] for p in projects] 
+                    for projects in user_projects.values()
+                )
+            
+            if assignment_data['is_active']:
+                ProjectService.add_user_to_project(
+                    project_id=assignment_data['project_id'],
+                    user_id=assignment_data['user_id'],
+                    role=assignment_data['role'],
+                    session=sess,
+                    user_weight=assignment_data.get('user_weight')
+                )
+                operation = "updated" if existing else "created"
+                return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", operation, True, None
+            elif existing:
+                # Use remove_user_from_project instead of archive_user_from_project
+                AuthService.remove_user_from_project(
+                    assignment_data['user_id'], 
+                    assignment_data['project_id'], 
+                    assignment_data['role'], 
+                    sess
+                )
+                return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "removed", True, None
+            else:
+                return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "skipped", True, None
+                
+        except Exception as e:
+            return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "error", False, str(e)
+
+def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None, max_workers: int = 10) -> None:
+    """Bulk assign users to projects with parallel validation and application.
+    
+    Args:
+        assignment_path: Path to JSON file containing assignment list
+        assignments_data: Pre-loaded list of assignment dictionaries
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        ValueError: If validation fails or input parameters invalid
+        TypeError: If assignments_data is not a list of dictionaries  
+        RuntimeError: If assignment application fails
+        
+    Note:
+        Exactly one of assignment_path or assignments_data must be provided.
+        Each assignment dict requires: user_name/user_email, project_name, role.
+        Optional: is_active (default: True), user_weight.
+    """
+    
+    # Load and validate input
+    if assignment_path is None and assignments_data is None:
+        raise ValueError("Either assignment_path or assignments_data must be provided")
+    
+    if assignment_path:
         with open(assignment_path, 'r') as f:
             assignments_data = json.load(f)
     
-    with SessionLocal() as session:
-        try:
-            for assignment in assignments_data:
-                try:
-                    user = AuthService.get_user_by_name(assignment["user_name"], session)
-                    project = ProjectService.get_project_by_name(assignment["project_name"], session)
-                    
-                    # Skip global admin users
-                    if user.user_type == "admin":
-                        raise ValueError(f"⚠️ {assignment['user_name']} is a global admin, cannot assign non-admin role")
-                    
-                    if user.user_type == "model":
-                        if assignment["role"] != "model":
-                            raise ValueError(f"⚠️ {assignment['user_name']} is a model user, cannot assign non-model role")
-                        ProjectService.add_user_to_project(
-                            project_id=project.id,
-                            user_id=user.id, 
-                            role="model",
-                            session=session
-                        )
-                        print(f"✓ Assigned model user {assignment['user_name']} to {assignment['project_name']}")
-                        continue
-                    # Get user's projects by role using service function
-                    user_projects = AuthService.get_user_projects_by_role(user.id, session)
-                    
-                    # Check if user has any role in this project
-                    user_has_role = False
-                    current_role = None
-                    
-                    for role_type, projects in user_projects.items():
-                        for proj in projects:
-                            if proj["id"] == project.id:
-                                user_has_role = True
-                                current_role = role_type
-                                break
-                        if user_has_role:
-                            break
-                    
-                    new_role = assignment["role"]
-                    
-                    # No existing role - assign new role
-                    ProjectService.add_user_to_project(
-                        project_id=project.id,
-                        user_id=user.id, 
-                        role=new_role,
-                        session=session
-                    )
-                    # Apply business logic
-                    if not user_has_role:
-                        print(f"✓ Assigned {assignment['user_name']} to {assignment['project_name']} as {new_role}")
-                        
-                    
-                    else:
-                        print(f"✓ Updated {assignment['user_name']} role to {new_role} in {assignment['project_name']}")
-                    
-                except Exception as e:
-                    print(f"✗ Failed: {e}")
-                    session.rollback()
-                    continue
+    if not isinstance(assignments_data, list):
+        raise TypeError("assignments_data must be a list of dictionaries")
+
+    if not assignments_data:
+        print("ℹ️  No assignments to process")
+        return
+
+    # Add index for tracking
+    for idx, assignment in enumerate(assignments_data):
+        assignment['_index'] = idx + 1
+
+    # Process and validate assignments with ThreadPoolExecutor
+    processed = []
+    seen_pairs = set()
+    validation_errors = []
+    
+    print("🔍 Validating assignments...")
+    with tqdm(total=len(assignments_data), desc="Validating assignments", unit="assignment") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_assignment_validation, a): a for a in assignments_data}
             
-            session.commit()
-            print("🎉 Bulk assignment completed!")
+            for future in concurrent.futures.as_completed(futures):
+                assignment = futures[future]
+                idx, processed_data, error_msg = future.result()
+                
+                if error_msg:
+                    validation_errors.append(f"#{idx}: {error_msg}")
+                else:
+                    # Check for duplicates
+                    pair = (processed_data['user_name'], processed_data['project_name'])
+                    if pair in seen_pairs:
+                        validation_errors.append(f"#{idx}: Duplicate assignment {pair[0]} -> {pair[1]}")
+                    else:
+                        seen_pairs.add(pair)
+                        processed.append(processed_data)
+                
+                pbar.update(1)
+                pbar.set_postfix(valid=len(processed), errors=len(validation_errors))
+
+    if validation_errors:
+        error_summary = f"Validation failed for {len(validation_errors)} assignments:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = validation_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(validation_errors) > 5:
+            error_summary += f"\n  ... and {len(validation_errors) - 5} more errors"
+        raise ValueError(error_summary)
+
+    print(f"✅ Validation passed for {len(processed)} assignments")
+
+    # Verify all operations before applying them
+    print("🔍 Verifying all operations...")
+    verification_errors = []
+    
+    with tqdm(total=len(processed), desc="Verifying operations", unit="operation") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_verify_single_assignment, a): a for a in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                assignment = futures[future]
+                assignment_name, error_msg = future.result()
+                
+                if error_msg:
+                    verification_errors.append(f"{assignment_name}: {error_msg}")
+                
+                pbar.update(1)
+                pbar.set_postfix(errors=len(verification_errors))
+
+    if verification_errors:
+        error_summary = f"Verification failed for {len(verification_errors)} operations:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = verification_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(verification_errors) > 5:
+            error_summary += f"\n  ... and {len(verification_errors) - 5} more errors"
+        raise ValueError(error_summary)
+
+    print("✅ All operations verified")
+
+    # Apply assignments with ThreadPoolExecutor
+    created = updated = removed = skipped = 0
+    application_errors = []
+    
+    print("📤 Applying assignments...")
+    with tqdm(total=len(processed), desc="Applying assignments", unit="assignment") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_apply_single_assignment, a): a for a in processed}
+            
+            for future in concurrent.futures.as_completed(futures):
+                assignment = futures[future]
+                assignment_name, operation, success, error_msg = future.result()
+                
+                if success:
+                    if operation == "created":
+                        created += 1
+                    elif operation == "updated":
+                        updated += 1
+                    elif operation == "removed":
+                        removed += 1
+                    elif operation == "skipped":
+                        skipped += 1
+                else:
+                    application_errors.append(f"{assignment_name}: {error_msg}")
+                
+                pbar.update(1)
+                pbar.set_postfix(created=created, updated=updated, removed=removed, skipped=skipped, errors=len(application_errors))
+
+    if application_errors:
+        error_summary = f"Application failed for {len(application_errors)} assignments:\n"
+        # Show first 5 errors, then summarize if more
+        shown_errors = application_errors[:5]
+        error_summary += "\n".join(f"  • {err}" for err in shown_errors)
+        if len(application_errors) > 5:
+            error_summary += f"\n  ... and {len(application_errors) - 5} more errors"
+        raise RuntimeError(error_summary)
+
+    print(f"✅ Completed: {created} created, {updated} updated, {removed} removed, {skipped} skipped")
+
+def _verify_single_assignment(assignment_data: Dict) -> Tuple[str, Optional[str]]:
+    """Verify a single assignment operation in a thread-safe manner.
+    
+    Args:
+        assignment_data: Assignment dictionary with user_id, project_id, role, is_active
+        
+    Returns:
+        Tuple of (assignment_name, error_message). Error message is None on success.
+    """
+    with SessionLocal() as sess:
+        try:
+            assignment_name = f"{assignment_data['user_name']} -> {assignment_data['project_name']}"
+            
+            if assignment_data['is_active']:
+                # Verify adding user to project
+                ProjectService.verify_add_user_to_project(
+                    project_id=assignment_data['project_id'],
+                    user_id=assignment_data['user_id'],
+                    role=assignment_data['role'],
+                    session=sess,
+                )
+            else:
+                # Verify removing user from project
+                AuthService.verify_remove_user_from_project(
+                    assignment_data['user_id'],
+                    assignment_data['project_id'],
+                    assignment_data['role'],
+                    sess
+                )
+            
+            return assignment_name, None
             
         except Exception as e:
-            print(f"❌ Error: {e}")
+            assignment_name = f"{assignment_data['user_name']} -> {assignment_data['project_name']}"
+            return assignment_name, str(e)
+
+
+def sync_annotations(annotation: dict) -> dict:
+    """Upload a single annotation item with duplicate checking.
+    
+    Args:
+        annotation: Annotation dictionary with video_uid, project_name, user_name, 
+                   question_group_title, answers, and optional confidence_scores/notes
+        
+    Returns:
+        Dictionary with status ("uploaded" or "skipped"), video_uid, user_name, and group
+        
+    Raises:
+        TypeError: If annotation is not a dictionary
+        RuntimeError: If upload fails (includes rollback)
+        
+    Note:
+        Assumes annotation has already been validated. Skips if no changes detected.
+    """
+    
+    if not isinstance(annotation, dict):
+        raise TypeError("annotation must be a dictionary")
+    
+    with SessionLocal() as session:
+        try:
+            # Resolve IDs (these should succeed since validation passed)
+            video_uid = annotation.get("video_uid", "").split("/")[-1]
+            video = VideoService.get_video_by_uid(video_uid, session)
+            project = ProjectService.get_project_by_name(annotation["project_name"], session)
+            user = AuthService.get_user_by_name(annotation["user_name"], session)
+            group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
+            
+            # Check if answers already exist
+            existing = AnnotatorService.get_user_answers_for_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                user_id=user.id,
+                question_group_id=group.id,
+                session=session
+            )
+            
+            # Determine if update needed - check if any answer differs
+            needs_update = False
+            for q_text, answer in annotation["answers"].items():
+                if q_text not in existing or existing[q_text] != answer:
+                    needs_update = True
+                    break
+            
+            if not needs_update:
+                print(f"⏭️  Skipped: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']} (no changes)")
+                return {
+                    "status": "skipped",
+                    "video_uid": video_uid,
+                    "user_name": annotation["user_name"],
+                    "group": annotation["question_group_title"]
+                }
+            
+            # Submit the annotation (no verification needed - already done)
+            AnnotatorService.submit_answer_to_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                user_id=user.id,
+                question_group_id=group.id,
+                answers=annotation["answers"],
+                session=session,
+                confidence_scores=annotation.get("confidence_scores"),
+                notes=annotation.get("notes")
+            )
+            
+            session.commit()
+            print(f"🎉 Successfully uploaded annotation: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']}")
+            
+            return {
+                "status": "uploaded",
+                "video_uid": video_uid,
+                "user_name": annotation["user_name"],
+                "group": annotation["question_group_title"]
+            }
+            
+        except Exception as e:
             session.rollback()
+            error_msg = f"{annotation.get('video_uid')} | {annotation.get('user_name')} | {annotation.get('question_group_title')}: {e}"
+            raise RuntimeError(f"Upload failed: {error_msg}")
 
 
-
-# ──────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────
-def _resolve_ids(
-    *,
-    session: Session,
-    question_group_title: str,
-    user_name: str,
-    video_ref: str,
-    project_name: str,
-) -> Tuple[int, int, int, int]:
-    """Return (video_id, project_id, user_id, group_id) or raise ValueError."""
-    group_id = QuestionGroupService.get_group_by_name(question_group_title, session).id
-    if user_name:
-        user_id  = AuthService.get_user_by_name(user_name, session).id
-    else:
-        raise ValueError("user_name is required!")
-
-    video_uid  = video_ref.split("/")[-1]
-    video_id   = VideoService.get_video_by_uid(video_uid, session).id
-
-    project_id = ProjectService.get_project_by_name(project_name, session).id
-    return video_id, project_id, user_id, group_id
-
-
-def _verification_passes(
-    *,
-    session: Session,
-    video_id: int,
-    project_id: int,
-    user_id: int,
-    group_id: int,
-    answers: Dict[str, str],
-) -> None:
+def sync_ground_truths(ground_truth: dict) -> dict:
+    """Upload a single ground truth item with duplicate checking.
+    
+    Args:
+        ground_truth: Ground truth dictionary with video_uid, project_name, user_name,
+                     question_group_title, answers, and optional confidence_scores/notes
+        
+    Returns:
+        Dictionary with status ("uploaded" or "skipped"), video_uid, and reviewer
+        
+    Raises:
+        TypeError: If ground_truth is not a dictionary
+        RuntimeError: If upload fails (includes rollback)
+        
+    Note:
+        Assumes ground truth has already been validated. Skips if no changes detected.
     """
-    Validate one label *without* writing to DB.
-    Missing answers are tolerated for questions where `is_required` is False.
+    
+    if not isinstance(ground_truth, dict):
+        raise TypeError("ground_truth must be a dictionary")
+    
+    with SessionLocal() as session:
+        try:
+            # Resolve IDs (these should succeed since validation passed)
+            video_uid = ground_truth.get("video_uid", "").split("/")[-1]
+            video = VideoService.get_video_by_uid(video_uid, session)
+            project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+            reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+            group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
+            
+            # Check existing ground truth
+            existing = GroundTruthService.get_ground_truth_dict_for_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                question_group_id=group.id,
+                session=session
+            )
+            
+            # Determine if update needed - check if any answer differs
+            needs_update = False
+            for q_text, answer in ground_truth["answers"].items():
+                if q_text not in existing or existing[q_text] != answer:
+                    needs_update = True
+                    break
+            
+            if not needs_update:
+                print(f"⏭️  Skipped: {video_uid} | {ground_truth['user_name']} (no changes)")
+                return {
+                    "status": "skipped",
+                    "video_uid": video_uid,
+                    "reviewer": ground_truth["user_name"]
+                }
+            
+            # Submit the ground truth (no verification needed - already done)
+            GroundTruthService.submit_ground_truth_to_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                reviewer_id=reviewer.id,
+                question_group_id=group.id,
+                answers=ground_truth["answers"],
+                session=session,
+                confidence_scores=ground_truth.get("confidence_scores"),
+                notes=ground_truth.get("notes")
+            )
+            
+            session.commit()
+            print(f"🎉 Successfully uploaded ground truth: {video_uid} | {ground_truth['user_name']}")
+            
+            return {
+                "status": "uploaded",
+                "video_uid": video_uid,
+                "reviewer": ground_truth["user_name"]
+            }
+            
+        except Exception as e:
+            session.rollback()
+            error_msg = f"{ground_truth.get('video_uid')} | reviewer:{ground_truth.get('user_name')}: {e}"
+            raise RuntimeError(f"Upload failed: {error_msg}")
+
+
+def load_and_flatten_json_files(folder_path: str) -> list[dict]:
+    """Load all JSON files from folder and flatten into single list.
+    
+    Args:
+        folder_path: Path to folder containing JSON files
+        
+    Returns:
+        Flattened list of dictionaries from all JSON files
+        
+    Note:
+        Handles both single objects and arrays in JSON files.
+        Prints success/failure for each file loaded.
     """
-    # 1. project & user existence / role checks ------------------------
-    AnnotatorService._validate_project_and_user(project_id, user_id, session)
-    AnnotatorService._validate_user_role(user_id, project_id, "annotator", session)
+    json_files = glob.glob(f"{folder_path}/*.json")
+    flattened_data = []
+    
+    for filepath in json_files:
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            
+            # Handle both single items and lists
+            if isinstance(data, list):
+                flattened_data.extend(data)
+            else:
+                flattened_data.append(data)
+            
+            print(f"✓ Loaded {filepath}")
+        except Exception as e:
+            print(f"✗ Failed to load {filepath}: {e}")
+    
+    return flattened_data
 
-    # 2. fetch group + questions ---------------------------------------
-    group, questions = AnnotatorService._validate_question_group(group_id, session)
 
-    # ---- build two helper sets ---------------------------------------
-    required_q_texts = {q.text for q in questions if getattr(q, "required", True)}
-    provided_q_texts = set(answers)
-    missing = required_q_texts - provided_q_texts
-    extra   = provided_q_texts  - {q.text for q in questions}
-
-    if missing or extra:
-        raise ValueError(
-            f"Answers do not match questions in group. "
-            f"Missing: {missing}. Extra: {extra}"
+def check_for_duplicates(data: list[dict], data_type: str) -> None:
+    """Check for duplicate entries based on video_uid, user_name, question_group_title, project_name.
+    
+    Args:
+        data: List of dictionaries to check for duplicates
+        data_type: Type description for error messages (e.g., "annotation", "ground truth")
+        
+    Raises:
+        ValueError: If duplicates are found (includes detailed duplicate list)
+    """
+    seen = set()
+    duplicates = []
+    
+    for idx, item in enumerate(data):
+        # Create a unique key based on the combination of fields
+        key = (
+            item.get("video_uid", "").split("/")[-1],
+            item.get("user_name", ""),
+            item.get("question_group_title", ""),
+            item.get("project_name", "")
         )
+        
+        if key in seen:
+            duplicates.append({
+                "index": idx,
+                "video_uid": item.get("video_uid"),
+                "user_name": item.get("user_name"),
+                "question_group_title": item.get("question_group_title"),
+                "project_name": item.get("project_name")
+            })
+        else:
+            seen.add(key)
+    
+    if duplicates:
+        error_msg = f"Found {len(duplicates)} duplicate {data_type} entries:\n"
+        for dup in duplicates:
+            error_msg += f"  - Index {dup['index']}: {dup['video_uid']} | {dup['user_name']} | {dup['question_group_title']} | {dup['project_name']}\n"
+        raise ValueError(error_msg)
 
-    # 3. run optional verification hook -------------------------------
-    AnnotatorService._run_verification(group, answers)
 
-    # 4. per-question value validation (only for keys we have) ---------
-    q_lookup = {q.text: q for q in questions}
-    for q_text in provided_q_texts:
-        AnnotatorService._validate_answer_value(q_lookup[q_text], answers[q_text])
-
-# ──────────────────────────────────────────────────────────────────────
-# Main routine
-# ──────────────────────────────────────────────────────────────────────
-# ── small helper: cache the legal question keys for each group_id ────────────
-@lru_cache(maxsize=None)
-def _legal_keys_for_group(group_id: int, session: Session) -> set[str]:
-    """Return the set of Question.text keys that live in <group_id>."""
-    qs = QuestionGroupService.get_group_questions(group_id, session)
-    return {row["Text"] for _, row in qs.iterrows()}
-
-def upload_annotations_from_json(
-    rows: List[Dict[str, Any]],
-) -> None:
-    """Verify every entry; upload only if all entries are valid."""
-    errors: list[str] = []
-    valid_cache: list[dict[str, Any]] = []
-
-    with SessionLocal() as session:
-        for idx, row in enumerate(tqdm(rows, desc="verifying"), start=1):
-            try:
-                # ----- resolve IDs -------------------------------------------------
-                video_id, project_id, user_id, group_id = _resolve_ids(
-                    session=session,
-                    question_group_title=row["question_group_title"],
-                    user_name=row["user_name"],
-                    video_ref=row.get("video_uid") or row["video_uid"],
-                    project_name=row["project_name"],
-                )
-
-                # ----- keep only questions that exist in this group ---------------
-                legal_keys = _legal_keys_for_group(group_id, session)
-                answers = {k: v for k, v in row["answers"].items() if k in legal_keys}
-
-                # (optional) warn if something was dropped
-                dropped = set(row["answers"]) - legal_keys
-                if dropped:
-                    print(f"[WARN] {row['video_uid']} | {row['user_name']} "
-                          f"dropped keys: {dropped}")
-
-                # ----- verify remaining answers -----------------------------------
-                _verification_passes(
-                    session=session,
-                    video_id=video_id,
-                    project_id=project_id,
-                    user_id=user_id,
-                    group_id=group_id,
-                    answers=answers,
-                )
-
-                # ----- cache for phase-2 upload -----------------------------------
-                valid_cache.append({
-                    "video_id":   video_id,
-                    "project_id": project_id,
-                    "user_id":    user_id,
-                    "group_id":   group_id,
-                    "answers":    answers,
-                    "confidence": row.get("confidence_scores") or {},
-                    "notes":      row.get("notes") or {},
-                    "video_uid":  row.get("video_uid", "<unknown>"),
-                    "user_name":      row["user_name"],
-                })
-
-            except Exception as exc:
-                errors.append(f"[{idx}] {row.get('video_uid')} | "
-                              f"{row.get('user_name')}: {exc}")
-
-    if errors:
-        print("\nVERIFICATION FAILED – nothing uploaded.")
-        for e in errors[:20]:
-            print(e)
-        if len(errors) > 20:
-            print(f"...and {len(errors)-20} more")
+def batch_sync_annotations(annotations_folder: str = None, 
+                           annotations_data: list[dict] = None, 
+                           max_workers: int = 15) -> None:
+    """Batch upload annotations with parallel validation and atomic transaction.
+    
+    Args:
+        annotations_folder: Path to folder containing JSON annotation files
+        annotations_data: Pre-loaded list of annotation dictionaries
+        max_workers: Number of parallel validation threads (default: 15)
+        
+    Raises:
+        ValueError: If validation fails, duplicates found, or invalid data structure
+        TypeError: If annotations_data is not a list of dictionaries
+        RuntimeError: If batch processing fails (all changes rolled back)
+        
+    Note:
+        Exactly one of annotations_folder or annotations_data must be provided.
+        All annotations validated in parallel before any database operations.
+    """
+    from tqdm import tqdm
+    
+    if annotations_folder and annotations_data:
+        raise ValueError("Only one of annotations_folder or annotations_data can be provided")
+    
+    # Load and flatten data
+    if annotations_folder:
+        annotations_data = load_and_flatten_json_files(annotations_folder)
+    
+    if not annotations_data:
+        print("No annotation data to process")
         return
-
-    print(f"\nVERIFICATION PASSED ({len(valid_cache)} records). Starting upload...")
-
-    # -------- phase 2 – real upload -----------------------------------
-    ok, fail = 0, 0
+    
+    # Validate data structure
+    if not isinstance(annotations_data, list):
+        raise TypeError("annotations_data must be a list of dictionaries")
+    
+    # Check for duplicates
+    check_for_duplicates(annotations_data, "annotation")
+    
+    # Validate all data BEFORE any database operations using ThreadPool
+    print("🔍 Validating all annotations...")
+    
+    def validate_single_annotation(annotation_with_idx):
+        idx, annotation = annotation_with_idx
+        try:
+            # Validate ground truth flag
+            if annotation.get("is_ground_truth", False):
+                raise ValueError(f"is_ground_truth must be False for annotations")
+            
+            with SessionLocal() as session:
+                # Resolve IDs
+                video_uid = annotation.get("video_uid", "").split("/")[-1]
+                video = VideoService.get_video_by_uid(video_uid, session)
+                project = ProjectService.get_project_by_name(annotation["project_name"], session)
+                user = AuthService.get_user_by_name(annotation["user_name"], session)
+                group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
+                
+                # Verify submission format
+                AnnotatorService.verify_submit_answer_to_question_group(
+                    video_id=video.id,
+                    project_id=project.id,
+                    user_id=user.id,
+                    question_group_id=group.id,
+                    answers=annotation["answers"],
+                    session=session,
+                    confidence_scores=annotation.get("confidence_scores"),
+                    notes=annotation.get("notes")
+                )
+                
+                # Return validated entry
+                return {
+                    "success": True,
+                    "annotation": annotation,
+                    "video_id": video.id,
+                    "project_id": project.id,
+                    "user_id": user.id,
+                    "group_id": group.id,
+                    "video_uid": video_uid
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "idx": idx,
+                "annotation": annotation,
+                "error": f"[Row {idx}] {annotation.get('video_uid')} | "
+                        f"{annotation.get('user_name')} | "
+                        f"{annotation.get('question_group_title')}: {e}"
+            }
+    
+    # Run validation in parallel
+    validated_entries = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all validation tasks
+        futures = [executor.submit(validate_single_annotation, (idx + 1, annotation)) 
+                  for idx, annotation in enumerate(annotations_data)]
+        
+        # Collect results with progress bar
+        for future in tqdm(futures, desc="Validating", unit="items"):
+            result = future.result()
+            if result["success"]:
+                validated_entries.append(result)
+            else:
+                raise ValueError(result["error"])
+    
+    print(f"✅ Validation passed for {len(validated_entries)} annotations")
+    
+    # Process all validated annotations in a single transaction
+    print("📤 Processing annotations...")
+    results = {"uploaded": [], "skipped": [], "errors": []}
+    
     with SessionLocal() as session:
-        for rec in tqdm(valid_cache, desc="uploading"):
-            try:
+        try:
+            for entry in tqdm(validated_entries, desc="Processing annotations", unit="items"):
+                annotation = entry["annotation"]
+                
+                # Check if answers already exist
+                existing = AnnotatorService.get_user_answers_for_question_group(
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    user_id=entry["user_id"],
+                    question_group_id=entry["group_id"],
+                    session=session
+                )
+                
+                # Determine if update needed - check if any answer differs
+                needs_update = False
+                for q_text, answer in annotation["answers"].items():
+                    if q_text not in existing or existing[q_text] != answer:
+                        needs_update = True
+                        break
+                
+                if not needs_update:
+                    results["skipped"].append({
+                        "status": "skipped",
+                        "video_uid": entry["video_uid"],
+                        "user_name": annotation["user_name"],
+                        "group": annotation["question_group_title"]
+                    })
+                    continue
+                
+                # Submit the annotation (without committing yet)
                 AnnotatorService.submit_answer_to_question_group(
-                    video_id=rec["video_id"],
-                    project_id=rec["project_id"],
-                    user_id=rec["user_id"],
-                    question_group_id=rec["group_id"],
-                    answers=rec["answers"],
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    user_id=entry["user_id"],
+                    question_group_id=entry["group_id"],
+                    answers=annotation["answers"],
                     session=session,
-                    confidence_scores=rec["confidence"],
-                    notes=rec["notes"],
+                    confidence_scores=annotation.get("confidence_scores"),
+                    notes=annotation.get("notes")
                 )
-                ok += 1
-            except Exception as exc:
-                print(f"[FAIL] {rec['video_uid']}: {exc}")
-                fail += 1
-
-    print(f"\nUpload finished – {ok} succeeded, {fail} failed.")
-
-def _resolve_ids_for_reviews(
-    *,
-    session: Session,
-    question_group_title: str,
-    user_name: str,
-    video_ref: str,
-    project_name: str,
-) -> Tuple[int, int, int, int]:
-    """Return (video_id, project_id, reviewer_id, group_id) or raise ValueError."""
-    group_id = QuestionGroupService.get_group_by_name(question_group_title, session).id
-    if user_name:
-        reviewer_id = AuthService.get_user_by_name(user_name=user_name, session=session).id
-    else:
-        raise ValueError("user_name is required!")
-
-    video_uid  = video_ref.split("/")[-1]
-    video_id   = VideoService.get_video_by_uid(video_uid, session).id
-
-    project_id = ProjectService.get_project_by_name(project_name, session).id
-    return video_id, project_id, reviewer_id, group_id
-
-def upload_reviews_from_json(
-    rows: List[Dict[str, Any]],
-) -> None:
-    """Verify every review entry; upload only if all entries are valid."""
-    errors: list[str] = []
-    valid_cache: list[dict[str, Any]] = []
-    with SessionLocal() as session:
-        for idx, row in enumerate(tqdm(rows, desc="verifying reviews"), start=1):
-            if row.get("is_ground_truth") == False:
-                raise ValueError(f"is_ground_truth must be True! Video: {row['video_uid']} is not ground truth.")
-            try:
-                # ----- resolve IDs -------------------------------------------------
-                video_id, project_id, reviewer_id, group_id = _resolve_ids_for_reviews(
-                    session=session,
-                    question_group_title=row["question_group_title"],
-                    user_name=row.get("user_name", None),
-                    video_ref=row.get("video_uid") or row["video_uid"],
-                    project_name=row["project_name"],
-                )
-
-                # ----- keep only questions that exist in this group ---------------
-                legal_keys = _legal_keys_for_group(group_id, session)
-                answers = {k: v for k, v in row["answers"].items() if k in legal_keys}
-
-                # (optional) warn if something was dropped
-                dropped = set(row["answers"]) - legal_keys
-                if dropped:
-                    print(f"[WARN] {row['video_uid']} | reviewer:{row['user_name']} "
-                          f"dropped keys: {dropped}")
-
-                # ----- verify remaining answers -----------------------------------
-                _verification_passes_reviews(
-                    session=session,
-                    video_id=video_id,
-                    project_id=project_id,
-                    reviewer_id=reviewer_id,
-                    group_id=group_id,
-                    answers=answers,
-                )
-
-                # ----- cache for phase-2 upload -----------------------------------
-                valid_cache.append({
-                    "video_id":   video_id,
-                    "project_id": project_id,
-                    "reviewer_id": reviewer_id,
-                    "group_id":   group_id,
-                    "answers":    answers,
-                    "confidence": row.get("confidence_scores") or {},
-                    "notes":      row.get("notes") or {},
-                    "video_uid":  row.get("video_uid", "<unknown>"),
-                    "user_name": row["user_name"],
+                
+                results["uploaded"].append({
+                    "status": "uploaded",
+                    "video_uid": entry["video_uid"],
+                    "user_name": annotation["user_name"],
+                    "group": annotation["question_group_title"]
                 })
+            
+            # Commit all changes at once - if this fails, everything rolls back
+            session.commit()
+            print(f"🎉 Successfully uploaded {len(results['uploaded'])} annotations!")
+            
+        except Exception as e:
+            session.rollback()
+            # If ANY item fails, nothing gets committed
+            raise RuntimeError(f"Batch processing failed - no changes committed: {e}")
+    
+    # Print summary
+    print(f"\n📊 Summary:")
+    print(f"  ✅ Uploaded: {len(results['uploaded'])}")
+    print(f"  ⏭️  Skipped: {len(results['skipped'])}")
+    
+    # No errors section needed since any error would prevent reaching this point
 
-            except Exception as exc:
-                errors.append(f"[{idx}] {row.get('video_uid')} | "
-                              f"reviewer:{row.get('user_name')}: {exc}")
 
-    if errors:
-        print("\nVERIFICATION FAILED – nothing uploaded.")
-        for e in errors[:20]:
-            print(e)
-        if len(errors) > 20:
-            print(f"...and {len(errors)-20} more")
+def batch_sync_ground_truths(ground_truths_folder: str = None, 
+                            ground_truths_data: list[dict] = None, 
+                            max_workers: int = 15) -> None:
+    """Batch upload ground truths with parallel validation and atomic transaction.
+    
+    Args:
+        ground_truths_folder: Path to folder containing JSON ground truth files
+        ground_truths_data: Pre-loaded list of ground truth dictionaries  
+        max_workers: Number of parallel validation threads (default: 15)
+        
+    Raises:
+        ValueError: If validation fails, duplicates found, or invalid data structure
+        TypeError: If ground_truths_data is not a list of dictionaries
+        RuntimeError: If batch processing fails (all changes rolled back)
+        
+    Note:
+        Exactly one of ground_truths_folder or ground_truths_data must be provided.
+        All ground truths validated in parallel before any database operations.
+        """
+    from tqdm import tqdm
+    
+    if ground_truths_folder and ground_truths_data:
+        raise ValueError("Only one of ground_truths_folder or ground_truths_data can be provided")
+    
+    # Load and flatten data
+    if ground_truths_folder:
+        ground_truths_data = load_and_flatten_json_files(ground_truths_folder)
+    
+    if not ground_truths_data:
+        print("No ground truth data to process")
         return
-
-    print(f"\nVERIFICATION PASSED ({len(valid_cache)} records). Starting upload...")
-
-    # -------- phase 2 – real upload -----------------------------------
-    ok, fail = 0, 0
-    with SessionLocal() as session:
-        for rec in tqdm(valid_cache, desc="uploading reviews"):
-            try:
-                GroundTruthService.submit_ground_truth_to_question_group(
-                    video_id=rec["video_id"],
-                    project_id=rec["project_id"],
-                    reviewer_id=rec["reviewer_id"],
-                    question_group_id=rec["group_id"],
-                    answers=rec["answers"],
+    
+    # Validate data structure
+    if not isinstance(ground_truths_data, list):
+        raise TypeError("ground_truths_data must be a list of dictionaries")
+    
+    # Check for duplicates
+    check_for_duplicates(ground_truths_data, "ground truth")
+    
+    # Validate all data BEFORE any database operations using ThreadPool
+    print("🔍 Validating all ground truths...")
+    
+    def validate_single_ground_truth(ground_truth_with_idx):
+        idx, ground_truth = ground_truth_with_idx
+        try:
+            # Validate ground truth flag
+            if not ground_truth.get("is_ground_truth", False):
+                raise ValueError(f"is_ground_truth must be True for ground truths")
+            
+            with SessionLocal() as session:
+                # Resolve IDs
+                video_uid = ground_truth.get("video_uid", "").split("/")[-1]
+                video = VideoService.get_video_by_uid(video_uid, session)
+                project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+                reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+                group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
+                
+                # Verify submission format
+                GroundTruthService.verify_submit_ground_truth_to_question_group(
+                    video_id=video.id,
+                    project_id=project.id,
+                    reviewer_id=reviewer.id,
+                    question_group_id=group.id,
+                    answers=ground_truth["answers"],
                     session=session,
-                    confidence_scores=rec["confidence"],
-                    notes=rec["notes"],
+                    confidence_scores=ground_truth.get("confidence_scores"),
+                    notes=ground_truth.get("notes")
                 )
-                ok += 1
-            except Exception as exc:
-                print(f"[FAIL] {rec['video_uid']} | reviewer:{rec['user_name']}: {exc}")
-                fail += 1
-
-    print(f"\nUpload finished – {ok} succeeded, {fail} failed.")
-
-
-def _verification_passes_reviews(
-    *,
-    session: Session,
-    video_id: int,  # 改为 int
-    project_id: int,
-    reviewer_id: int,
-    group_id: int,
-    answers: Dict[str, str],
-) -> None:
-    """
-    Validate one review label *without* writing to DB.
-    Missing answers are tolerated for questions where `is_required` is False.
-    """
-    # 1. project & reviewer existence / role checks ------------------------
-    GroundTruthService._validate_project_and_user(project_id, reviewer_id, session)
-    GroundTruthService._validate_user_role(reviewer_id, project_id, "reviewer", session)
-
-    # 2. fetch group + questions ---------------------------------------
-    group, questions = GroundTruthService._validate_question_group(group_id, session)
-
-    # ---- build two helper sets ---------------------------------------
-    required_q_texts = {q.text for q in questions if getattr(q, "required", True)}
-    provided_q_texts = set(answers)
-    missing = required_q_texts - provided_q_texts
-    extra   = provided_q_texts  - {q.text for q in questions}
-
-    if missing or extra:
-        raise ValueError(
-            f"Answers do not match questions in group. "
-            f"Missing: {missing}. Extra: {extra}"
-        )
-
-    # 3. run optional verification hook -------------------------------
-    GroundTruthService._run_verification(group, answers)
-
-    # 4. per-question value validation (only for keys we have) ---------
-    q_lookup = {q.text: q for q in questions}
-    for q_text in provided_q_texts:
-        GroundTruthService._validate_answer_value(q_lookup[q_text], answers[q_text])
-
-
-def upload_annotations(annotations_folder: str = None, annotations_data: list[dict] = None) -> None:
+                
+                # Return validated entry
+                return {
+                    "success": True,
+                    "ground_truth": ground_truth,
+                    "video_id": video.id,
+                    "project_id": project.id,
+                    "reviewer_id": reviewer.id,
+                    "group_id": group.id,
+                    "video_uid": video_uid
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "idx": idx,
+                "ground_truth": ground_truth,
+                "error": f"[Row {idx}] {ground_truth.get('video_uid')} | "
+                        f"reviewer:{ground_truth.get('user_name')}: {e}"
+            }
     
-    if annotations_folder is None and annotations_data is None:
-        raise ValueError("At least one parameter must be provided: annotations_folder or annotations_data")
+    # Run validation in parallel
+    validated_entries = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all validation tasks
+        futures = [executor.submit(validate_single_ground_truth, (idx + 1, ground_truth)) 
+                  for idx, ground_truth in enumerate(ground_truths_data)]
+        
+        # Collect results with progress bar
+        for future in tqdm(futures, desc="Validating", unit="items"):
+            result = future.result()
+            if result["success"]:
+                validated_entries.append(result)
+            else:
+                raise ValueError(result["error"])
     
-    if annotations_folder is not None:
-        import os
-        import glob
-        annotations_data = []
-        paths = glob.glob(os.path.join(annotations_folder, '*.json'))
-        for path in paths:
-            with open(path, 'r') as f:
-                annotations_data.append(json.load(f))
-    for annotation_data in annotations_data:
-        upload_annotations_from_json(annotation_data)
+    print(f"✅ Validation passed for {len(validated_entries)} ground truths")
     
-def upload_reviews(reviews_folder: str = None, reviews_data: list[dict] = None) -> None:
+    # Process all validated ground truths in a single transaction
+    print("📤 Processing ground truths...")
+    results = {"uploaded": [], "skipped": [], "errors": []}
     
-    if reviews_folder is None and reviews_data is None:
-        raise ValueError("At least one parameter must be provided: reviews_folder or reviews_data")
+    with SessionLocal() as session:
+        try:
+            for entry in tqdm(validated_entries, desc="Processing ground truths", unit="items"):
+                ground_truth = entry["ground_truth"]
+                
+                # Check existing ground truth
+                existing = GroundTruthService.get_ground_truth_dict_for_question_group(
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    question_group_id=entry["group_id"],
+                    session=session
+                )
+                
+                # Determine if update needed - check if any answer differs
+                needs_update = False
+                for q_text, answer in ground_truth["answers"].items():
+                    if q_text not in existing or existing[q_text] != answer:
+                        needs_update = True
+                        break
+                
+                if not needs_update:
+                    results["skipped"].append({
+                        "status": "skipped",
+                        "video_uid": entry["video_uid"],
+                        "reviewer": ground_truth["user_name"]
+                    })
+                    continue
+                
+                # Submit the ground truth (without committing yet)
+                GroundTruthService.submit_ground_truth_to_question_group(
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    reviewer_id=entry["reviewer_id"],
+                    question_group_id=entry["group_id"],
+                    answers=ground_truth["answers"],
+                    session=session,
+                    confidence_scores=ground_truth.get("confidence_scores"),
+                    notes=ground_truth.get("notes")
+                )
+                
+                results["uploaded"].append({
+                    "status": "uploaded",
+                    "video_uid": entry["video_uid"],
+                    "reviewer": ground_truth["user_name"]
+                })
+            
+            # Commit all changes at once - if this fails, everything rolls back
+            session.commit()
+            print(f"🎉 Successfully uploaded {len(results['uploaded'])} ground truths!")
+            
+        except Exception as e:
+            session.rollback()
+            # If ANY item fails, nothing gets committed
+            raise RuntimeError(f"Batch processing failed - no changes committed: {e}")
     
-    if reviews_folder is not None:
-        import os
-        import glob
-        reviews_data = []
-        paths = glob.glob(os.path.join(reviews_folder, '*'))
-        for path in paths:
-            with open(path, 'r') as f:
-                reviews_data.append(json.load(f))
-    for review_data in reviews_data:
-        upload_reviews_from_json(review_data)
-
+    # Print summary
+    print(f"\n📊 Summary:")
+    print(f"  ✅ Uploaded: {len(results['uploaded'])}")
+    print(f"  ⏭️  Skipped: {len(results['skipped'])}")
+    
+    # No errors section needed since any error would prevent reaching this point
+                    
+                    

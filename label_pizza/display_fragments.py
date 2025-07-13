@@ -3673,8 +3673,8 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
             search_indicator = f"🔍 Filtered by '{search_term}' • "
         
         st.markdown(f"""
-        <div style="{get_card_style(group_color)}background: linear-gradient(135deg, #ffffff, #f8f9fa) !important; position: relative;">
-            <div style="position: absolute; top: -8px; left: 20px; background: {group_color}; color: white; padding: 4px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+        <div style="background: #F2ECFC; border: 2px solid #F2ECFC; border-radius: 12px; padding: 18px; margin: 16px 0; position: relative;">
+            <div style="position: absolute; top: -8px; left: 20px; background: {group_color}; color: white; padding: 4px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; ">
                 PROJECT GROUP
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
@@ -3685,7 +3685,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                     </p>
                 </div>
                 <div style="text-align: right;">
-                    <span style="background: {group_color}; color: white; padding: 10px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 3px 6px rgba(0,0,0,0.2);">{total_projects} Projects</span>
+                    <span style="background: {group_color}; color: white; padding: 10px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; ">{total_projects} Projects</span>
                 </div>
             </div>
         </div>

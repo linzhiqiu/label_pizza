@@ -21,14 +21,22 @@ import pandas as pd
 import os
 import concurrent.futures
 import threading
-
+from concurrent.futures import ThreadPoolExecutor
+import glob
 
 # --------------------------------------------------------------------------- #
 # Core operations                                                             #
 # --------------------------------------------------------------------------- #
 
 def _process_video_add(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
-    """Process a single video addition in a thread-safe manner."""
+    """Process and verify a single video addition in a thread-safe manner.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, and optional metadata
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             VideoService.verify_add_video(
@@ -45,7 +53,14 @@ def _process_video_add(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
                 return video_data["video_uid"], False, str(err)
 
 def _add_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
-    """Add a single video in a thread-safe manner."""
+    """Add a single video in a thread-safe manner.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, and optional metadata
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             VideoService.add_video(
@@ -58,8 +73,17 @@ def _add_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
         except Exception as e:
             return video_data["video_uid"], False, str(e)
 
-def add_videos(videos_data: List[Dict], max_workers: int = 15) -> None:
-    """Insert videos that are *not* yet in DB – relies on verify_add_video."""
+def add_videos(videos_data: List[Dict], max_workers: int = 10) -> None:
+    """Insert videos that are not yet in database with parallel verification.
+    
+    Args:
+        videos_data: List of video dictionaries with video_uid, url, metadata
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        TypeError: If videos_data is not a list of dictionaries
+        ValueError: If videos already exist or verification fails
+    """
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
 
@@ -102,7 +126,14 @@ def add_videos(videos_data: List[Dict], max_workers: int = 15) -> None:
 
 
 def _process_video_update(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
-    """Process a single video update verification in a thread-safe manner."""
+    """Process and verify a single video update in a thread-safe manner.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, and optional metadata
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             VideoService.verify_update_video(
@@ -119,7 +150,14 @@ def _process_video_update(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
                 return video_data["video_uid"], False, str(err)
 
 def _update_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
-    """Update a single video in a thread-safe manner."""
+    """Update a single video in a thread-safe manner with change detection.
+    
+    Args:
+        video_data: Dictionary containing video_uid, url, metadata, optional is_archived
+        
+    Returns:
+        Tuple of (video_uid, success, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             # Get existing video info
@@ -170,8 +208,17 @@ def _update_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
         except Exception as e:
             return video_data["video_uid"], False, str(e)
 
-def update_videos(videos_data: List[Dict], max_workers: int = 15) -> None:
-    """Update videos that *must* exist – relies on verify_update_video."""
+def update_videos(videos_data: List[Dict], max_workers: int = 10) -> None:
+    """Update videos that must exist in database with parallel verification.
+    
+    Args:
+        videos_data: List of video dictionaries with video_uid, url, metadata
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        TypeError: If videos_data is not a list of dictionaries
+        ValueError: If videos not found or verification fails
+    """
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
 
@@ -228,7 +275,20 @@ def update_videos(videos_data: List[Dict], max_workers: int = 15) -> None:
 def sync_videos(
     *, videos_path: str | Path | None = None, videos_data: List[Dict] | None = None
 ) -> None:
-    """Load data, normalise video_uid, and route to add/update pipelines."""
+    """Load, validate, and route videos to add/update pipelines automatically.
+    
+    Args:
+        videos_path: Path to JSON file containing video list
+        videos_data: Pre-loaded list of video dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If videos_data is not a list of dictionaries
+        
+    Note:
+        Exactly one of videos_path or videos_data must be provided.
+        Each video dict requires: url, video_uid, metadata, is_active.
+    """
 
     if videos_path is None and videos_data is None:
         raise ValueError("Provide either videos_path or videos_data")
@@ -304,7 +364,15 @@ def sync_videos(
 # --------------------------------------------------------------------------- #
 
 def add_users(users_data: List[Dict]) -> None:
-    """Insert users that are *not* yet in DB – relies on verify_add_user."""
+    """Insert users that are not yet in database with verification.
+    
+    Args:
+        users_data: List of user dictionaries with user_id, email, password, user_type
+        
+    Raises:
+        TypeError: If users_data is not a list of dictionaries
+        ValueError: If users already exist or verification fails
+    """
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
 
@@ -342,7 +410,16 @@ def add_users(users_data: List[Dict]) -> None:
 
 
 def update_users(users_data: List[Dict]) -> None:
-    """Update users that *must* exist – checks for changes before updating."""
+    """Update users that must exist in database with change detection.
+    
+    Args:
+        users_data: List of user dictionaries with user_id/email and optional updates
+        
+    Raises:
+        TypeError: If users_data is not a list of dictionaries
+        ValueError: If users not found
+        RuntimeError: If update operation fails
+    """
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
 
@@ -458,7 +535,20 @@ def update_users(users_data: List[Dict]) -> None:
 def sync_users(
     *, users_path: str | Path | None = None, users_data: List[Dict] | None = None
 ) -> None:
-    """Load JSON / list and route to add/update."""
+    """Load, validate, and route users to add/update pipelines automatically.
+    
+    Args:
+        users_path: Path to JSON file containing user list
+        users_data: Pre-loaded list of user dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If users_data is not a list of dictionaries
+        
+    Note:
+        Exactly one of users_path or users_data must be provided.
+        Each user dict requires: user_id, email, password, user_type, is_active.
+    """
 
     if users_path is None and users_data is None:
         raise ValueError("Provide either users_path or users_data")
@@ -537,7 +627,18 @@ def sync_users(
 
 
 def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], List[str]]:
-    """Create brand‑new groups after *full* verification, single commit."""
+    """Create new question groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with question group data
+        
+    Returns:
+        Tuple of (created_groups, questions_created) with group info and new question texts
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups already exist or verification fails
+    """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
 
@@ -618,7 +719,18 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
 
 
 def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
-    """Edit existing groups after *full* verification, single commit."""
+    """Update existing question groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with question group data
+        
+    Returns:
+        List of updated group information with changes made
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups not found or verification fails
+    """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
 
@@ -808,8 +920,24 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
 def sync_question_groups(
     question_groups_folder: str = None, 
     question_groups_data: List[Dict] = None) -> None:
-    """Validate every file first, then route to add/update ops."""
+    """Load, validate, and route question groups to add/update pipelines.
+    
+    Args:
+        question_groups_folder: Path to folder containing JSON group files
+        question_groups_data: Pre-loaded list of question group dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If question_groups_data is not a list of dictionaries
+        
+    Note:
+        Exactly one parameter must be provided.
+        Each group dict requires: title, description, questions, is_active.
+    """
 
+    if question_groups_folder and question_groups_data:
+        raise ValueError("Only one of question_groups_folder or question_groups_data can be provided")
+    
     # Validate input parameters
     if question_groups_folder is None and question_groups_data is None:
         raise ValueError("Either question_groups_folder or question_groups_data must be provided")
@@ -923,7 +1051,18 @@ def sync_question_groups(
 
 
 def add_schemas(schemas: List[Dict]) -> List[Dict]:
-    """Create brand‑new schemas after full verification, single commit."""
+    """Create new schemas with full verification and atomic transaction.
+    
+    Args:
+        schemas: List of schema dictionaries with schema_name, question_group_names
+        
+    Returns:
+        List of created schema information
+        
+    Raises:
+        TypeError: If schemas is not a list of dictionaries
+        ValueError: If schemas already exist or verification fails
+    """
     if not isinstance(schemas, list):
         raise TypeError("schemas must be list[dict]")
 
@@ -980,7 +1119,18 @@ def add_schemas(schemas: List[Dict]) -> List[Dict]:
 
 
 def update_schemas(schemas: List[Dict]) -> List[Dict]:
-    """Edit existing schemas after full verification, single commit."""
+    """Update existing schemas with full verification and atomic transaction.
+    
+    Args:
+        schemas: List of schema dictionaries with schema_name and updates
+        
+    Returns:
+        List of updated schema information with changes made
+        
+    Raises:
+        TypeError: If schemas is not a list of dictionaries
+        ValueError: If schemas not found or verification fails
+    """
     if not isinstance(schemas, list):
         raise TypeError("schemas must be list[dict]")
 
@@ -1012,18 +1162,18 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
             sch = SchemaService.get_schema_by_name(s["schema_name"], sess)
             group_ids: List[int] = []
             
-            # Get question group IDs from the schema data if provided
-            if "question_groups" in s and s["question_groups"]:
-                for g in s["question_groups"]:
-                    try:
-                        group_rec = QuestionGroupService.get_group_by_name(g["title"], sess)
-                        group_ids.append(group_rec.id)
-                    except ValueError as err:
-                        # Only treat "not found" as missing, re-raise other errors
-                        if "not found" not in str(err).lower():
-                            raise
-                        # Question group doesn't exist
-                        missing_groups.append(g["title"])
+        # Get question group IDs from the schema data using question_group_names
+        if "question_group_names" in s and s["question_group_names"]:
+            for gname in s["question_group_names"]:
+                try:
+                    group_rec = QuestionGroupService.get_group_by_name(gname, sess)
+                    group_ids.append(group_rec.id)
+                except ValueError as err:
+                    # Only treat "not found" as missing, re-raise other errors
+                    if "not found" not in str(err).lower():
+                        raise
+                    # Question group doesn't exist
+                    missing_groups.append(gname)
             
             # Check if question group set has changed (before any database modifications)
             current_group_ids = set(SchemaService.get_question_group_order(sch.id, sess))
@@ -1140,7 +1290,23 @@ def update_schemas(schemas: List[Dict]) -> List[Dict]:
 # --------------------------------------------------------------------------- #
 
 def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[Dict] | None = None) -> None:
-    """Normalise input, classify add vs update, delegate, print summary."""
+    """Load, validate, and route schemas to add/update pipelines automatically.
+    
+    Args:
+        schemas_path: Path to JSON file containing schema list
+        schemas_data: Pre-loaded list of schema dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If schemas_data is not a list of dictionaries
+        
+    Note:
+        Exactly one parameter must be provided.
+        Each schema dict requires: schema_name, question_group_names, instructions_url, has_custom_display, is_active.
+    """
+
+    if schemas_path and schemas_data:
+        raise ValueError("Only one of schemas_path or schemas_data can be provided")
 
     if schemas_path is None and schemas_data is None:
         raise ValueError("Provide either schemas_path or schemas_data")
@@ -1203,7 +1369,18 @@ def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[D
 # --------------------------------------------------------------------------- #
 
 def _normalize_video_data(videos: list[Any]) -> Dict[str, List[Dict]]:
-    """Convert both list styles into {video_uid: [question_cfg, ...]}"""
+    """Convert video list formats into normalized dictionary structure.
+    
+    Args:
+        videos: List of video UIDs (strings) or video dictionaries with questions
+        
+    Returns:
+        Dictionary mapping video_uid to list of question configurations
+        
+    Raises:
+        TypeError: If videos is not a list
+        ValueError: If video entries have invalid format
+    """
     if not isinstance(videos, list):
         raise TypeError("'videos' must be a list")
     out: Dict[str, List[Dict]] = {}
@@ -1231,7 +1408,19 @@ def _normalize_video_data(videos: list[Any]) -> Dict[str, List[Dict]]:
 
 @staticmethod
 def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str, int]:
-    """Create / update / remove / skip custom displays to match JSON spec with full verification first."""
+    """Synchronize custom displays for project videos with verification.
+    
+    Args:
+        project_id: ID of the project
+        videos: List of video configurations with custom display settings
+        sess: Database session
+        
+    Returns:
+        Dictionary with operation counts (created, updated, removed, skipped)
+        
+    Raises:
+        ValueError: If verification fails for any custom display operation
+    """
     stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
 
     # Get project info including schema
@@ -1372,7 +1561,14 @@ def _sync_custom_displays(project_id: int, videos: list[Any], sess) -> Dict[str,
 # --------------------------------------------------------------------------- #
 
 def _process_project_validation(project_data: Dict) -> Tuple[str, bool, Optional[str]]:
-    """Validate single project creation in a thread-safe manner."""
+    """Validate single project creation in a thread-safe manner.
+    
+    Args:
+        project_data: Dictionary containing project_name, schema_name, videos
+        
+    Returns:
+        Tuple of (project_name, success, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             project_name = project_data["project_name"]
@@ -1398,7 +1594,14 @@ def _process_project_validation(project_data: Dict) -> Tuple[str, bool, Optional
             return project_data["project_name"], False, str(e)
 
 def _create_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
-    """Create single project in a thread-safe manner."""
+    """Create single project in a thread-safe manner with custom displays.
+    
+    Args:
+        project_data: Dictionary containing project creation parameters
+        
+    Returns:
+        Tuple of (project_name, success, error_message, result_info)
+    """
     with SessionLocal() as sess:
         try:
             project_name = project_data["project_name"]
@@ -1425,7 +1628,12 @@ def _create_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
             
             # Handle archive status
             if project_data.get("is_archived", False):
+                ProjectService.verify_archive_project(proj.id, sess)
                 ProjectService.archive_project(proj.id, sess)
+            
+            if project_data.get("is_active") == True:
+                ProjectService.verify_unarchive_project(proj.id, sess)
+                ProjectService.unarchive_project(proj.id, sess)
             
             # Sync custom displays
             stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
@@ -1442,7 +1650,19 @@ def _create_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
             return project_data["project_name"], False, str(e), {}
 
 def add_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[Dict]:
-    """Create projects using ThreadPool for parallel processing."""
+    """Create projects using parallel processing with full verification.
+    
+    Args:
+        projects: List of project dictionaries with project_name, schema_name, videos
+        max_workers: Number of parallel worker threads (default: 20)
+        
+    Returns:
+        List of created project information with custom display stats
+        
+    Raises:
+        TypeError: If projects is not a list of dictionaries
+        ValueError: If projects already exist or verification fails
+    """
     if not isinstance(projects, list):
         raise TypeError("projects must be list[dict]")
 
@@ -1490,7 +1710,14 @@ def add_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[D
     return output
 
 def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, Optional[str]]:
-    """Validate single project update in a thread-safe manner."""
+    """Validate single project update in a thread-safe manner.
+    
+    Args:
+        project_data: Dictionary containing project update parameters
+        
+    Returns:
+        Tuple of (project_name, success, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             proj = ProjectService.get_project_by_name(project_data["project_name"], sess)
@@ -1520,7 +1747,14 @@ def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, O
             return project_data["project_name"], False, str(e)
 
 def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
-    """Update single project in a thread-safe manner."""
+    """Update single project in a thread-safe manner with change detection.
+    
+    Args:
+        project_data: Dictionary containing project update parameters
+        
+    Returns:
+        Tuple of (project_name, success, error_message, result_info)
+    """
     with SessionLocal() as sess:
         try:
             project_name = project_data["project_name"]
@@ -1630,7 +1864,19 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
             return project_data["project_name"], False, str(e), {}
 
 def update_projects_parallel(projects: List[Dict], max_workers: int = 20) -> List[Dict]:
-    """Update projects using ThreadPool for parallel processing."""
+    """Update projects using parallel processing with full verification.
+    
+    Args:
+        projects: List of project dictionaries with updates
+        max_workers: Number of parallel worker threads (default: 20)
+        
+    Returns:
+        List of updated project information with changes and custom display stats
+        
+    Raises:
+        TypeError: If projects is not a list of dictionaries
+        ValueError: If projects not found or verification fails
+    """
     if not isinstance(projects, list):
         raise TypeError("projects must be list[dict]")
 
@@ -1686,7 +1932,21 @@ def update_projects_parallel(projects: List[Dict], max_workers: int = 20) -> Lis
     return output
 
 def sync_projects(*, projects_path: str | Path | None = None, projects_data: List[Dict] | None = None, max_workers: int = 10) -> None:
-    """Sync projects using ThreadPool for parallel processing."""
+    """Load, validate, and route projects to add/update pipelines with parallel processing.
+    
+    Args:
+        projects_path: Path to JSON file containing project list
+        projects_data: Pre-loaded list of project dictionaries
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If projects_data is not a list of dictionaries
+        
+    Note:
+        Exactly one path parameter must be provided.
+        Each project dict requires: project_name, schema_name, is_active, videos.
+    """
     if projects_path is None and projects_data is None:
         raise ValueError("Provide either projects_path or projects_data")
         
@@ -1768,7 +2028,18 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
 
 
 def add_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
-    """Create brand‑new project groups after *full* verification, single commit."""
+    """Create new project groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with project group data
+        
+    Returns:
+        List of created project group information
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups already exist or projects not found
+    """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
 
@@ -1837,7 +2108,18 @@ def add_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
 
 
 def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
-    """Edit existing project groups after *full* verification, single commit."""
+    """Update existing project groups with full verification and atomic transaction.
+    
+    Args:
+        groups: List of (filename, group_dict) tuples with project group data
+        
+    Returns:
+        List of updated project group information with changes made
+        
+    Raises:
+        TypeError: If groups is not a list of tuples
+        ValueError: If groups not found or projects not found
+    """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
 
@@ -1983,7 +2265,20 @@ def update_project_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
 def sync_project_groups(
     *, project_groups_path: str | Path | None = None, 
     project_groups_data: List[Dict] | None = None) -> None:
-    """Validate every file first, then route to add/update ops."""
+    """Load, validate, and route project groups to add/update pipelines.
+    
+    Args:
+        project_groups_path: Path to JSON file containing project group list
+        project_groups_data: Pre-loaded list of project group dictionaries
+        
+    Raises:
+        ValueError: If neither or both parameters provided, or validation fails
+        TypeError: If project_groups_data is not a list of dictionaries
+        
+    Note:
+        Exactly one parameter must be provided.
+        Each group dict requires: project_group_name, projects.
+    """
 
     if project_groups_path is None and project_groups_data is None:
         raise ValueError("Provide either project_groups_path or project_groups_data")
@@ -2056,7 +2351,17 @@ def sync_project_groups(
 
 
 def _process_assignment_validation(assignment_data: Dict) -> Tuple[int, Dict, Optional[str]]:
-    """Process a single assignment validation in a thread-safe manner."""
+    """Process and validate a single assignment in a thread-safe manner.
+    
+    Args:
+        assignment_data: Dictionary containing assignment fields (user_name/user_email, project_name, role)
+        
+    Returns:
+        Tuple of (index, processed_data, error_message). Error message is None on success.
+        
+    Raises:
+        ValueError: If entity lookup fails with unhandled error
+    """
     with SessionLocal() as sess:
         try:
             # Validate required fields
@@ -2101,7 +2406,15 @@ def _process_assignment_validation(assignment_data: Dict) -> Tuple[int, Dict, Op
 
 
 def _apply_single_assignment(assignment_data: Dict) -> Tuple[str, str, bool, Optional[str]]:
-    """Apply a single assignment in a thread-safe manner."""
+    """Apply a single assignment operation in a thread-safe manner.
+    
+    Args:
+        assignment_data: Validated assignment dictionary with user_id, project_id, role, is_active
+        
+    Returns:
+        Tuple of (assignment_name, operation, success, error_message). 
+        Operation is one of: "created", "updated", "removed", "skipped", "error".
+    """
     with SessionLocal() as sess:
         try:
             # Check existing assignment using service method
@@ -2139,8 +2452,24 @@ def _apply_single_assignment(assignment_data: Dict) -> Tuple[str, str, bool, Opt
         except Exception as e:
             return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "error", False, str(e)
 
-def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None, max_workers: int = 20) -> None:
-    """Bulk assign users to projects with roles using thread pool and progress tracking."""
+def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None, max_workers: int = 10) -> None:
+    """Bulk assign users to projects with parallel validation and application.
+    
+    Args:
+        assignment_path: Path to JSON file containing assignment list
+        assignments_data: Pre-loaded list of assignment dictionaries
+        max_workers: Number of parallel worker threads (default: 10)
+        
+    Raises:
+        ValueError: If validation fails or input parameters invalid
+        TypeError: If assignments_data is not a list of dictionaries  
+        RuntimeError: If assignment application fails
+        
+    Note:
+        Exactly one of assignment_path or assignments_data must be provided.
+        Each assignment dict requires: user_name/user_email, project_name, role.
+        Optional: is_active (default: True), user_weight.
+    """
     
     # Load and validate input
     if assignment_path is None and assignments_data is None:
@@ -2269,7 +2598,14 @@ def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: l
     print(f"✅ Completed: {created} created, {updated} updated, {removed} removed, {skipped} skipped")
 
 def _verify_single_assignment(assignment_data: Dict) -> Tuple[str, Optional[str]]:
-    """Verify a single assignment operation in a thread-safe manner."""
+    """Verify a single assignment operation in a thread-safe manner.
+    
+    Args:
+        assignment_data: Assignment dictionary with user_id, project_id, role, is_active
+        
+    Returns:
+        Tuple of (assignment_name, error_message). Error message is None on success.
+    """
     with SessionLocal() as sess:
         try:
             assignment_name = f"{assignment_data['user_name']} -> {assignment_data['project_name']}"
@@ -2298,311 +2634,590 @@ def _verify_single_assignment(assignment_data: Dict) -> Tuple[str, Optional[str]
             return assignment_name, str(e)
 
 
-def sync_annotations(annotations_path: str = None, annotations_data: list[dict] = None) -> None:
-    """Upload annotations from JSON file or data list with optimized connection handling."""
+def sync_annotations(annotation: dict) -> dict:
+    """Upload a single annotation item with duplicate checking.
+    
+    Args:
+        annotation: Annotation dictionary with video_uid, project_name, user_name, 
+                   question_group_title, answers, and optional confidence_scores/notes
+        
+    Returns:
+        Dictionary with status ("uploaded" or "skipped"), video_uid, user_name, and group
+        
+    Raises:
+        TypeError: If annotation is not a dictionary
+        RuntimeError: If upload fails (includes rollback)
+        
+    Note:
+        Assumes annotation has already been validated. Skips if no changes detected.
+    """
+    
+    if not isinstance(annotation, dict):
+        raise TypeError("annotation must be a dictionary")
+    
+    with SessionLocal() as session:
+        try:
+            # Resolve IDs (these should succeed since validation passed)
+            video_uid = annotation.get("video_uid", "").split("/")[-1]
+            video = VideoService.get_video_by_uid(video_uid, session)
+            project = ProjectService.get_project_by_name(annotation["project_name"], session)
+            user = AuthService.get_user_by_name(annotation["user_name"], session)
+            group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
+            
+            # Check if answers already exist
+            existing = AnnotatorService.get_user_answers_for_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                user_id=user.id,
+                question_group_id=group.id,
+                session=session
+            )
+            
+            # Determine if update needed - check if any answer differs
+            needs_update = False
+            for q_text, answer in annotation["answers"].items():
+                if q_text not in existing or existing[q_text] != answer:
+                    needs_update = True
+                    break
+            
+            if not needs_update:
+                print(f"⏭️  Skipped: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']} (no changes)")
+                return {
+                    "status": "skipped",
+                    "video_uid": video_uid,
+                    "user_name": annotation["user_name"],
+                    "group": annotation["question_group_title"]
+                }
+            
+            # Submit the annotation (no verification needed - already done)
+            AnnotatorService.submit_answer_to_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                user_id=user.id,
+                question_group_id=group.id,
+                answers=annotation["answers"],
+                session=session,
+                confidence_scores=annotation.get("confidence_scores"),
+                notes=annotation.get("notes")
+            )
+            
+            session.commit()
+            print(f"🎉 Successfully uploaded annotation: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']}")
+            
+            return {
+                "status": "uploaded",
+                "video_uid": video_uid,
+                "user_name": annotation["user_name"],
+                "group": annotation["question_group_title"]
+            }
+            
+        except Exception as e:
+            session.rollback()
+            error_msg = f"{annotation.get('video_uid')} | {annotation.get('user_name')} | {annotation.get('question_group_title')}: {e}"
+            raise RuntimeError(f"Upload failed: {error_msg}")
+
+
+def sync_ground_truths(ground_truth: dict) -> dict:
+    """Upload a single ground truth item with duplicate checking.
+    
+    Args:
+        ground_truth: Ground truth dictionary with video_uid, project_name, user_name,
+                     question_group_title, answers, and optional confidence_scores/notes
+        
+    Returns:
+        Dictionary with status ("uploaded" or "skipped"), video_uid, and reviewer
+        
+    Raises:
+        TypeError: If ground_truth is not a dictionary
+        RuntimeError: If upload fails (includes rollback)
+        
+    Note:
+        Assumes ground truth has already been validated. Skips if no changes detected.
+    """
+    
+    if not isinstance(ground_truth, dict):
+        raise TypeError("ground_truth must be a dictionary")
+    
+    with SessionLocal() as session:
+        try:
+            # Resolve IDs (these should succeed since validation passed)
+            video_uid = ground_truth.get("video_uid", "").split("/")[-1]
+            video = VideoService.get_video_by_uid(video_uid, session)
+            project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+            reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+            group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
+            
+            # Check existing ground truth
+            existing = GroundTruthService.get_ground_truth_dict_for_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                question_group_id=group.id,
+                session=session
+            )
+            
+            # Determine if update needed - check if any answer differs
+            needs_update = False
+            for q_text, answer in ground_truth["answers"].items():
+                if q_text not in existing or existing[q_text] != answer:
+                    needs_update = True
+                    break
+            
+            if not needs_update:
+                print(f"⏭️  Skipped: {video_uid} | {ground_truth['user_name']} (no changes)")
+                return {
+                    "status": "skipped",
+                    "video_uid": video_uid,
+                    "reviewer": ground_truth["user_name"]
+                }
+            
+            # Submit the ground truth (no verification needed - already done)
+            GroundTruthService.submit_ground_truth_to_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                reviewer_id=reviewer.id,
+                question_group_id=group.id,
+                answers=ground_truth["answers"],
+                session=session,
+                confidence_scores=ground_truth.get("confidence_scores"),
+                notes=ground_truth.get("notes")
+            )
+            
+            session.commit()
+            print(f"🎉 Successfully uploaded ground truth: {video_uid} | {ground_truth['user_name']}")
+            
+            return {
+                "status": "uploaded",
+                "video_uid": video_uid,
+                "reviewer": ground_truth["user_name"]
+            }
+            
+        except Exception as e:
+            session.rollback()
+            error_msg = f"{ground_truth.get('video_uid')} | reviewer:{ground_truth.get('user_name')}: {e}"
+            raise RuntimeError(f"Upload failed: {error_msg}")
+
+
+def load_and_flatten_json_files(folder_path: str) -> list[dict]:
+    """Load all JSON files from folder and flatten into single list.
+    
+    Args:
+        folder_path: Path to folder containing JSON files
+        
+    Returns:
+        Flattened list of dictionaries from all JSON files
+        
+    Note:
+        Handles both single objects and arrays in JSON files.
+        Prints success/failure for each file loaded.
+    """
+    json_files = glob.glob(f"{folder_path}/*.json")
+    flattened_data = []
+    
+    for filepath in json_files:
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            
+            # Handle both single items and lists
+            if isinstance(data, list):
+                flattened_data.extend(data)
+            else:
+                flattened_data.append(data)
+            
+            print(f"✓ Loaded {filepath}")
+        except Exception as e:
+            print(f"✗ Failed to load {filepath}: {e}")
+    
+    return flattened_data
+
+
+def check_for_duplicates(data: list[dict], data_type: str) -> None:
+    """Check for duplicate entries based on video_uid, user_name, question_group_title, project_name.
+    
+    Args:
+        data: List of dictionaries to check for duplicates
+        data_type: Type description for error messages (e.g., "annotation", "ground truth")
+        
+    Raises:
+        ValueError: If duplicates are found (includes detailed duplicate list)
+    """
+    seen = set()
+    duplicates = []
+    
+    for idx, item in enumerate(data):
+        # Create a unique key based on the combination of fields
+        key = (
+            item.get("video_uid", "").split("/")[-1],
+            item.get("user_name", ""),
+            item.get("question_group_title", ""),
+            item.get("project_name", "")
+        )
+        
+        if key in seen:
+            duplicates.append({
+                "index": idx,
+                "video_uid": item.get("video_uid"),
+                "user_name": item.get("user_name"),
+                "question_group_title": item.get("question_group_title"),
+                "project_name": item.get("project_name")
+            })
+        else:
+            seen.add(key)
+    
+    if duplicates:
+        error_msg = f"Found {len(duplicates)} duplicate {data_type} entries:\n"
+        for dup in duplicates:
+            error_msg += f"  - Index {dup['index']}: {dup['video_uid']} | {dup['user_name']} | {dup['question_group_title']} | {dup['project_name']}\n"
+        raise ValueError(error_msg)
+
+
+def batch_sync_annotations(annotations_folder: str = None, 
+                           annotations_data: list[dict] = None, 
+                           max_workers: int = 15) -> None:
+    """Batch upload annotations with parallel validation and atomic transaction.
+    
+    Args:
+        annotations_folder: Path to folder containing JSON annotation files
+        annotations_data: Pre-loaded list of annotation dictionaries
+        max_workers: Number of parallel validation threads (default: 15)
+        
+    Raises:
+        ValueError: If validation fails, duplicates found, or invalid data structure
+        TypeError: If annotations_data is not a list of dictionaries
+        RuntimeError: If batch processing fails (all changes rolled back)
+        
+    Note:
+        Exactly one of annotations_folder or annotations_data must be provided.
+        All annotations validated in parallel before any database operations.
+    """
     from tqdm import tqdm
     
-    # Load data
-    if annotations_path is None and annotations_data is None:
-        raise ValueError("Either annotations_path or annotations_data must be provided")
+    if annotations_folder and annotations_data:
+        raise ValueError("Only one of annotations_folder or annotations_data can be provided")
     
-    if annotations_path is not None:
-        with open(annotations_path, 'r') as f:
-            annotations_data = json.load(f)
+    # Load and flatten data
+    if annotations_folder:
+        annotations_data = load_and_flatten_json_files(annotations_folder)
     
+    if not annotations_data:
+        print("No annotation data to process")
+        return
+    
+    # Validate data structure
     if not isinstance(annotations_data, list):
         raise TypeError("annotations_data must be a list of dictionaries")
     
-    if not annotations_data:
-        print("ℹ️  No annotations to upload")
-        return
+    # Check for duplicates
+    check_for_duplicates(annotations_data, "annotation")
     
-    # Process annotations in single session to avoid connection exhaustion
-    validated_entries = []
-    skipped_entries = []
+    # Validate all data BEFORE any database operations using ThreadPool
+    print("🔍 Validating all annotations...")
     
-    print("🔍 Validating and uploading annotations...")
-    with SessionLocal() as session:
+    def validate_single_annotation(annotation_with_idx):
+        idx, annotation = annotation_with_idx
         try:
-            # Validation phase with progress bar
-            for idx, annotation in enumerate(tqdm(annotations_data, desc="Validating", unit="items"), 1):
-                try:
-                    # Resolve IDs
-                    video_uid = annotation.get("video_uid", "").split("/")[-1]
-                    video = VideoService.get_video_by_uid(video_uid, session)
-                    project = ProjectService.get_project_by_name(annotation["project_name"], session)
-                    user = AuthService.get_user_by_name(annotation["user_name"], session)
-                    group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
-                    # Verify submission
-                    AnnotatorService.verify_submit_answer_to_question_group(
-                        video_id=video.id,
-                        project_id=project.id,
-                        user_id=user.id,
-                        question_group_id=group.id,
-                        answers=annotation["answers"],
-                        session=session,
-                        confidence_scores=annotation.get("confidence_scores"),
-                        notes=annotation.get("notes")
-                    )
-                    # Check if answers already exist
-                    existing = AnnotatorService.get_user_answers_for_question_group(
-                        video_id=video.id,
-                        project_id=project.id,
-                        user_id=user.id,
-                        question_group_id=group.id,
-                        session=session
-                    )
-                    
-                    # Determine if update needed
-                    needs_update = False
-                    for q_text, answer in annotation["answers"].items():
-                        if q_text not in existing or existing[q_text] != answer:
-                            needs_update = True
-                            break
-                    
-                    if not needs_update:
-                        skipped_entries.append({
-                            "video_uid": video_uid,
-                            "user_name": annotation["user_name"],
-                            "group": annotation["question_group_title"]
-                        })
-                    else:
-                        validated_entries.append({
-                            "video_id": video.id,
-                            "project_id": project.id,
-                            "user_id": user.id,
-                            "group_id": group.id,
-                            "answers": annotation["answers"],
-                            "confidence_scores": annotation.get("confidence_scores"),
-                            "notes": annotation.get("notes"),
-                            "video_uid": video_uid,
-                            "user_name": annotation["user_name"],
-                            "group_title": annotation["question_group_title"]
-                        })
-                        
-                except Exception as e:
-                    raise ValueError(f"[Row {idx}] {annotation.get('video_uid')} | "
-                                   f"{annotation.get('user_name')} | "
-                                   f"{annotation.get('question_group_title')}: {e}")
+            # Validate ground truth flag
+            if annotation.get("is_ground_truth", False):
+                raise ValueError(f"is_ground_truth must be False for annotations")
             
-            print(f"✅ Validation passed: {len(validated_entries)} to upload, {len(skipped_entries)} skipped")
-            
-            # Upload validated entries in same session with progress bar
-            if validated_entries:
-                print("📤 Uploading annotations...")
-                for entry in tqdm(validated_entries, desc="Uploading", unit="groups"):
-                    AnnotatorService.submit_answer_to_question_group(
-                        video_id=entry["video_id"],
-                        project_id=entry["project_id"],
-                        user_id=entry["user_id"],
-                        question_group_id=entry["group_id"],
-                        answers=entry["answers"],
-                        session=session,
-                        confidence_scores=entry["confidence_scores"],
-                        notes=entry["notes"]
-                    )
+            with SessionLocal() as session:
+                # Resolve IDs
+                video_uid = annotation.get("video_uid", "").split("/")[-1]
+                video = VideoService.get_video_by_uid(video_uid, session)
+                project = ProjectService.get_project_by_name(annotation["project_name"], session)
+                user = AuthService.get_user_by_name(annotation["user_name"], session)
+                group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
                 
-                session.commit()
-                print(f"🎉 Successfully uploaded {len(validated_entries)} annotation groups!")
+                # Verify submission format
+                AnnotatorService.verify_submit_answer_to_question_group(
+                    video_id=video.id,
+                    project_id=project.id,
+                    user_id=user.id,
+                    question_group_id=group.id,
+                    answers=annotation["answers"],
+                    session=session,
+                    confidence_scores=annotation.get("confidence_scores"),
+                    notes=annotation.get("notes")
+                )
+                
+                # Return validated entry
+                return {
+                    "success": True,
+                    "annotation": annotation,
+                    "video_id": video.id,
+                    "project_id": project.id,
+                    "user_id": user.id,
+                    "group_id": group.id,
+                    "video_uid": video_uid
+                }
                 
         except Exception as e:
+            return {
+                "success": False,
+                "idx": idx,
+                "annotation": annotation,
+                "error": f"[Row {idx}] {annotation.get('video_uid')} | "
+                        f"{annotation.get('user_name')} | "
+                        f"{annotation.get('question_group_title')}: {e}"
+            }
+    
+    # Run validation in parallel
+    validated_entries = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all validation tasks
+        futures = [executor.submit(validate_single_annotation, (idx + 1, annotation)) 
+                  for idx, annotation in enumerate(annotations_data)]
+        
+        # Collect results with progress bar
+        for future in tqdm(futures, desc="Validating", unit="items"):
+            result = future.result()
+            if result["success"]:
+                validated_entries.append(result)
+            else:
+                raise ValueError(result["error"])
+    
+    print(f"✅ Validation passed for {len(validated_entries)} annotations")
+    
+    # Process all validated annotations in a single transaction
+    print("📤 Processing annotations...")
+    results = {"uploaded": [], "skipped": [], "errors": []}
+    
+    with SessionLocal() as session:
+        try:
+            for entry in tqdm(validated_entries, desc="Processing annotations", unit="items"):
+                annotation = entry["annotation"]
+                
+                # Check if answers already exist
+                existing = AnnotatorService.get_user_answers_for_question_group(
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    user_id=entry["user_id"],
+                    question_group_id=entry["group_id"],
+                    session=session
+                )
+                
+                # Determine if update needed - check if any answer differs
+                needs_update = False
+                for q_text, answer in annotation["answers"].items():
+                    if q_text not in existing or existing[q_text] != answer:
+                        needs_update = True
+                        break
+                
+                if not needs_update:
+                    results["skipped"].append({
+                        "status": "skipped",
+                        "video_uid": entry["video_uid"],
+                        "user_name": annotation["user_name"],
+                        "group": annotation["question_group_title"]
+                    })
+                    continue
+                
+                # Submit the annotation (without committing yet)
+                AnnotatorService.submit_answer_to_question_group(
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    user_id=entry["user_id"],
+                    question_group_id=entry["group_id"],
+                    answers=annotation["answers"],
+                    session=session,
+                    confidence_scores=annotation.get("confidence_scores"),
+                    notes=annotation.get("notes")
+                )
+                
+                results["uploaded"].append({
+                    "status": "uploaded",
+                    "video_uid": entry["video_uid"],
+                    "user_name": annotation["user_name"],
+                    "group": annotation["question_group_title"]
+                })
+            
+            # Commit all changes at once - if this fails, everything rolls back
+            session.commit()
+            print(f"🎉 Successfully uploaded {len(results['uploaded'])} annotations!")
+            
+        except Exception as e:
             session.rollback()
-            raise RuntimeError(f"Upload failed: {e}")
+            # If ANY item fails, nothing gets committed
+            raise RuntimeError(f"Batch processing failed - no changes committed: {e}")
+    
+    # Print summary
+    print(f"\n📊 Summary:")
+    print(f"  ✅ Uploaded: {len(results['uploaded'])}")
+    print(f"  ⏭️  Skipped: {len(results['skipped'])}")
+    
+    # No errors section needed since any error would prevent reaching this point
 
 
-def sync_reviews(reviews_path: str = None, reviews_data: list[dict] = None) -> None:
-    """Upload ground truth reviews from JSON file or data list.
+def batch_sync_ground_truths(ground_truths_folder: str = None, 
+                            ground_truths_data: list[dict] = None, 
+                            max_workers: int = 15) -> None:
+    """Batch upload ground truths with parallel validation and atomic transaction.
     
     Args:
-        reviews_path: Path to reviews JSON file
-        reviews_data: List of review dictionaries
+        ground_truths_folder: Path to folder containing JSON ground truth files
+        ground_truths_data: Pre-loaded list of ground truth dictionaries  
+        max_workers: Number of parallel validation threads (default: 15)
         
-    JSON format: Same as annotations but with is_ground_truth: true
-    """
-    # Load data
-    if reviews_path is None and reviews_data is None:
-        raise ValueError("Either reviews_path or reviews_data must be provided")
+    Raises:
+        ValueError: If validation fails, duplicates found, or invalid data structure
+        TypeError: If ground_truths_data is not a list of dictionaries
+        RuntimeError: If batch processing fails (all changes rolled back)
+        
+    Note:
+        Exactly one of ground_truths_folder or ground_truths_data must be provided.
+        All ground truths validated in parallel before any database operations.
+        """
+    from tqdm import tqdm
     
-    if reviews_path is not None:
-        with open(reviews_path, 'r') as f:
-            reviews_data = json.load(f)
+    if ground_truths_folder and ground_truths_data:
+        raise ValueError("Only one of ground_truths_folder or ground_truths_data can be provided")
     
-    if not isinstance(reviews_data, list):
-        raise TypeError("reviews_data must be a list of dictionaries")
+    # Load and flatten data
+    if ground_truths_folder:
+        ground_truths_data = load_and_flatten_json_files(ground_truths_folder)
     
-    if not reviews_data:
-        print("ℹ️  No reviews to upload")
+    if not ground_truths_data:
+        print("No ground truth data to process")
         return
     
-    # Validate ground truth flag
-    for idx, review in enumerate(reviews_data, 1):
-        if not review.get("is_ground_truth", False):
-            raise ValueError(f"[Row {idx}] is_ground_truth must be True for reviews")
+    # Validate data structure
+    if not isinstance(ground_truths_data, list):
+        raise TypeError("ground_truths_data must be a list of dictionaries")
     
-    # Process reviews
-    validated_entries = []
-    skipped_entries = []
+    # Check for duplicates
+    check_for_duplicates(ground_truths_data, "ground truth")
     
-    print("🔍 Validating reviews...")
-    with SessionLocal() as session:
-        for idx, review in enumerate(tqdm(reviews_data, desc="Validating"), 1):
-            try:
+    # Validate all data BEFORE any database operations using ThreadPool
+    print("🔍 Validating all ground truths...")
+    
+    def validate_single_ground_truth(ground_truth_with_idx):
+        idx, ground_truth = ground_truth_with_idx
+        try:
+            # Validate ground truth flag
+            if not ground_truth.get("is_ground_truth", False):
+                raise ValueError(f"is_ground_truth must be True for ground truths")
+            
+            with SessionLocal() as session:
                 # Resolve IDs
-                video_uid = review.get("video_uid", "").split("/")[-1]
+                video_uid = ground_truth.get("video_uid", "").split("/")[-1]
                 video = VideoService.get_video_by_uid(video_uid, session)
-                project = ProjectService.get_project_by_name(review["project_name"], session)
-                reviewer = AuthService.get_user_by_name(review["user_name"], session)
-                group = QuestionGroupService.get_group_by_name(review["question_group_title"], session)
+                project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+                reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+                group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
                 
-                # Verify submission
+                # Verify submission format
                 GroundTruthService.verify_submit_ground_truth_to_question_group(
                     video_id=video.id,
                     project_id=project.id,
                     reviewer_id=reviewer.id,
                     question_group_id=group.id,
-                    answers=review["answers"],
+                    answers=ground_truth["answers"],
                     session=session,
-                    confidence_scores=review.get("confidence_scores"),
-                    notes=review.get("notes")
+                    confidence_scores=ground_truth.get("confidence_scores"),
+                    notes=ground_truth.get("notes")
                 )
+                
+                # Return validated entry
+                return {
+                    "success": True,
+                    "ground_truth": ground_truth,
+                    "video_id": video.id,
+                    "project_id": project.id,
+                    "reviewer_id": reviewer.id,
+                    "group_id": group.id,
+                    "video_uid": video_uid
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "idx": idx,
+                "ground_truth": ground_truth,
+                "error": f"[Row {idx}] {ground_truth.get('video_uid')} | "
+                        f"reviewer:{ground_truth.get('user_name')}: {e}"
+            }
+    
+    # Run validation in parallel
+    validated_entries = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all validation tasks
+        futures = [executor.submit(validate_single_ground_truth, (idx + 1, ground_truth)) 
+                  for idx, ground_truth in enumerate(ground_truths_data)]
+        
+        # Collect results with progress bar
+        for future in tqdm(futures, desc="Validating", unit="items"):
+            result = future.result()
+            if result["success"]:
+                validated_entries.append(result)
+            else:
+                raise ValueError(result["error"])
+    
+    print(f"✅ Validation passed for {len(validated_entries)} ground truths")
+    
+    # Process all validated ground truths in a single transaction
+    print("📤 Processing ground truths...")
+    results = {"uploaded": [], "skipped": [], "errors": []}
+    
+    with SessionLocal() as session:
+        try:
+            for entry in tqdm(validated_entries, desc="Processing ground truths", unit="items"):
+                ground_truth = entry["ground_truth"]
                 
                 # Check existing ground truth
                 existing = GroundTruthService.get_ground_truth_dict_for_question_group(
-                    video_id=video.id,
-                    project_id=project.id,
-                    question_group_id=group.id,
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    question_group_id=entry["group_id"],
                     session=session
                 )
                 
-                # Determine what needs updating
-                to_upload = {}
-                for q_text, answer in review["answers"].items():
+                # Determine if update needed - check if any answer differs
+                needs_update = False
+                for q_text, answer in ground_truth["answers"].items():
                     if q_text not in existing or existing[q_text] != answer:
-                        to_upload[q_text] = answer
+                        needs_update = True
+                        break
                 
-                if not to_upload:
-                    skipped_entries.append({
-                        "video_uid": video_uid,
-                        "reviewer": review["user_name"]
+                if not needs_update:
+                    results["skipped"].append({
+                        "status": "skipped",
+                        "video_uid": entry["video_uid"],
+                        "reviewer": ground_truth["user_name"]
                     })
-                else:
-                    validated_entries.append({
-                        "video_id": video.id,
-                        "project_id": project.id,
-                        "reviewer_id": reviewer.id,
-                        "group_id": group.id,
-                        "answers": to_upload,
-                        "confidence_scores": review.get("confidence_scores"),
-                        "notes": review.get("notes"),
-                        "video_uid": video_uid,
-                        "reviewer_name": review["user_name"]
-                    })
+                    continue
+                
+                # Submit the ground truth (without committing yet)
+                GroundTruthService.submit_ground_truth_to_question_group(
+                    video_id=entry["video_id"],
+                    project_id=entry["project_id"],
+                    reviewer_id=entry["reviewer_id"],
+                    question_group_id=entry["group_id"],
+                    answers=ground_truth["answers"],
+                    session=session,
+                    confidence_scores=ground_truth.get("confidence_scores"),
+                    notes=ground_truth.get("notes")
+                )
+                
+                results["uploaded"].append({
+                    "status": "uploaded",
+                    "video_uid": entry["video_uid"],
+                    "reviewer": ground_truth["user_name"]
+                })
+            
+            # Commit all changes at once - if this fails, everything rolls back
+            session.commit()
+            print(f"🎉 Successfully uploaded {len(results['uploaded'])} ground truths!")
+            
+        except Exception as e:
+            session.rollback()
+            # If ANY item fails, nothing gets committed
+            raise RuntimeError(f"Batch processing failed - no changes committed: {e}")
+    
+    # Print summary
+    print(f"\n📊 Summary:")
+    print(f"  ✅ Uploaded: {len(results['uploaded'])}")
+    print(f"  ⏭️  Skipped: {len(results['skipped'])}")
+    
+    # No errors section needed since any error would prevent reaching this point
                     
-            except Exception as e:
-                raise ValueError(f"[Row {idx}] {review.get('video_uid')} | "
-                               f"reviewer:{review.get('user_name')}: {e}")
-    
-    print(f"✅ Validation passed: {len(validated_entries)} to upload, {len(skipped_entries)} skipped")
-    
-    # Upload validated entries
-    if validated_entries:
-        print("\n📤 Uploading reviews...")
-        with SessionLocal() as session:
-            try:
-                for entry in tqdm(validated_entries, desc="Uploading"):
-                    GroundTruthService.submit_ground_truth_to_question_group(
-                        video_id=entry["video_id"],
-                        project_id=entry["project_id"],
-                        reviewer_id=entry["reviewer_id"],
-                        question_group_id=entry["group_id"],
-                        answers=entry["answers"],
-                        session=session,
-                        confidence_scores=entry["confidence_scores"],
-                        notes=entry["notes"]
-                    )
-                
-                session.commit()
-                print(f"🎉 Successfully uploaded {len(validated_entries)} reviews!")
-            except Exception as e:
-                session.rollback()
-                raise RuntimeError(f"Upload failed: {e}")
-
-
-def batch_sync_annotations(annotations_folder: str = None, 
-                           annotations_data: list[list[dict]] = None, 
-                           max_workers: int = 15) -> None:
-    """Batch upload annotations from folder or data list."""
-    import concurrent.futures
-    import glob
-    
-    if annotations_folder:
-        json_files = glob.glob(f"{annotations_folder}/*.json")
-        
-        def process_file(filepath):
-            with open(filepath, 'r') as f:
-                data = json.load(f)
-            sync_annotations(annotations_data=data)
-            return filepath
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(process_file, f): f for f in json_files}
-            
-            for future in concurrent.futures.as_completed(futures):
-                filepath = futures[future]
-                try:
-                    future.result()
-                    print(f"✓ Processed {filepath}")
-                except Exception as e:
-                    print(f"✗ Failed {filepath}: {e}")
-    
-    elif annotations_data:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(sync_annotations, annotations_data=data) 
-                      for data in annotations_data]
-            
-            for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                try:
-                    future.result()
-                    print(f"✓ Processed batch {i+1}")
-                except Exception as e:
-                    print(f"✗ Failed batch {i+1}: {e}")
-
-
-def batch_sync_reviews(reviews_folder: str = None, 
-                        reviews_data: list[list[dict]] = None, 
-                        max_workers: int = 15) -> None:
-    """Batch upload reviews from folder or data list."""
-    import concurrent.futures
-    import glob
-    
-    if reviews_folder:
-        json_files = glob.glob(f"{reviews_folder}/*.json")
-        
-        def process_file(filepath):
-            with open(filepath, 'r') as f:
-                data = json.load(f)
-            sync_reviews(reviews_data=data)
-            return filepath
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(process_file, f): f for f in json_files}
-            
-            for future in concurrent.futures.as_completed(futures):
-                filepath = futures[future]
-                try:
-                    future.result()
-                    print(f"✓ Processed {filepath}")
-                except Exception as e:
-                    print(f"✗ Failed {filepath}: {e}")
-    
-    elif reviews_data:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(sync_reviews, reviews_data=data) 
-                      for data in reviews_data]
-            
-            for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                try:
-                    future.result()
-                    print(f"✓ Processed batch {i+1}")
-                except Exception as e:
-                    print(f"✗ Failed batch {i+1}: {e}")
+                    

@@ -1,9 +1,11 @@
 {
     "title": "Human",
+    "display_title": "Human",
     "description": "Detect and describe all humans in the video.",
     "is_reusable": false,
     "is_auto_submit": false,
     "verification_function": "check_human_description",
+    "is_active": true,
     "questions": [
         {
             "qtype": "single",

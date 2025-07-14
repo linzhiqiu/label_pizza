@@ -1,9 +1,11 @@
 {
     "title": "NSFW",
+    "display_title": "NSFW",
     "description": "Check whether the video is not safe for work.",
     "is_reusable": true,
     "is_auto_submit": true,
     "verification_function": "",
+    "is_active": true,
     "questions": [
         {
             "text": "Is the video not safe for work?",

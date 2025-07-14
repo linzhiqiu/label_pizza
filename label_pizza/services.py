@@ -2292,36 +2292,6 @@ class SchemaService:
 
 class QuestionService:
     
-    def update_question_text(question_id: int, new_text: str, session: Session) -> dict:
-        """Update question text."""
-        
-        # Verify the question exists
-        question = session.get(Question, question_id)
-        if not question:
-            raise ValueError(f"Question with ID {question_id} not found")
-        
-        old_text = question.text
-        
-        # Check if new text already exists
-        if session.scalar(select(Question).where(Question.text == new_text)):
-            raise ValueError(f"Question with text '{new_text}' already exists")
-        
-        # Update the text
-        question.text = new_text
-        
-        # Update display_text if it matches the old text
-        if question.display_text == old_text:
-            question.display_text = new_text
-        
-        session.commit()
-        
-        return {
-            "question_id": question_id,
-            "old_text": old_text,
-            "new_text": new_text,
-            "display_text_updated": question.display_text == new_text
-        }
-    
     @staticmethod
     def get_all_questions(session: Session) -> pd.DataFrame:
         """Get all questions with their group information.
@@ -6067,22 +6037,6 @@ class GroundTruthService(BaseAnswerService):
         for question in questions:
             answer_value = answers[question.text]
             GroundTruthService._validate_answer_value(question=question, answer_value=answer_value)
-            
-        # Check if any existing ground truth was set by admin
-        for question in questions:
-            existing_gt = session.get(ReviewerGroundTruth, (video_id, question.id, project_id))
-            if existing_gt and existing_gt.modified_by_admin_id is not None:
-                # Get admin user info for better error message
-                from label_pizza.models import User
-                admin_user = session.get(User, existing_gt.modified_by_admin_id)
-                admin_name = admin_user.user_id_str if admin_user else f"Admin {existing_gt.modified_by_admin_id}"
-                
-                raise ValueError(
-                    f"Cannot submit ground truth for question '{question.text}'. "
-                    f"This question's ground truth was previously set by admin '{admin_name}' "
-                    f"on {existing_gt.modified_by_admin_at.strftime('%Y-%m-%d %H:%M:%S')}. "
-                    f"Only admins can modify admin-set ground truth."
-                )
 
     @staticmethod
     def submit_ground_truth_to_question_group(

@@ -34,8 +34,8 @@ def run_label_pizza_setup(database_url_name, folder_path):
     from label_pizza.sync_utils import sync_project_groups
     sync_project_groups(project_groups_path=os.path.join(folder_path, "project_groups.json"))
     
-    from label_pizza.sync_utils import bulk_sync_users_to_projects
-    bulk_sync_users_to_projects(assignment_path=os.path.join(folder_path, "assignments.json"))
+    from label_pizza.sync_utils import sync_users_to_projects
+    sync_users_to_projects(assignment_path=os.path.join(folder_path, "assignments.json"))
     
     from label_pizza.sync_utils import batch_sync_annotations
     batch_sync_annotations(annotations_folder=os.path.join(folder_path, "annotations"), max_workers=8)

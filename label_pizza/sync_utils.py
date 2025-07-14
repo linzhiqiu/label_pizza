@@ -2452,7 +2452,7 @@ def _apply_single_assignment(assignment_data: Dict) -> Tuple[str, str, bool, Opt
         except Exception as e:
             return f"{assignment_data['user_name']} -> {assignment_data['project_name']}", "error", False, str(e)
 
-def bulk_sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None, max_workers: int = 10) -> None:
+def sync_users_to_projects(assignment_path: str = None, assignments_data: list[dict] = None, max_workers: int = 10) -> None:
     """Bulk assign users to projects with parallel validation and application.
     
     Args:
@@ -3048,94 +3048,85 @@ def batch_sync_annotations(annotations_folder: str = None,
     # No errors section needed since any error would prevent reaching this point
 
 
-def batch_sync_ground_truths(ground_truths_folder: str = None, 
-                            ground_truths_data: list[dict] = None, 
-                            max_workers: int = 15) -> None:
-    """Batch upload ground truths with parallel validation and atomic transaction.
-    
-    Args:
-        ground_truths_folder: Path to folder containing JSON ground truth files
-        ground_truths_data: Pre-loaded list of ground truth dictionaries  
-        max_workers: Number of parallel validation threads (default: 15)
+def validate_single_ground_truth(ground_truth_with_idx):
+    idx, ground_truth = ground_truth_with_idx
+    try:
+        # Validate ground truth flag
+        if not ground_truth.get("is_ground_truth", False):
+            raise ValueError(f"is_ground_truth must be True for ground truths")
         
-    Raises:
-        ValueError: If validation fails, duplicates found, or invalid data structure
-        TypeError: If ground_truths_data is not a list of dictionaries
-        RuntimeError: If batch processing fails (all changes rolled back)
-        
-    Note:
-        Exactly one of ground_truths_folder or ground_truths_data must be provided.
-        All ground truths validated in parallel before any database operations.
-        """
-    from tqdm import tqdm
-    
-    if ground_truths_folder and ground_truths_data:
-        raise ValueError("Only one of ground_truths_folder or ground_truths_data can be provided")
-    
-    # Load and flatten data
-    if ground_truths_folder:
-        ground_truths_data = load_and_flatten_json_files(ground_truths_folder)
-    
-    if not ground_truths_data:
-        print("No ground truth data to process")
-        return
-    
-    # Validate data structure
-    if not isinstance(ground_truths_data, list):
-        raise TypeError("ground_truths_data must be a list of dictionaries")
-    
-    # Check for duplicates
-    check_for_duplicates(ground_truths_data, "ground truth")
-    
-    # Validate all data BEFORE any database operations using ThreadPool
-    print("🔍 Validating all ground truths...")
-    
-    def validate_single_ground_truth(ground_truth_with_idx):
-        idx, ground_truth = ground_truth_with_idx
-        try:
-            # Validate ground truth flag
-            if not ground_truth.get("is_ground_truth", False):
-                raise ValueError(f"is_ground_truth must be True for ground truths")
+        with SessionLocal() as session:
+            # Resolve IDs
+            video_uid = ground_truth.get("video_uid", "").split("/")[-1]
+            video = VideoService.get_video_by_uid(video_uid, session)
+            project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+            reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+            group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
             
-            with SessionLocal() as session:
-                # Resolve IDs
-                video_uid = ground_truth.get("video_uid", "").split("/")[-1]
-                video = VideoService.get_video_by_uid(video_uid, session)
-                project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
-                reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
-                group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
-                
-                # Verify submission format
-                GroundTruthService.verify_submit_ground_truth_to_question_group(
-                    video_id=video.id,
-                    project_id=project.id,
-                    reviewer_id=reviewer.id,
-                    question_group_id=group.id,
-                    answers=ground_truth["answers"],
-                    session=session,
-                    confidence_scores=ground_truth.get("confidence_scores"),
-                    notes=ground_truth.get("notes")
-                )
-                
-                # Return validated entry
-                return {
-                    "success": True,
-                    "ground_truth": ground_truth,
-                    "video_id": video.id,
-                    "project_id": project.id,
-                    "reviewer_id": reviewer.id,
-                    "group_id": group.id,
-                    "video_uid": video_uid
-                }
-                
-        except Exception as e:
+            # Verify submission format
+            GroundTruthService.verify_submit_ground_truth_to_question_group(
+                video_id=video.id,
+                project_id=project.id,
+                reviewer_id=reviewer.id,
+                question_group_id=group.id,
+                answers=ground_truth["answers"],
+                session=session,
+                confidence_scores=ground_truth.get("confidence_scores"),
+                notes=ground_truth.get("notes")
+            )
+            
+            # Get questions for admin modification check
+            group, questions = GroundTruthService._get_question_group_with_questions(question_group_id=group.id, session=session)
+
+            # Check if any existing ground truth was set by admin
+            for question in questions:
+                if GroundTruthService.check_question_modified_by_admin(
+                    video_id=video.id, 
+                    project_id=project.id, 
+                    question_id=question.id, 
+                    session=session
+                ):
+                    # Get admin modification details for better error message
+                    admin_details = GroundTruthService.get_admin_modification_details(
+                        video_id=video.id,
+                        project_id=project.id,
+                        question_id=question.id,
+                        session=session
+                    )
+                    
+                    if admin_details:
+                        raise ValueError(
+                            f"Cannot submit ground truth for question '{question.text}'. "
+                            f"This question's ground truth was previously set by admin '{admin_details['admin_name']}' "
+                            f"on {admin_details['modified_at'].strftime('%Y-%m-%d %H:%M:%S')}. "
+                            f"Only admins can modify admin-set ground truth."
+                        )
+                    else:
+                        raise ValueError(
+                            f"Cannot submit ground truth for question '{question.text}'. "
+                            f"This question's ground truth was previously modified by an admin. "
+                            f"Only admins can modify admin-set ground truth."
+                        )
+            
+            # Return validated entry with all necessary data
             return {
-                "success": False,
-                "idx": idx,
+                "success": True,
                 "ground_truth": ground_truth,
-                "error": f"[Row {idx}] {ground_truth.get('video_uid')} | "
-                        f"reviewer:{ground_truth.get('user_name')}: {e}"
+                "video_id": video.id,
+                "project_id": project.id,
+                "reviewer_id": reviewer.id,
+                "group_id": group.id,
+                "video_uid": video_uid
             }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "idx": idx,
+            "ground_truth": ground_truth,
+            "error": f"[Row {idx}] {ground_truth.get('video_uid')} | "
+                    f"reviewer:{ground_truth.get('user_name')}: {e}"
+        }
     
     # Run validation in parallel
     validated_entries = []

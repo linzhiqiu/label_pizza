@@ -4931,7 +4931,7 @@ class QuestionGroupService:
             for question_id in question_ids:
                 question = session.scalar(select(Question).where(Question.id == question_id))
                 if not question.default_option:
-                    raise ValueError(f"Question with ID {question_id} with Name {question.text} does not have a default option")
+                    raise ValueError(f"Question with ID {question_id} does not have a default option")
 
     @staticmethod
     def create_group(

@@ -952,8 +952,6 @@ def sync_question_groups(
             raise ValueError(f"Invalid folder: {question_groups_folder}")
 
         json_paths = list(folder.glob("*.json"))
-        if not json_paths:
-            raise ValueError(f"No JSON files in {question_groups_folder}")
 
         for pth in json_paths:
             with open(pth, "r") as f:
@@ -2634,167 +2632,167 @@ def _verify_single_assignment(assignment_data: Dict) -> Tuple[str, Optional[str]
             return assignment_name, str(e)
 
 
-def sync_annotations(annotation: dict) -> dict:
-    """Upload a single annotation item with duplicate checking.
+# def sync_annotations(annotation: dict) -> dict:
+#     """Upload a single annotation item with duplicate checking.
     
-    Args:
-        annotation: Annotation dictionary with video_uid, project_name, user_name, 
-                   question_group_title, answers, and optional confidence_scores/notes
+#     Args:
+#         annotation: Annotation dictionary with video_uid, project_name, user_name, 
+#                    question_group_title, answers, and optional confidence_scores/notes
         
-    Returns:
-        Dictionary with status ("uploaded" or "skipped"), video_uid, user_name, and group
+#     Returns:
+#         Dictionary with status ("uploaded" or "skipped"), video_uid, user_name, and group
         
-    Raises:
-        TypeError: If annotation is not a dictionary
-        RuntimeError: If upload fails (includes rollback)
+#     Raises:
+#         TypeError: If annotation is not a dictionary
+#         RuntimeError: If upload fails (includes rollback)
         
-    Note:
-        Assumes annotation has already been validated. Skips if no changes detected.
-    """
+#     Note:
+#         Assumes annotation has already been validated. Skips if no changes detected.
+#     """
     
-    if not isinstance(annotation, dict):
-        raise TypeError("annotation must be a dictionary")
+#     if not isinstance(annotation, dict):
+#         raise TypeError("annotation must be a dictionary")
     
-    with SessionLocal() as session:
-        try:
-            # Resolve IDs (these should succeed since validation passed)
-            video_uid = annotation.get("video_uid", "").split("/")[-1]
-            video = VideoService.get_video_by_uid(video_uid, session)
-            project = ProjectService.get_project_by_name(annotation["project_name"], session)
-            user = AuthService.get_user_by_name(annotation["user_name"], session)
-            group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
+#     with SessionLocal() as session:
+#         try:
+#             # Resolve IDs (these should succeed since validation passed)
+#             video_uid = annotation.get("video_uid", "").split("/")[-1]
+#             video = VideoService.get_video_by_uid(video_uid, session)
+#             project = ProjectService.get_project_by_name(annotation["project_name"], session)
+#             user = AuthService.get_user_by_name(annotation["user_name"], session)
+#             group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
             
-            # Check if answers already exist
-            existing = AnnotatorService.get_user_answers_for_question_group(
-                video_id=video.id,
-                project_id=project.id,
-                user_id=user.id,
-                question_group_id=group.id,
-                session=session
-            )
+#             # Check if answers already exist
+#             existing = AnnotatorService.get_user_answers_for_question_group(
+#                 video_id=video.id,
+#                 project_id=project.id,
+#                 user_id=user.id,
+#                 question_group_id=group.id,
+#                 session=session
+#             )
             
-            # Determine if update needed - check if any answer differs
-            needs_update = False
-            for q_text, answer in annotation["answers"].items():
-                if q_text not in existing or existing[q_text] != answer:
-                    needs_update = True
-                    break
+#             # Determine if update needed - check if any answer differs
+#             needs_update = False
+#             for q_text, answer in annotation["answers"].items():
+#                 if q_text not in existing or existing[q_text] != answer:
+#                     needs_update = True
+#                     break
             
-            if not needs_update:
-                print(f"⏭️  Skipped: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']} (no changes)")
-                return {
-                    "status": "skipped",
-                    "video_uid": video_uid,
-                    "user_name": annotation["user_name"],
-                    "group": annotation["question_group_title"]
-                }
+#             if not needs_update:
+#                 print(f"⏭️  Skipped: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']} (no changes)")
+#                 return {
+#                     "status": "skipped",
+#                     "video_uid": video_uid,
+#                     "user_name": annotation["user_name"],
+#                     "group": annotation["question_group_title"]
+#                 }
             
-            # Submit the annotation (no verification needed - already done)
-            AnnotatorService.submit_answer_to_question_group(
-                video_id=video.id,
-                project_id=project.id,
-                user_id=user.id,
-                question_group_id=group.id,
-                answers=annotation["answers"],
-                session=session,
-                confidence_scores=annotation.get("confidence_scores"),
-                notes=annotation.get("notes")
-            )
+#             # Submit the annotation (no verification needed - already done)
+#             AnnotatorService.submit_answer_to_question_group(
+#                 video_id=video.id,
+#                 project_id=project.id,
+#                 user_id=user.id,
+#                 question_group_id=group.id,
+#                 answers=annotation["answers"],
+#                 session=session,
+#                 confidence_scores=annotation.get("confidence_scores"),
+#                 notes=annotation.get("notes")
+#             )
             
-            session.commit()
-            print(f"🎉 Successfully uploaded annotation: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']}")
+#             session.commit()
+#             print(f"🎉 Successfully uploaded annotation: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']}")
             
-            return {
-                "status": "uploaded",
-                "video_uid": video_uid,
-                "user_name": annotation["user_name"],
-                "group": annotation["question_group_title"]
-            }
+#             return {
+#                 "status": "uploaded",
+#                 "video_uid": video_uid,
+#                 "user_name": annotation["user_name"],
+#                 "group": annotation["question_group_title"]
+#             }
             
-        except Exception as e:
-            session.rollback()
-            error_msg = f"{annotation.get('video_uid')} | {annotation.get('user_name')} | {annotation.get('question_group_title')}: {e}"
-            raise RuntimeError(f"Upload failed: {error_msg}")
+#         except Exception as e:
+#             session.rollback()
+#             error_msg = f"{annotation.get('video_uid')} | {annotation.get('user_name')} | {annotation.get('question_group_title')}: {e}"
+#             raise RuntimeError(f"Upload failed: {error_msg}")
 
 
-def sync_ground_truths(ground_truth: dict) -> dict:
-    """Upload a single ground truth item with duplicate checking.
+# def sync_ground_truths(ground_truth: dict) -> dict:
+#     """Upload a single ground truth item with duplicate checking.
     
-    Args:
-        ground_truth: Ground truth dictionary with video_uid, project_name, user_name,
-                     question_group_title, answers, and optional confidence_scores/notes
+#     Args:
+#         ground_truth: Ground truth dictionary with video_uid, project_name, user_name,
+#                      question_group_title, answers, and optional confidence_scores/notes
         
-    Returns:
-        Dictionary with status ("uploaded" or "skipped"), video_uid, and reviewer
+#     Returns:
+#         Dictionary with status ("uploaded" or "skipped"), video_uid, and reviewer
         
-    Raises:
-        TypeError: If ground_truth is not a dictionary
-        RuntimeError: If upload fails (includes rollback)
+#     Raises:
+#         TypeError: If ground_truth is not a dictionary
+#         RuntimeError: If upload fails (includes rollback)
         
-    Note:
-        Assumes ground truth has already been validated. Skips if no changes detected.
-    """
+#     Note:
+#         Assumes ground truth has already been validated. Skips if no changes detected.
+#     """
     
-    if not isinstance(ground_truth, dict):
-        raise TypeError("ground_truth must be a dictionary")
+#     if not isinstance(ground_truth, dict):
+#         raise TypeError("ground_truth must be a dictionary")
     
-    with SessionLocal() as session:
-        try:
-            # Resolve IDs (these should succeed since validation passed)
-            video_uid = ground_truth.get("video_uid", "").split("/")[-1]
-            video = VideoService.get_video_by_uid(video_uid, session)
-            project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
-            reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
-            group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
+#     with SessionLocal() as session:
+#         try:
+#             # Resolve IDs (these should succeed since validation passed)
+#             video_uid = ground_truth.get("video_uid", "").split("/")[-1]
+#             video = VideoService.get_video_by_uid(video_uid, session)
+#             project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+#             reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+#             group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
             
-            # Check existing ground truth
-            existing = GroundTruthService.get_ground_truth_dict_for_question_group(
-                video_id=video.id,
-                project_id=project.id,
-                question_group_id=group.id,
-                session=session
-            )
+#             # Check existing ground truth
+#             existing = GroundTruthService.get_ground_truth_dict_for_question_group(
+#                 video_id=video.id,
+#                 project_id=project.id,
+#                 question_group_id=group.id,
+#                 session=session
+#             )
             
-            # Determine if update needed - check if any answer differs
-            needs_update = False
-            for q_text, answer in ground_truth["answers"].items():
-                if q_text not in existing or existing[q_text] != answer:
-                    needs_update = True
-                    break
+#             # Determine if update needed - check if any answer differs
+#             needs_update = False
+#             for q_text, answer in ground_truth["answers"].items():
+#                 if q_text not in existing or existing[q_text] != answer:
+#                     needs_update = True
+#                     break
             
-            if not needs_update:
-                print(f"⏭️  Skipped: {video_uid} | {ground_truth['user_name']} (no changes)")
-                return {
-                    "status": "skipped",
-                    "video_uid": video_uid,
-                    "reviewer": ground_truth["user_name"]
-                }
+#             if not needs_update:
+#                 print(f"⏭️  Skipped: {video_uid} | {ground_truth['user_name']} (no changes)")
+#                 return {
+#                     "status": "skipped",
+#                     "video_uid": video_uid,
+#                     "reviewer": ground_truth["user_name"]
+#                 }
             
-            # Submit the ground truth (no verification needed - already done)
-            GroundTruthService.submit_ground_truth_to_question_group(
-                video_id=video.id,
-                project_id=project.id,
-                reviewer_id=reviewer.id,
-                question_group_id=group.id,
-                answers=ground_truth["answers"],
-                session=session,
-                confidence_scores=ground_truth.get("confidence_scores"),
-                notes=ground_truth.get("notes")
-            )
+#             # Submit the ground truth (no verification needed - already done)
+#             GroundTruthService.submit_ground_truth_to_question_group(
+#                 video_id=video.id,
+#                 project_id=project.id,
+#                 reviewer_id=reviewer.id,
+#                 question_group_id=group.id,
+#                 answers=ground_truth["answers"],
+#                 session=session,
+#                 confidence_scores=ground_truth.get("confidence_scores"),
+#                 notes=ground_truth.get("notes")
+#             )
             
-            session.commit()
-            print(f"🎉 Successfully uploaded ground truth: {video_uid} | {ground_truth['user_name']}")
+#             session.commit()
+#             print(f"🎉 Successfully uploaded ground truth: {video_uid} | {ground_truth['user_name']}")
             
-            return {
-                "status": "uploaded",
-                "video_uid": video_uid,
-                "reviewer": ground_truth["user_name"]
-            }
+#             return {
+#                 "status": "uploaded",
+#                 "video_uid": video_uid,
+#                 "reviewer": ground_truth["user_name"]
+#             }
             
-        except Exception as e:
-            session.rollback()
-            error_msg = f"{ground_truth.get('video_uid')} | reviewer:{ground_truth.get('user_name')}: {e}"
-            raise RuntimeError(f"Upload failed: {error_msg}")
+#         except Exception as e:
+#             session.rollback()
+#             error_msg = f"{ground_truth.get('video_uid')} | reviewer:{ground_truth.get('user_name')}: {e}"
+#             raise RuntimeError(f"Upload failed: {error_msg}")
 
 
 def load_and_flatten_json_files(folder_path: str) -> list[dict]:
@@ -2871,26 +2869,28 @@ def check_for_duplicates(data: list[dict], data_type: str) -> None:
         raise ValueError(error_msg)
 
 
-def batch_sync_annotations(annotations_folder: str = None, 
+def sync_annotations(annotations_folder: str = None, 
                            annotations_data: list[dict] = None, 
                            max_workers: int = 15) -> None:
-    """Batch upload annotations with parallel validation and atomic transaction.
+    """Batch upload annotations with parallel validation and submission.
     
     Args:
         annotations_folder: Path to folder containing JSON annotation files
         annotations_data: Pre-loaded list of annotation dictionaries
-        max_workers: Number of parallel validation threads (default: 15)
+        max_workers: Number of parallel validation/submission threads (default: 15)
         
     Raises:
         ValueError: If validation fails, duplicates found, or invalid data structure
         TypeError: If annotations_data is not a list of dictionaries
-        RuntimeError: If batch processing fails (all changes rolled back)
+        RuntimeError: If batch processing fails
         
     Note:
         Exactly one of annotations_folder or annotations_data must be provided.
         All annotations validated in parallel before any database operations.
+        Submissions are also processed in parallel for better performance.
     """
     from tqdm import tqdm
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     
     if annotations_folder and annotations_data:
         raise ValueError("Only one of annotations_folder or annotations_data can be provided")
@@ -2961,38 +2961,46 @@ def batch_sync_annotations(annotations_folder: str = None,
                         f"{annotation.get('question_group_title')}: {e}"
             }
     
-    # Run validation in parallel
-    validated_entries = []
+    # Parallel validation
+    validation_results = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all validation tasks
-        futures = [executor.submit(validate_single_annotation, (idx + 1, annotation)) 
-                  for idx, annotation in enumerate(annotations_data)]
-        
-        # Collect results with progress bar
-        for future in tqdm(futures, desc="Validating", unit="items"):
-            result = future.result()
-            if result["success"]:
-                validated_entries.append(result)
-            else:
-                raise ValueError(result["error"])
+        enumerated_data = [(idx + 1, annotation) for idx, annotation in enumerate(annotations_data)]
+        results = list(tqdm(
+            executor.map(validate_single_annotation, enumerated_data),
+            total=len(enumerated_data),
+            desc="Validating annotations"
+        ))
+        validation_results.extend(results)
     
-    print(f"✅ Validation passed for {len(validated_entries)} annotations")
+    # Check for validation errors - ALL must pass or NONE are submitted
+    failed_validations = [r for r in validation_results if not r["success"]]
+    if failed_validations:
+        print(f"❌ {len(failed_validations)} validation errors found:")
+        for failure in failed_validations[:10]:  # Show first 10 errors
+            print(f"  {failure['error']}")
+        if len(failed_validations) > 10:
+            print(f"  ... and {len(failed_validations) - 10} more errors")
+        print(f"\n🚫 ABORTING: All {len(validation_results)} annotations must pass validation before any submissions occur.")
+        raise ValueError(f"Validation failed for {len(failed_validations)} annotations. No data was submitted.")
     
-    # Process all validated annotations in a single transaction
-    print("📤 Processing annotations...")
-    results = {"uploaded": [], "skipped": [], "errors": []}
+    print(f"✅ All {len(validation_results)} annotations validated successfully")
     
-    with SessionLocal() as session:
+    # All validations passed - safe to proceed with submissions
+    successful_validations = validation_results  # All are successful at this point
+    
+    # Parallel submission function
+    def submit_single_annotation(validation_result):
+        """Submit a single annotation entry to the database."""
         try:
-            for entry in tqdm(validated_entries, desc="Processing annotations", unit="items"):
-                annotation = entry["annotation"]
-                
+            annotation = validation_result["annotation"]
+            
+            with SessionLocal() as session:
                 # Check if answers already exist
                 existing = AnnotatorService.get_user_answers_for_question_group(
-                    video_id=entry["video_id"],
-                    project_id=entry["project_id"],
-                    user_id=entry["user_id"],
-                    question_group_id=entry["group_id"],
+                    video_id=validation_result["video_id"],
+                    project_id=validation_result["project_id"],
+                    user_id=validation_result["user_id"],
+                    question_group_id=validation_result["group_id"],
                     session=session
                 )
                 
@@ -3004,211 +3012,319 @@ def batch_sync_annotations(annotations_folder: str = None,
                         break
                 
                 if not needs_update:
-                    results["skipped"].append({
+                    return {
+                        "success": True,
                         "status": "skipped",
-                        "video_uid": entry["video_uid"],
+                        "video_uid": validation_result["video_uid"],
                         "user_name": annotation["user_name"],
-                        "group": annotation["question_group_title"]
-                    })
-                    continue
+                        "group": annotation["question_group_title"],
+                        "reason": "No changes needed"
+                    }
                 
-                # Submit the annotation (without committing yet)
+                # Submit the annotation
                 AnnotatorService.submit_answer_to_question_group(
-                    video_id=entry["video_id"],
-                    project_id=entry["project_id"],
-                    user_id=entry["user_id"],
-                    question_group_id=entry["group_id"],
+                    video_id=validation_result["video_id"],
+                    project_id=validation_result["project_id"],
+                    user_id=validation_result["user_id"],
+                    question_group_id=validation_result["group_id"],
                     answers=annotation["answers"],
                     session=session,
                     confidence_scores=annotation.get("confidence_scores"),
                     notes=annotation.get("notes")
                 )
                 
-                results["uploaded"].append({
+                return {
+                    "success": True,
                     "status": "uploaded",
-                    "video_uid": entry["video_uid"],
+                    "video_uid": validation_result["video_uid"],
                     "user_name": annotation["user_name"],
                     "group": annotation["question_group_title"]
-                })
-            
-            # Commit all changes at once - if this fails, everything rolls back
-            session.commit()
-            print(f"🎉 Successfully uploaded {len(results['uploaded'])} annotations!")
-            
+                }
+                
         except Exception as e:
-            session.rollback()
-            # If ANY item fails, nothing gets committed
-            raise RuntimeError(f"Batch processing failed - no changes committed: {e}")
+            return {
+                "success": False,
+                "status": "error",
+                "video_uid": validation_result["video_uid"],
+                "user_name": annotation["user_name"],
+                "group": annotation["question_group_title"],
+                "error": str(e)
+            }
+    
+    # Parallel submission
+    print("📤 Submitting annotations to database...")
+    submission_results = []
+    failed_submissions = []
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit futures and track progress
+        future_to_validation = {
+            executor.submit(submit_single_annotation, validation_result): validation_result
+            for validation_result in successful_validations
+        }
+        
+        with tqdm(total=len(successful_validations), desc="Submitting annotations") as pbar:
+            for future in as_completed(future_to_validation):
+                result = future.result()
+                submission_results.append(result)
+                
+                if not result["success"]:
+                    failed_submissions.append(result)
+                    print(f"❌ Failed submission: {result['video_uid']} | {result['user_name']} | {result['group']}: {result['error']}")
+                
+                pbar.update(1)
+    
+    # Categorize results
+    successful_submissions = [r for r in submission_results if r["success"]]
+    uploaded = [r for r in successful_submissions if r["status"] == "uploaded"]
+    skipped = [r for r in successful_submissions if r["status"] == "skipped"]
+    
+    # Report results
+    if failed_submissions:
+        print(f"❌ {len(failed_submissions)} submission errors occurred:")
+        for failure in failed_submissions[:10]:  # Show first 10 errors
+            print(f"  {failure['video_uid']} | {failure['user_name']} | {failure['group']}: {failure['error']}")
+        if len(failed_submissions) > 10:
+            print(f"  ... and {len(failed_submissions) - 10} more errors")
     
     # Print summary
     print(f"\n📊 Summary:")
-    print(f"  ✅ Uploaded: {len(results['uploaded'])}")
-    print(f"  ⏭️  Skipped: {len(results['skipped'])}")
+    print(f"  ✅ Uploaded: {len(uploaded)}")
+    print(f"  ⏭️  Skipped: {len(skipped)}")
+    if failed_submissions:
+        print(f"  ❌ Failed: {len(failed_submissions)}")
     
-    # No errors section needed since any error would prevent reaching this point
+    if uploaded:
+        print(f"🎉 Successfully uploaded {len(uploaded)} annotations!")
+    
+    if failed_submissions and not uploaded:
+        raise RuntimeError(f"All {len(failed_submissions)} annotation submissions failed")
 
 
-def validate_single_ground_truth(ground_truth_with_idx):
-    idx, ground_truth = ground_truth_with_idx
-    try:
-        # Validate ground truth flag
-        if not ground_truth.get("is_ground_truth", False):
-            raise ValueError(f"is_ground_truth must be True for ground truths")
+def sync_ground_truths(ground_truths_folder: str = None, 
+                            ground_truths_data: list[dict] = None, 
+                            max_workers: int = 15) -> None:
+    """Batch upload ground truths with parallel validation and submission.
+    
+    Args:
+        ground_truths_folder: Path to folder containing JSON ground truth files
+        ground_truths_data: Pre-loaded list of ground truth dictionaries  
+        max_workers: Number of parallel validation/submission threads (default: 15)
         
-        with SessionLocal() as session:
-            # Resolve IDs
-            video_uid = ground_truth.get("video_uid", "").split("/")[-1]
-            video = VideoService.get_video_by_uid(video_uid, session)
-            project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
-            reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
-            group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
-            
-            # Verify submission format
-            GroundTruthService.verify_submit_ground_truth_to_question_group(
-                video_id=video.id,
-                project_id=project.id,
-                reviewer_id=reviewer.id,
-                question_group_id=group.id,
-                answers=ground_truth["answers"],
-                session=session,
-                confidence_scores=ground_truth.get("confidence_scores"),
-                notes=ground_truth.get("notes")
-            )
-            
-            # Get questions for admin modification check
-            group, questions = GroundTruthService._get_question_group_with_questions(question_group_id=group.id, session=session)
-
-            # Check if any existing ground truth was set by admin
-            for question in questions:
-                if GroundTruthService.check_question_modified_by_admin(
-                    video_id=video.id, 
-                    project_id=project.id, 
-                    question_id=question.id, 
-                    session=session
-                ):
-                    # Get admin modification details for better error message
-                    admin_details = GroundTruthService.get_admin_modification_details(
-                        video_id=video.id,
-                        project_id=project.id,
-                        question_id=question.id,
-                        session=session
-                    )
-                    
-                    if admin_details:
-                        raise ValueError(
-                            f"Cannot submit ground truth for question '{question.text}'. "
-                            f"This question's ground truth was previously set by admin '{admin_details['admin_name']}' "
-                            f"on {admin_details['modified_at'].strftime('%Y-%m-%d %H:%M:%S')}. "
-                            f"Only admins can modify admin-set ground truth."
-                        )
-                    else:
-                        raise ValueError(
-                            f"Cannot submit ground truth for question '{question.text}'. "
-                            f"This question's ground truth was previously modified by an admin. "
-                            f"Only admins can modify admin-set ground truth."
-                        )
-            
-            # Return validated entry with all necessary data
-            return {
-                "success": True,
-                "ground_truth": ground_truth,
-                "video_id": video.id,
-                "project_id": project.id,
-                "reviewer_id": reviewer.id,
-                "group_id": group.id,
-                "video_uid": video_uid
-            }
-            
-    except Exception as e:
-        return {
-            "success": False,
-            "idx": idx,
-            "ground_truth": ground_truth,
-            "error": f"[Row {idx}] {ground_truth.get('video_uid')} | "
-                    f"reviewer:{ground_truth.get('user_name')}: {e}"
-        }
-    
-    # Run validation in parallel
-    validated_entries = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all validation tasks
-        futures = [executor.submit(validate_single_ground_truth, (idx + 1, ground_truth)) 
-                  for idx, ground_truth in enumerate(ground_truths_data)]
+    Raises:
+        ValueError: If validation fails, duplicates found, or invalid data structure
+        TypeError: If ground_truths_data is not a list of dictionaries
+        RuntimeError: If batch processing fails (all changes rolled back)
         
-        # Collect results with progress bar
-        for future in tqdm(futures, desc="Validating", unit="items"):
-            result = future.result()
-            if result["success"]:
-                validated_entries.append(result)
-            else:
-                raise ValueError(result["error"])
+    Note:
+        Exactly one of ground_truths_folder or ground_truths_data must be provided.
+        All ground truths validated in parallel before any database operations.
+        Submissions are also processed in parallel for better performance.
+        ALL validations must pass before ANY submissions occur (all-or-nothing).
+        """
+    from tqdm import tqdm
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     
-    print(f"✅ Validation passed for {len(validated_entries)} ground truths")
+    if ground_truths_folder and ground_truths_data:
+        raise ValueError("Only one of ground_truths_folder or ground_truths_data can be provided")
     
-    # Process all validated ground truths in a single transaction
-    print("📤 Processing ground truths...")
-    results = {"uploaded": [], "skipped": [], "errors": []}
+    # Load and flatten data
+    if ground_truths_folder:
+        ground_truths_data = load_and_flatten_json_files(ground_truths_folder)
     
-    with SessionLocal() as session:
+    if not ground_truths_data:
+        print("No ground truth data to process")
+        return
+    
+    # Validate data structure
+    if not isinstance(ground_truths_data, list):
+        raise TypeError("ground_truths_data must be a list of dictionaries")
+    
+    # Check for duplicates
+    check_for_duplicates(ground_truths_data, "ground truth")
+    
+    # Validate all data BEFORE any database operations using ThreadPool
+    print("🔍 Validating all ground truths...")
+    
+    def validate_single_ground_truth(ground_truth_with_idx):
+        idx, ground_truth = ground_truth_with_idx
         try:
-            for entry in tqdm(validated_entries, desc="Processing ground truths", unit="items"):
-                ground_truth = entry["ground_truth"]
+            # Validate ground truth flag
+            if not ground_truth.get("is_ground_truth", False):
+                raise ValueError(f"is_ground_truth must be True for ground truths")
+            
+            with SessionLocal() as session:
+                # Resolve IDs
+                video_uid = ground_truth.get("video_uid", "").split("/")[-1]
+                video = VideoService.get_video_by_uid(video_uid, session)
+                project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
+                reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
+                group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
                 
-                # Check existing ground truth
-                existing = GroundTruthService.get_ground_truth_dict_for_question_group(
-                    video_id=entry["video_id"],
-                    project_id=entry["project_id"],
-                    question_group_id=entry["group_id"],
-                    session=session
-                )
-                
-                # Determine if update needed - check if any answer differs
-                needs_update = False
-                for q_text, answer in ground_truth["answers"].items():
-                    if q_text not in existing or existing[q_text] != answer:
-                        needs_update = True
-                        break
-                
-                if not needs_update:
-                    results["skipped"].append({
-                        "status": "skipped",
-                        "video_uid": entry["video_uid"],
-                        "reviewer": ground_truth["user_name"]
-                    })
-                    continue
-                
-                # Submit the ground truth (without committing yet)
-                GroundTruthService.submit_ground_truth_to_question_group(
-                    video_id=entry["video_id"],
-                    project_id=entry["project_id"],
-                    reviewer_id=entry["reviewer_id"],
-                    question_group_id=entry["group_id"],
+                # Verify submission format
+                GroundTruthService.verify_submit_ground_truth_to_question_group(
+                    video_id=video.id,
+                    project_id=project.id,
+                    reviewer_id=reviewer.id,
+                    question_group_id=group.id,
                     answers=ground_truth["answers"],
                     session=session,
                     confidence_scores=ground_truth.get("confidence_scores"),
                     notes=ground_truth.get("notes")
                 )
                 
-                results["uploaded"].append({
-                    "status": "uploaded",
-                    "video_uid": entry["video_uid"],
-                    "reviewer": ground_truth["user_name"]
-                })
-            
-            # Commit all changes at once - if this fails, everything rolls back
-            session.commit()
-            print(f"🎉 Successfully uploaded {len(results['uploaded'])} ground truths!")
-            
+                # Get questions for admin modification check
+                group, questions = GroundTruthService._get_question_group_with_questions(question_group_id=group.id, session=session)
+
+                # Check if any existing ground truth was set by admin
+                for question in questions:
+                    if GroundTruthService.check_question_modified_by_admin(
+                        video_id=video.id, 
+                        project_id=project.id, 
+                        question_id=question.id, 
+                        session=session
+                    ):
+                        # Get admin modification details for better error message
+                        admin_details = GroundTruthService.get_admin_modification_details(
+                            video_id=video.id,
+                            project_id=project.id,
+                            question_id=question.id,
+                            session=session
+                        )
+                        
+                        if admin_details:
+                            raise ValueError(
+                                f"Cannot submit ground truth for question '{question.text}'. "
+                                f"This question's ground truth was previously set by admin '{admin_details['admin_name']}' "
+                                f"on {admin_details['modified_at'].strftime('%Y-%m-%d %H:%M:%S')}. "
+                                f"Only admins can modify admin-set ground truth."
+                            )
+                        else:
+                            raise ValueError(
+                                f"Cannot submit ground truth for question '{question.text}'. "
+                                f"This question's ground truth was previously modified by an admin. "
+                                f"Only admins can modify admin-set ground truth."
+                            )
+                
+                # Return validated entry
+                return {
+                    "success": True,
+                    "ground_truth": ground_truth,
+                    "video_id": video.id,
+                    "project_id": project.id,
+                    "reviewer_id": reviewer.id,
+                    "group_id": group.id,
+                    "video_uid": video_uid
+                }
+                
         except Exception as e:
-            session.rollback()
-            # If ANY item fails, nothing gets committed
-            raise RuntimeError(f"Batch processing failed - no changes committed: {e}")
+            return {
+                "success": False,
+                "idx": idx,
+                "ground_truth": ground_truth,
+                "error": f"[Row {idx}] {ground_truth.get('video_uid')} | "
+                        f"reviewer:{ground_truth.get('user_name')}: {e}"
+            }
     
-    # Print summary
-    print(f"\n📊 Summary:")
-    print(f"  ✅ Uploaded: {len(results['uploaded'])}")
-    print(f"  ⏭️  Skipped: {len(results['skipped'])}")
+    # Parallel validation
+    validation_results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        enumerated_data = list(enumerate(ground_truths_data))
+        results = list(tqdm(
+            executor.map(validate_single_ground_truth, enumerated_data),
+            total=len(enumerated_data),
+            desc="Validating ground truths"
+        ))
+        validation_results.extend(results)
     
-    # No errors section needed since any error would prevent reaching this point
+    # Check for validation errors - ALL must pass or NONE are submitted
+    failed_validations = [r for r in validation_results if not r["success"]]
+    if failed_validations:
+        print(f"❌ {len(failed_validations)} validation errors found:")
+        for failure in failed_validations[:10]:  # Show first 10 errors
+            print(f"  {failure['error']}")
+        if len(failed_validations) > 10:
+            print(f"  ... and {len(failed_validations) - 10} more errors")
+        print(f"\n🚫 ABORTING: All {len(validation_results)} ground truths must pass validation before any submissions occur.")
+        raise ValueError(f"Validation failed for {len(failed_validations)} ground truths. No data was submitted.")
+    
+    print(f"✅ All {len(validation_results)} ground truths validated successfully")
+    
+    # All validations passed - safe to proceed with submissions
+    successful_validations = validation_results  # All are successful at this point
+    
+    # Parallel submission function
+    def submit_single_ground_truth(validation_result):
+        """Submit a single ground truth entry to the database."""
+        try:
+            ground_truth = validation_result["ground_truth"]
+            
+            with SessionLocal() as session:
+                # Submit to database using validated IDs
+                GroundTruthService.submit_ground_truth_to_question_group(
+                    video_id=validation_result["video_id"],
+                    project_id=validation_result["project_id"], 
+                    reviewer_id=validation_result["reviewer_id"],
+                    question_group_id=validation_result["group_id"],
+                    answers=ground_truth["answers"],
+                    session=session,
+                    confidence_scores=ground_truth.get("confidence_scores"),
+                    notes=ground_truth.get("notes")
+                )
+                
+                return {
+                    "success": True,
+                    "video_uid": validation_result["video_uid"],
+                    "user_name": ground_truth.get("user_name")
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "video_uid": validation_result["video_uid"],
+                "user_name": ground_truth.get("user_name"),
+                "error": str(e)
+            }
+    
+    # Parallel submission
+    print("📤 Submitting ground truths to database...")
+    submission_results = []
+    failed_submissions = []
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit futures and track progress
+        future_to_validation = {
+            executor.submit(submit_single_ground_truth, validation_result): validation_result
+            for validation_result in successful_validations
+        }
+        
+        with tqdm(total=len(successful_validations), desc="Submitting ground truths") as pbar:
+            for future in as_completed(future_to_validation):
+                result = future.result()
+                submission_results.append(result)
+                
+                if not result["success"]:
+                    failed_submissions.append(result)
+                    print(f"❌ Failed submission: {result['video_uid']} | {result['user_name']}: {result['error']}")
+                
+                pbar.update(1)
+    
+    # Report results
+    successful_submissions = [r for r in submission_results if r["success"]]
+    
+    if failed_submissions:
+        print(f"❌ {len(failed_submissions)} submission errors occurred:")
+        for failure in failed_submissions[:10]:  # Show first 10 errors
+            print(f"  {failure['video_uid']} | {failure['user_name']}: {failure['error']}")
+        if len(failed_submissions) > 10:
+            print(f"  ... and {len(failed_submissions) - 10} more errors")
+        
+        if successful_submissions:
+            print(f"✅ {len(successful_submissions)} ground truths submitted successfully")
+            print(f"❌ {len(failed_submissions)} ground truths failed to submit")
+        else:
+            raise RuntimeError(f"All {len(failed_submissions)} ground truth submissions failed")
+    else:
+        print(f"✅ Successfully submitted all {len(successful_submissions)} ground truths")
                     
                     

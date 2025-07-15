@@ -25,6 +25,13 @@ def init_database(database_url_name="DBURL"):
     if not url:
         raise ValueError(f"Database URL '{database_url_name}' not found in environment variables")
     
+    # # ← ADD: Enhance URL with database timeout for PostgreSQL
+    # if url.startswith('postgresql') and 'idle_in_transaction_session_timeout' not in url:
+    #     from urllib.parse import quote_plus
+    #     timeout_option = "-c idle_in_transaction_session_timeout=1800000"  # 30 minutes
+    #     separator = "&" if "?" in url else "?"
+    #     url = f"{url}{separator}options={quote_plus(timeout_option)}"
+    
     engine = create_engine(
         url,
         echo=False,

@@ -568,6 +568,15 @@ def _render_custom_player(video_url, video_uid, aspect_ratio, autoplay, loop, sh
                     playPauseBtn.textContent = '▶️';
                 }});
                 
+                // Add click event listener for video play/pause
+                video.addEventListener('click', () => {{
+                    if (video.paused) {{
+                        video.play();
+                    }} else {{
+                        video.pause();
+                    }}
+                }});
+                
                 if (isAutoplay) {{
                     video.addEventListener('loadeddata', () => {{
                         if (video.paused) {{
@@ -928,7 +937,6 @@ def _render_custom_player(video_url, video_uid, aspect_ratio, autoplay, loop, sh
     
     components.html(html_code, height=total_height, scrolling=False)
     return total_height
-
 # TODO: Original code without youtube
 # import streamlit.components.v1 as components
 

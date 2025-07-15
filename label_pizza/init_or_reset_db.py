@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-Database Initialization/Reset Script for Label Pizza
-====================================================
-This script provides nuclear database reset functionality that ACTUALLY works.
-
-FIXES:
-- Uses DROP TABLE CASCADE for each table individually (nuclear option)
-- Completely destroys and recreates all tables from SQLAlchemy models
-- Works around all Supabase limitations and connection routing issues
-- Properly closes all sessions before operations
-- Integrates backup functionality
+Database Initialization/Backup/Reset Script for Label Pizza
+==========================================================
 
 Usage:
     # Initialize database (safe, won't affect existing tables)
     python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode init --email admin@example.com --password mypass --user-id "Admin"
+
+    # Create backup with auto-generated filename
+    python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode backup
+    
+    # Create backup in custom directory
+    python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode backup --backup-dir ./my_backups --backup-file important_backup.sql.gz
     
     # Nuclear reset with automatic backup (RECOMMENDED)
     python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode reset --email admin@example.com --password mypass --user-id "Admin" --auto-backup
@@ -552,6 +550,168 @@ def nuclear_reset_database(email: str, password: str, user_id: str, force: bool 
             print(f"   python label_pizza/init_or_reset_db.py --mode restore --backup-dir {backup_dir} --backup-file {os.path.basename(backup_created)}")
         return False
 
+def check_database_is_empty(db_url: str, force: bool = False) -> bool:
+    """Check if database is empty before allowing restore"""
+    try:
+        print("🔍 Checking if database is empty...")
+        
+        # Create engine to check database state
+        check_engine = create_engine(db_url, poolclass=NullPool, echo=False)
+        
+        with check_engine.connect() as conn:
+            # Check if any tables exist
+            result = conn.execute(text("""
+                SELECT COUNT(*) FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+            """))
+            table_count = result.scalar()
+            
+            if table_count == 0:
+                print("   ✅ Database is empty - safe to restore")
+                check_engine.dispose()
+                return True
+            
+            print(f"   ⚠️  Found {table_count} existing tables")
+            
+            # Check if tables have data
+            tables_with_data = []
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+            """))
+            table_names = [row[0] for row in result.fetchall()]
+            
+            total_rows = 0
+            for table_name in table_names:
+                try:
+                    count_result = conn.execute(text(f'SELECT COUNT(*) FROM public."{table_name}"'))
+                    row_count = count_result.scalar()
+                    total_rows += row_count
+                    if row_count > 0:
+                        tables_with_data.append(f"{table_name} ({row_count} rows)")
+                except Exception as e:
+                    print(f"   ⚠️  Could not check table {table_name}: {e}")
+            
+            if total_rows == 0:
+                print(f"   ✅ All {table_count} tables are empty - safe to restore")
+                check_engine.dispose()
+                return True
+            
+            # Database has data - this is dangerous!
+            print(f"   🚨 DANGER: Database contains {total_rows} rows of data!")
+            print(f"   📊 Tables with data: {tables_with_data}")
+            print()
+            print("🛑 RESTORE WILL DESTROY ALL EXISTING DATA!")
+            print("This data will be permanently lost and replaced with backup contents.")
+            
+            if force:
+                print("   ⚠️  --force flag used, proceeding anyway...")
+                check_engine.dispose()
+                return True
+            
+            print()
+            response = input("Type 'DESTROY' to confirm you want to lose all current data: ")
+            
+            check_engine.dispose()
+            
+            if response.strip() != "DESTROY":
+                print("❌ Restore cancelled - current data preserved")
+                return False
+            
+            print("💀 User confirmed data destruction - proceeding with restore...")
+            return True
+            
+    except Exception as e:
+        print(f"   ❌ Error checking database state: {e}")
+        if force:
+            print("   ⚠️  --force flag used, proceeding anyway...")
+            return True
+        
+        response = input("Could not verify database state. Proceed anyway? (y/N): ")
+        return response.lower() in ['y', 'yes']
+
+def backup_mode(backup_dir: str = "./backups", backup_file: Optional[str] = None, 
+               compress: bool = True, db_url: str = None) -> bool:
+    """Backup mode: create a backup of the current database"""
+    print("🍕 Label Pizza Database Backup")
+    print("=" * 40)
+    
+    if not db_url:
+        db_url = os.getenv("DBURL")
+    if not db_url:
+        print("❌ DBURL environment variable not found")
+        return False
+    
+    try:
+        # Show what will be backed up
+        print("🔍 Analyzing database for backup...")
+        
+        check_engine = create_engine(db_url, poolclass=NullPool, echo=False)
+        with check_engine.connect() as conn:
+            # Count tables and data
+            result = conn.execute(text("""
+                SELECT COUNT(*) FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+            """))
+            table_count = result.scalar()
+            
+            if table_count == 0:
+                print("   ⚠️  Database appears to be empty (no tables)")
+                response = input("Create backup of empty database anyway? (y/N): ")
+                if response.lower() not in ['y', 'yes']:
+                    print("❌ Backup cancelled")
+                    return False
+            else:
+                print(f"   📊 Found {table_count} tables to backup")
+                
+                # Count total rows
+                result = conn.execute(text("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+                """))
+                table_names = [row[0] for row in result.fetchall()]
+                
+                total_rows = 0
+                for table_name in table_names:
+                    try:
+                        count_result = conn.execute(text(f'SELECT COUNT(*) FROM public."{table_name}"'))
+                        row_count = count_result.scalar()
+                        total_rows += row_count
+                    except Exception:
+                        pass
+                
+                print(f"   📈 Total data rows: {total_rows:,}")
+        
+        check_engine.dispose()
+        
+        # Create the backup
+        backup_created = create_backup_if_requested(db_url, backup_dir, backup_file, compress)
+        
+        if backup_created:
+            print(f"\n🎉 Backup completed successfully!")
+            print(f"📁 Backup location: {backup_created}")
+            
+            # Show backup file size
+            try:
+                from pathlib import Path
+                backup_path = Path(backup_created)
+                if backup_path.exists():
+                    size_mb = backup_path.stat().st_size / (1024 * 1024)
+                    print(f"📦 Backup size: {size_mb:.2f} MB")
+            except Exception:
+                pass
+            
+            return True
+        else:
+            print("\n❌ Backup failed")
+            return False
+            
+    except Exception as e:
+        print(f"\n❌ Backup failed: {e}")
+        return False
+
 def restore_mode(backup_dir: str, backup_file: str, email: str, password: str, user_id: str, 
                 force: bool = False, engine: Engine = None, session_local = None, db_url: str = None) -> bool:
     """Restore mode: restore from backup and recreate admin user"""
@@ -566,6 +726,9 @@ def restore_mode(backup_dir: str, backup_file: str, email: str, password: str, u
         db_url = os.getenv("DBURL")
     if not db_url:
         print("❌ DBURL environment variable not found")
+        return False
+    
+    if not check_database_is_empty(db_url, force):
         return False
     
     try:
@@ -634,7 +797,7 @@ Nuclear Improvements:
     
     parser.add_argument(
         "--mode",
-        choices=["init", "reset", "restore"],
+        choices=["init", "reset", "restore", "backup"],
         default="init",
         help="Operation mode"
     )
@@ -748,6 +911,10 @@ Nuclear Improvements:
         success = restore_mode(
             args.backup_dir, args.backup_file, args.email, args.password, args.user_id,
             args.force, engine, SessionLocal, db_url
+        )
+    elif args.mode == "backup":
+        success = backup_mode(
+            args.backup_dir, args.backup_file, compress, db_url
         )
     
     sys.exit(0 if success else 1)

@@ -1446,3 +1446,123 @@ After running the configuration, you'll see a summary:
    • Total processed: 10
 ```xxxxxxxxxx 📊 Summary:   • Created: 4   • Updated: 2   • Removed: 1   • Skipped: 3   • Total processed: 10
 ```
+
+
+
+### Hack Functions
+
+#### 1. change_question_text(original_text, new_text)
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import change_question_text
+
+change_question_text(
+	original_text="original_text",
+	new_text="new_text"
+)
+```
+
+> **Important:** This will update the question across all question groups and projects that use it.
+
+#### 2. update_question_group_titles(group_id, new_title, new_display_title=None)
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import update_question_group_titles
+
+update_question_group_titles(
+    group_id=5,
+    new_title="Human Detection V2",
+    new_display_title="Human Detection (Updated)"
+)
+```
+
+#### 3. change_project_schema_simple(project_id, new_schema_id)
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import change_project_schema_simple
+
+result = change_project_schema_simple(
+    project_id=3,
+    new_schema_id=7
+)
+```
+
+> Changes a project's schema and automatically cleans up incompatible data.
+
+#### 4. delete_all_project_data(project_id, confirm_delete=True)
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import delete_all_project_data
+
+# Delete project with confirmation prompt
+result = delete_all_project_data(
+    project_id=3,
+    confirm_delete=True  # Will ask for "DELETE" confirmation
+)
+
+# Quick delete without confirmation (use carefully!)
+result = delete_all_project_data(
+    project_id=3,
+    confirm_delete=False
+)
+```
+
+#### 5. delete_all_schema_data(schema_id, confirm_delete=True)
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import delete_all_schema_data
+
+# Delete schema and all projects using it
+result = delete_all_schema_data(
+    schema_id=5,
+    confirm_delete=True
+)
+```
+
+> **Warning:** This will delete ALL projects using the schema, not just the schema itself.
+
+#### 6. delete_all_question_group_data(question_group_id, confirm_delete=True)
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import delete_all_question_group_data
+
+# Delete question group safely
+result = delete_all_question_group_data(
+    question_group_id=2,
+    confirm_delete=True
+)
+```
+
+#### 7. delete_all_question_data(question_id, confirm_delete=True)
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.hack_utils import delete_all_question_data
+
+# Delete question and all its answers
+result = delete_all_question_data(
+    question_id=8,
+    confirm_delete=True
+)
+```
+

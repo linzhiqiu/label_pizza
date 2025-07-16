@@ -1970,14 +1970,7 @@ def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, O
             return project_data["project_name"], False, str(e)
 
 def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str], Dict]:
-    """Update single project in a thread-safe manner with change detection.
-    
-    Args:
-        project_data: Dictionary containing project update parameters
-        
-    Returns:
-        Tuple of (project_name, success, error_message, result_info)
-    """
+    """Update single project in a thread-safe manner with change detection."""
     with SessionLocal() as sess:
         try:
             project_name = project_data["project_name"]
@@ -2005,8 +1998,10 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
             
             # Check if custom displays need updating (only if schema supports it)
             custom_displays_changed = False
+            custom_display_stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
+            
+            # Only check custom displays if schema supports it AND videos data is provided
             if "videos" in project_data:
-                # Check if schema supports custom displays
                 schema = SchemaService.get_schema_by_id(proj.schema_id, sess)
                 if schema.has_custom_display:
                     # Get current custom displays for comparison
@@ -2045,6 +2040,14 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
                         if custom_displays_changed:
                             break
             
+            # Debug logging to see what's happening
+            # print(f"DEBUG {project_name}: needs_update={needs_update}, custom_displays_changed={custom_displays_changed}")
+            # print(f"DEBUG {project_name}: changes={changes}")
+            # if "videos" in project_data:
+            #     schema = SchemaService.get_schema_by_id(proj.schema_id, sess)
+            #     print(f"DEBUG {project_name}: schema.has_custom_display={schema.has_custom_display}")
+            
+            # Only proceed with updates if there are actual changes
             if needs_update or custom_displays_changed:
                 # Apply changes
                 if "archive_status" in changes:
@@ -2056,21 +2059,21 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
                 if "description" in changes:
                     ProjectService.update_project_description(proj.id, project_data["description"], sess)
                 
-                # Sync custom displays only if schema supports it and there are changes
-                stats = {"created": 0, "updated": 0, "removed": 0, "skipped": 0}
+                # Sync custom displays only if there are changes
                 if custom_displays_changed:
-                    stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
+                    custom_display_stats = _sync_custom_displays(proj.id, project_data["videos"], sess)
+                    changes.append("custom_displays")
                 
                 result = {
                     "name": proj.name, 
                     "id": proj.id, 
                     "changes": changes,
-                    **stats
+                    **custom_display_stats
                 }
                 
                 return project_name, True, None, result
             else:
-                # No changes needed
+                # No changes needed - this is the skip case
                 result = {
                     "name": proj.name, 
                     "id": proj.id, 

@@ -505,9 +505,9 @@ A ground-truth record is the **single final answer** chosen by a reviewer for on
 
 Now that you understand the key components of Label Pizza (videos, users, question groups, schemas, projects, and project-user assignments), you can dive in right away with our provided demo (`example/`) or bring in your own data (`workspace/`):
 
-| Goal                                           | Command                                                           | What happens                                                                                                                                                                                                  |
-| ---------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Explore a working demo**                     | `python sync_from_folder.py --folder-path ./example`   | Loads the sample **example/** folder into a fresh database so you can click around immediately.                                                                                                               |
+| Goal                                           | Command                                                | What happens                                                 |
+| ---------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| **Explore a working demo**                     | `python sync_from_folder.py --folder-path ./example`   | Loads the sample **example/** folder into a fresh database so you can click around immediately. |
 | **Start from scratch or import your own data** | `python sync_from_folder.py --folder-path ./workspace` | The empty **workspace/** folder has the correct structure. Run the command as-is for a blank database, **or** fill the JSON files first to bulk-import all your videos, users, schemas, and projects in one shot. |
 
 
@@ -532,7 +532,7 @@ Now that you understand the key components of Label Pizza (videos, users, questi
    ```bash
    # Our provided demo
    python sync_from_folder.py --folder-path ./example
-
+   
    # Blank or custom project
    python sync_from_folder.py --folder-path ./workspace
    ```
@@ -561,21 +561,21 @@ Now that you understand the key components of Label Pizza (videos, users, questi
 
 Want to save your current work or start over from a blank database? Use the commands below—always back up first so you can restore any time.
 
-| Action                                                           | One-liner to run                                                                                                                                                                             | Result                                                                                            |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Create a backup**                                              | `python label_pizza/init_or_reset_db.py --mode backup --backup-file my_sql.sql.gz`                                                                                                           | Saves `./backups/my_sql.sql.gz` with every table.                                                 |
-| **Reset the database**<br>(nuclear option, makes its own backup) | `python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode reset --auto-backup --backup-file my_sql.sql.gz --email admin1@example.com --password admin111 --user-id "Admin 1"` | Backs up first, then drops every table and recreates them from scratch (all tables start empty).  |
-| **Restore from backup**                                          | `python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode restore --backup-file my_sql.sql.gz --email admin1@example.com --password admin111 --user-id "Admin 1"`             | Loads `my_sql.sql.gz` into a freshly reset database, repopulating all tables with the saved data. |
+| Action                                                       | One-liner to run                                             | Result                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Create a backup**                                          | `python label_pizza/init_or_reset_db.py --mode backup --backup-file my_sql.sql.gz` | Saves `./backups/my_sql.sql.gz` with every table.            |
+| **Reset the database**<br>(nuclear option, makes its own backup) | `python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode reset --auto-backup --backup-file my_sql.sql.gz --email admin1@example.com --password admin111 --user-id "Admin 1"` | Backs up first, then drops every table and recreates them from scratch (all tables start empty). |
+| **Restore from backup**                                      | `python label_pizza/init_or_reset_db.py --database-url-name DBURL --mode restore --backup-file my_sql.sql.gz --email admin1@example.com --password admin111 --user-id "Admin 1"` | Loads `my_sql.sql.gz` into a freshly reset database, repopulating all tables with the saved data. |
 
 ### Syncing the database
 
 Throughout your work, you can always synchronize the database—adding new items, updating existing ones, or archiving anything you no longer need—using one of the three methods below:
 
-| Method                                                                              | When to use it                                                                        | Typical examples                                                                                                                             | Pros                                                                                                                                     | Cons                                                                                                                                                                  |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Web UI**                                                                          | Quick, single-item edits                                                              | Add one user and set a password • Assign that user to a project • Change the URL or metadata of one video                                    | Instant; no code                                                                                                                         | Tedious for hundreds of items                                                                                                                                         |
-| **`sync_from_folder.py`** (whole-folder sync)                                       | First import of the demo or your own workspace • One-time migration of a full dataset | Point the script at **workspace/** (or your custom folder) after you’ve prepared JSON for every table                                        | One command; the JSON in **workspace/** is the canonical source of truth you can commit to Git                                           | Scans every file (slow on very large folders) • Can’t handle some cross-table actions such as archiving a schema *and* its projects in the same run (explained later) |
-| **Helpers in `sync_utils.py`** (`sync_videos`, `sync_question_groups`, …) | Day-to-day batch jobs or surgical edits                                               | Add or update hundreds of videos/question groups/users/schemas/projects/assignments in one call • Import model answers and their confidence scores | Fast; touches only the table you call • Lets you script complex sequences (e.g., archive projects, then archive their now-unused schema) | You must run helpers in dependency order and manage the JSON yourself                                                                                                 |
+| Method                                                       | When to use it                                               | Typical examples                                             | Pros                                                         | Cons                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Web UI**                                                   | Quick, single-item edits                                     | Add one user and set a password • Assign that user to a project • Change the URL or metadata of one video | Instant; no code                                             | Tedious for hundreds of items                                |
+| **`sync_from_folder.py`** (whole-folder sync)                | First import of the demo or your own workspace • One-time migration of a full dataset | Point the script at **workspace/** (or your custom folder) after you’ve prepared JSON for every table | One command; the JSON in **workspace/** is the canonical source of truth you can commit to Git | Scans every file (slow on very large folders) • Can’t handle some cross-table actions such as archiving a schema *and* its projects in the same run (explained later) |
+| **Helpers in `sync_utils.py`** (`sync_videos`, `sync_question_groups`, …) | Day-to-day batch jobs or surgical edits                      | Add or update hundreds of videos/question groups/users/schemas/projects/assignments in one call • Import model answers and their confidence scores | Fast; touches only the table you call • Lets you script complex sequences (e.g., archive projects, then archive their now-unused schema) | You must run helpers in dependency order and manage the JSON yourself |
 
 **Rule of thumb**
 
@@ -598,17 +598,17 @@ Because **[`sync_from_folder.py`](sync_from_folder.py)** is just a thin wrapper 
 
 ### Overview of the helpers
 
-| Helper                         | What it syncs                                            | Common tasks                                                                          |
-| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `sync_videos`                  | Videos                                                  | Add new clips, update video URLs or metadata, archive videos                       |
-| `sync_question_groups`         | Question Groups **plus** their Questions                | Create or update question groups, add verification rules, archive question groups      |
-| `sync_schemas`                 | Schemas                                                 | Add or update schemas, update instruction urls, toggle `has_custom_display` for per-video questions/options, archive schemas              |
-| `sync_users`                   | Users                                                   | Bulk-create or archive users, reset passwords         |
-| `sync_projects`                | Projects (and per-video custom question text / options) | Add new projects, add or update per-video custom question text / options, archive projects |
-| `sync_users_to_projects`       | User ↔ Project assignments                               | Grant or revoke project assignments, update user roles in a project, adjust user weights        |
-| `sync_project_groups`          | Project Groups                                          | Organize projects into groups for easier management, archive project groups            |
-| `sync_annotations`             | Annotator answers                                       | Import existing human or model predictions                            |
-| `sync_ground_truths`           | Reviewer ground-truth answers                           | Import ground-truth answers so new annotators can start a project in Training mode with immediate feedback                    |
+| Helper                   | What it syncs                                           | Common tasks                                                 |
+| ------------------------ | ------------------------------------------------------- | ------------------------------------------------------------ |
+| `sync_videos`            | Videos                                                  | Add new clips, update video URLs or metadata, archive videos |
+| `sync_question_groups`   | Question Groups **plus** their Questions                | Create or update question groups, add verification rules, archive question groups |
+| `sync_schemas`           | Schemas                                                 | Add or update schemas, update instruction urls, toggle `has_custom_display` for per-video questions/options, archive schemas |
+| `sync_users`             | Users                                                   | Bulk-create or archive users, reset passwords                |
+| `sync_projects`          | Projects (and per-video custom question text / options) | Add new projects, add or update per-video custom question text / options, archive projects |
+| `sync_users_to_projects` | User ↔ Project assignments                              | Grant or revoke project assignments, update user roles in a project, adjust user weights |
+| `sync_project_groups`    | Project Groups                                          | Organize projects into groups for easier management, archive project groups |
+| `sync_annotations`       | Annotator answers                                       | Import existing human or model predictions                   |
+| `sync_ground_truths`     | Reviewer ground-truth answers                           | Import ground-truth answers so new annotators can start a project in Training mode with immediate feedback |
 
 ### How the helpers take input
 
@@ -643,11 +643,11 @@ You don’t need to keep everything in `workspace/` — just the parts that are 
 * **🚫 Annotations & Ground-Truths**
   These should be collected directly in the web UI. Only use the helpers if you're importing existing labels (e.g., from a model or legacy dataset). -->
 
-| Keep in JSON?                      | Why                                                             |
-| ---------------------------------- | --------------------------------------------------------------- |
-| **Videos & Projects ✅**            | usually hundreds—JSON + helper is far faster than hand entry    |
-| **Question Groups & Schemas ✅**    | version-control your labeling policy and reuse it elsewhere     |
-| **Users & Assignments 🟡**         | UI is fine for small teams; use helpers only for large batches  |
+| Keep in JSON?                     | Why                                                          |
+| --------------------------------- | ------------------------------------------------------------ |
+| **Videos & Projects ✅**           | usually hundreds—JSON + helper is far faster than hand entry |
+| **Question Groups & Schemas ✅**   | version-control your labeling policy and reuse it elsewhere  |
+| **Users & Assignments 🟡**         | UI is fine for small teams; use helpers only for large batches |
 | **Annotations & Ground-Truths 🚫** | collect via Web UI; import here only for existing labels (e.g., legacy dataset or from a model) |
 
 
@@ -836,7 +836,6 @@ question_groups_data = [
         "is_reusable": False,
         "is_auto_submit": False,
         "verification_function": "check_human_description",
-        "is_active": True,
         "questions": [
             {
                 "qtype": "single",
@@ -891,7 +890,6 @@ question_groups_data = [
         "is_reusable": True,               # update is_reusable
         "is_auto_submit": True,            # update is_auto_submit
         "verification_function": None,     # remove verification_function
-        "is_active": False,                # set False to archive the question group
         "questions": [                     # update the question order to move description to the first question
             {
                 "qtype": "description",
@@ -1190,7 +1188,28 @@ sync_users_to_projects(assignments_data=assignments_data)
 
 > Notice that you cannot assign an "Admin" user to a non-"Admin" role.
 
-7.2 - Remove user from project
+7.2 - Update user in project
+
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_users_to_projects
+
+assignments_data = [
+  {
+    "user_name": "User 1",             # Must exists in the database
+    "project_name": "Human Test 0",    # Must exists in the database
+    "role": "reviewer",                # Update it to reviewer
+    "user_weight": 1.0,              
+    "is_active": True
+  }
+]
+
+sync_users_to_projects(assignments_data=assignments_data)
+```
+
+7.3 - Remove user from project
 
 ```python
 from label_pizza.db import init_database
@@ -1235,7 +1254,7 @@ annotations_data = [
       "Number of people?": "1",
       "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    "is_ground_truth": True
+    "is_ground_truth": False            # For annotations, is_ground_truth MUST be False
   }
 ]
 

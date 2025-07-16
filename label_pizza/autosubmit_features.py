@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import time
 
 from label_pizza.services import (
-    AuthService, AnnotatorService, 
+    AuthService, AnnotatorService, GroundTruthService,
     QuestionService, QuestionGroupService,
     ProjectService, AutoSubmitService, ReviewerAutoSubmitService
 )
@@ -1019,9 +1019,11 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
                         if user_id_for_weight:
                             weight = user_weights.get(annotator_name, 1.0)
                             user_weight_map[user_id_for_weight] = weight
-                except:
+                except Exception as e:
+                    print(f"Error mapping user weights for annotator {annotator_name}: {e}")
                     continue
-        except:
+        except Exception as e:
+            print(f"Error getting annotator user IDs for reviewer {role} in project {project_id}: {e}")
             include_user_ids = []
     else:
         include_user_ids = [user_id]
@@ -1151,6 +1153,16 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
         questions = get_questions_by_group_cached(group_id=question_group_id, session=session)
         if not questions:
             return {}
+
+        if role == "annotator":
+            existing_answers = AnnotatorService.get_user_answers_for_question_group(
+                video_id=video_id, project_id=project_id, user_id=include_user_ids[0], 
+                question_group_id=question_group_id, session=session
+            )
+        else:
+            existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+            )
         
         preload_answers = {}
 
@@ -1166,6 +1178,10 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
         for question in questions:
             question_id = question["id"]
             question_type = question["type"]
+
+            question_text = question["text"]
+            if existing_answers.get(question_text, "").strip():
+                continue
             
             if question_type == "single":
                 # REVERTED: Use original AutoSubmitService logic for single choice
@@ -1207,6 +1223,7 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                                         vote_counts[answer_value] = 0.0
                                     vote_counts[answer_value] += user_weight
                         except Exception:
+                            print(f"Error getting answers for question {question_id} from {include_user_ids}: {e}")
                             pass
                 
                 # Add virtual responses (default answers configured)
@@ -1278,7 +1295,8 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                                         if answer_value not in answer_scores:
                                             answer_scores[answer_value] = 0.0
                                         answer_scores[answer_value] += user_weight
-                            except Exception:
+                            except Exception as e:
+                                print(f"Error getting answers for question {question_id} from {include_user_ids}: {e}")
                                 pass
                     
                     # Pick highest weighted answer (NO THRESHOLD CHECK!)
@@ -1288,7 +1306,8 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
         
         return preload_answers
         
-    except Exception:
+    except Exception as e:
+        print(f"Error in calculate_preload_answers_no_threshold: {e}")
         return {}
 
 
@@ -1306,6 +1325,10 @@ def calculate_preload_with_weights(
         if not questions:
             return {}
         
+        existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+            video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+        )
+        
         preload_answers = {}
 
         cache_data = None
@@ -1319,7 +1342,11 @@ def calculate_preload_with_weights(
         for question in questions:
             question_id = question["id"]
             question_type = question["type"]
-            
+            question_text = question["text"]
+
+            if existing_answers.get(question_text, "").strip():
+                continue
+
             if question_type == "single":
                 # Get custom option weights for this question
                 question_custom_weights = option_weights.get(question_id, {}) if option_weights else {}
@@ -1344,7 +1371,8 @@ def calculate_preload_with_weights(
                             try:
                                 option_index = question["options"].index(answer_value)
                                 option_weight = float(question["option_weights"][option_index])
-                            except (ValueError, IndexError):
+                            except (ValueError, IndexError) as e:
+                                print(f"Error getting option weight for question {question_id}: {e}")
                                 option_weight = 1.0
                         
                         # Combined weight
@@ -1419,7 +1447,8 @@ def calculate_preload_with_weights(
                                         if answer_value not in answer_scores:
                                             answer_scores[answer_value] = 0.0
                                         answer_scores[answer_value] += user_weight
-                            except Exception:
+                            except Exception as e:
+                                print(f"Error getting answers for question {question_id} from {include_user_ids}: {e}")
                                 pass
                     
                     # Pick highest weighted answer (NO THRESHOLD CHECK!)

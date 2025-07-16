@@ -527,6 +527,103 @@ class VideoService:
 
 
 class ProjectService:
+
+    @staticmethod
+    def get_bulk_project_completion_data(project_ids: List[int], session: Session) -> Dict[int, Dict[str, Any]]:
+        """Get completion data for multiple projects in bulk - much faster than individual calls."""
+        
+        if not project_ids:
+            return {}
+        
+        # Single query to get all project basic info
+        projects_query = select(
+            Project.id,
+            Project.name,
+            Project.description,
+            Project.schema_id,
+            Project.is_archived,
+            Project.created_at
+        ).where(Project.id.in_(project_ids))
+        
+        projects_result = session.execute(projects_query).all()
+        
+        # Single query to get video counts for all projects
+        video_counts_query = select(
+            ProjectVideo.project_id,
+            func.count(ProjectVideo.video_id).label('video_count')
+        ).select_from(
+            ProjectVideo
+        ).join(
+            Video, ProjectVideo.video_id == Video.id
+        ).where(
+            ProjectVideo.project_id.in_(project_ids),
+            Video.is_archived == False
+        ).group_by(ProjectVideo.project_id)
+        
+        video_counts_result = session.execute(video_counts_query).all()
+        video_counts_map = {row.project_id: row.video_count for row in video_counts_result}
+        
+        # Single query to get question counts for all schemas
+        schema_ids = [p.schema_id for p in projects_result]
+        question_counts_query = select(
+            SchemaQuestionGroup.schema_id,
+            func.count(Question.id).label('question_count')
+        ).select_from(
+            Question
+        ).join(
+            QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id
+        ).join(
+            SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id
+        ).where(
+            SchemaQuestionGroup.schema_id.in_(schema_ids),
+            Question.is_archived == False
+        ).group_by(SchemaQuestionGroup.schema_id)
+        
+        question_counts_result = session.execute(question_counts_query).all()
+        question_counts_map = {row.schema_id: row.question_count for row in question_counts_result}
+        
+        # Single query to get ground truth counts for all projects
+        gt_counts_query = select(
+            ReviewerGroundTruth.project_id,
+            func.count().label('gt_count')
+        ).select_from(
+            ReviewerGroundTruth
+        ).join(
+            Question, ReviewerGroundTruth.question_id == Question.id
+        ).where(
+            ReviewerGroundTruth.project_id.in_(project_ids),
+            Question.is_archived == False
+        ).group_by(ReviewerGroundTruth.project_id)
+        
+        gt_counts_result = session.execute(gt_counts_query).all()
+        gt_counts_map = {row.project_id: row.gt_count for row in gt_counts_result}
+        
+        # Build result
+        result = {}
+        for project in projects_result:
+            video_count = video_counts_map.get(project.id, 0)
+            question_count = question_counts_map.get(project.schema_id, 0)
+            gt_count = gt_counts_map.get(project.id, 0)
+            
+            total_possible = video_count * question_count
+            completion_percentage = (gt_count / total_possible * 100) if total_possible > 0 else 0.0
+            
+            result[project.id] = {
+                "id": project.id,
+                "name": project.name,
+                "description": project.description,
+                "schema_id": project.schema_id,
+                "is_archived": project.is_archived,
+                "created_at": project.created_at,
+                "video_count": video_count,
+                "question_count": question_count,
+                "gt_count": gt_count,
+                "completion_percentage": completion_percentage,
+                "has_full_ground_truth": completion_percentage >= 100.0
+            }
+        
+        return result
+
     @staticmethod
     def get_project_by_name(name: str, session: Session) -> Optional[Project]:
         """Get a project by its name.
@@ -5610,6 +5707,83 @@ class BaseAnswerService:
         return completion_percentage
 
 class AnnotatorService(BaseAnswerService):
+
+    @staticmethod
+    def get_all_project_answers(project_id: int, session: Session) -> List[Dict[str, Any]]:
+        """Get all annotator answers for a project in bulk.
+        
+        Args:
+            project_id: The ID of the project
+            session: Database session
+            
+        Returns:
+            List of answer dictionaries with keys:
+            - video_id, question_id, user_id, answer_value, confidence_score, created_at, modified_at, notes
+        """
+        answers = session.scalars(
+            select(AnnotatorAnswer)
+            .where(AnnotatorAnswer.project_id == project_id)
+        ).all()
+        
+        return [
+            {
+                "video_id": answer.video_id,
+                "question_id": answer.question_id,
+                "user_id": answer.user_id,
+                "answer_value": answer.answer_value,
+                "confidence_score": answer.confidence_score,
+                "created_at": answer.created_at,
+                "modified_at": answer.modified_at,
+                "notes": answer.notes
+            }
+            for answer in answers
+        ]
+
+    @staticmethod
+    def get_all_text_answers_for_project(project_id: int, description_question_ids: List[int], session: Session) -> List[Dict[str, Any]]:
+        """Get all text answers for description questions in a project.
+        
+        Args:
+            project_id: The ID of the project
+            description_question_ids: List of question IDs for description questions
+            session: Database session
+            
+        Returns:
+            List of text answer dictionaries with keys:
+            - video_id, question_id, user_id, answer_value, user_name
+        """
+        if not description_question_ids:
+            return []
+        
+        # Get text answers with user info in one query
+        results = session.execute(
+            select(
+                AnnotatorAnswer.video_id,
+                AnnotatorAnswer.question_id,
+                AnnotatorAnswer.user_id,
+                AnnotatorAnswer.answer_value,
+                User.user_id_str
+            ).select_from(
+                AnnotatorAnswer
+            ).join(
+                User, AnnotatorAnswer.user_id == User.id
+            ).where(
+                AnnotatorAnswer.project_id == project_id,
+                AnnotatorAnswer.question_id.in_(description_question_ids)
+            )
+        ).all()
+        
+        return [
+            {
+                "video_id": row.video_id,
+                "question_id": row.question_id,
+                "user_id": row.user_id,
+                "answer_value": row.answer_value,
+                "user_name": row.user_id_str
+            }
+            for row in results
+        ]
+
     @staticmethod
     def verify_submit_answer_to_question_group(
         video_id: int,
@@ -5986,6 +6160,7 @@ class AnnotatorService(BaseAnswerService):
         return result
 
 class GroundTruthService(BaseAnswerService):
+
     @staticmethod
     def verify_submit_ground_truth_to_question_group(
         video_id: int,

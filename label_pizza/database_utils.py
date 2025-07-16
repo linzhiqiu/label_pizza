@@ -192,6 +192,183 @@ def get_cached_project_videos(project_id: int, session_id: str) -> List[Dict]:
             print(f"Error in get_cached_project_videos: {e}")
             return []
 
+@st.cache_data(ttl=1800)  # Cache for 30 minutes
+def get_cached_bulk_reviewer_data(project_id: int, session_id: str) -> Dict:
+    """Cache ALL reviewer data for entire project to minimize repeated queries"""
+    with SessionLocal() as session:
+        try:
+            # 🚀 OPTIMIZED: Get all annotator answers using service method
+            all_answers = AnnotatorService.get_all_project_answers(project_id=project_id, session=session)
+            
+            # Organize answers by video_id -> question_id -> list of answers
+            answers_by_video_question = {}
+            confidence_scores_by_user = {}
+            
+            for answer in all_answers:
+                video_id = answer["video_id"]
+                question_id = answer["question_id"]
+                user_id = answer["user_id"]
+                
+                if video_id not in answers_by_video_question:
+                    answers_by_video_question[video_id] = {}
+                if question_id not in answers_by_video_question[video_id]:
+                    answers_by_video_question[video_id][question_id] = []
+                
+                answer_record = {
+                    "User ID": user_id,
+                    "Answer Value": answer["answer_value"],
+                    "Confidence Score": answer["confidence_score"],
+                    "Created At": answer["created_at"],
+                    "Modified At": answer["modified_at"],
+                    "Notes": answer["notes"]
+                }
+                
+                answers_by_video_question[video_id][question_id].append(answer_record)
+                
+                # Track confidence scores
+                if answer["confidence_score"] is not None:
+                    if user_id not in confidence_scores_by_user:
+                        confidence_scores_by_user[user_id] = {}
+                    confidence_scores_by_user[user_id][question_id] = answer["confidence_score"]
+            
+            # Get all users info using service method
+            users_df = AuthService.get_all_users(session=session)
+            user_info_map = {}
+            display_name_to_user_id = {}
+            
+            for _, user_row in users_df.iterrows():
+                user_id = user_row["ID"]
+                user_name = user_row["User ID"]
+                
+                user_info_map[user_id] = {
+                    "name": user_name,
+                    "email": user_row["Email"],
+                    "role": user_row["Role"]
+                }
+                
+                display_name, _ = AuthService.get_user_display_name_with_initials(user_name)
+                display_name_to_user_id[display_name] = user_id
+            
+            # Get user weights for project using service method
+            user_weights = {}
+            try:
+                weights_data = AuthService.get_user_weights_for_project(project_id=project_id, session=session)
+                user_weights = weights_data
+            except Exception as e:
+                print(f"Error getting user weights: {e}")
+                user_weights = {}
+            
+            # Get all text answers for description questions using service method
+            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            description_questions = [q for q in questions if q["type"] == "description"]
+            description_question_ids = [q["id"] for q in description_questions]
+            
+            text_answers_by_video_question = {}
+            
+            if description_question_ids:
+                text_answers = AnnotatorService.get_all_text_answers_for_project(
+                    project_id=project_id, 
+                    description_question_ids=description_question_ids, 
+                    session=session
+                )
+                
+                for answer in text_answers:
+                    video_id = answer["video_id"]
+                    question_id = answer["question_id"]
+                    user_name = answer["user_name"]
+                    
+                    if video_id not in text_answers_by_video_question:
+                        text_answers_by_video_question[video_id] = {}
+                    if question_id not in text_answers_by_video_question[video_id]:
+                        text_answers_by_video_question[video_id][question_id] = []
+                    
+                    # Generate initials
+                    name_parts = user_name.split()
+                    if len(name_parts) >= 2:
+                        initials = f"{name_parts[0][0]}{name_parts[-1][0]}".upper()
+                    else:
+                        initials = user_name[:2].upper()
+                    
+                    text_answers_by_video_question[video_id][question_id].append({
+                        "name": user_name,
+                        "initials": initials,
+                        "answer_value": answer["answer_value"]
+                    })
+            
+            return {
+                "annotator_answers": answers_by_video_question,
+                "user_info": user_info_map,
+                "confidence_scores": confidence_scores_by_user,
+                "text_answers": text_answers_by_video_question,
+                "user_weights": user_weights,
+                "display_name_to_user_id": display_name_to_user_id,
+                "project_id": project_id
+            }
+            
+        except Exception as e:
+            print(f"Error in get_cached_bulk_reviewer_data: {e}")
+            return {}
+
+def get_video_reviewer_data_from_bulk(video_id: int, project_id: int, annotator_user_ids: List[int]) -> Dict:
+    """Get reviewer data for a specific video from bulk cache"""
+    session_id = get_session_cache_key()
+    bulk_data = get_cached_bulk_reviewer_data(project_id, session_id)
+    
+    if not bulk_data:
+        return {}
+    
+    # Filter data for this video and selected annotators
+    video_data = {
+        "annotator_answers": {},
+        "user_info": {},
+        "confidence_scores": {},
+        "text_answers": {},
+        "user_weights": {},
+        "display_name_to_user_id": bulk_data["display_name_to_user_id"]
+    }
+    
+    # Get answers for this video
+    video_answers = bulk_data["annotator_answers"].get(video_id, {})
+    
+    for question_id, answers in video_answers.items():
+        # Filter answers for selected annotators
+        filtered_answers = [
+            answer for answer in answers 
+            if answer["User ID"] in annotator_user_ids
+        ]
+        if filtered_answers:
+            video_data["annotator_answers"][question_id] = filtered_answers
+    
+    # Get user info for selected annotators
+    for user_id in annotator_user_ids:
+        if user_id in bulk_data["user_info"]:
+            video_data["user_info"][user_id] = bulk_data["user_info"][user_id]
+        
+        if user_id in bulk_data["confidence_scores"]:
+            video_data["confidence_scores"][user_id] = bulk_data["confidence_scores"][user_id]
+        
+        video_data["user_weights"][user_id] = bulk_data["user_weights"].get(user_id, 1.0)
+    
+    # Get text answers for this video
+    video_text_answers = bulk_data["text_answers"].get(video_id, {})
+    for question_id, text_answers in video_text_answers.items():
+        # Filter for selected annotators
+        filtered_text_answers = []
+        for answer in text_answers:
+            # Find user_id from name
+            user_id = None
+            for uid, user_info in bulk_data["user_info"].items():
+                if user_info["name"] == answer["name"]:
+                    user_id = uid
+                    break
+            
+            if user_id and user_id in annotator_user_ids:
+                filtered_text_answers.append(answer)
+        
+        if filtered_text_answers:
+            video_data["text_answers"][question_id] = filtered_text_answers
+    
+    return video_data
 
 @st.cache_data(ttl=600)  # Cache for 10 minutes
 def get_cached_video_reviewer_data(video_id: int, project_id: int, annotator_user_ids: List[int], session_id: str) -> Dict:
@@ -574,12 +751,47 @@ def get_project_videos(project_id: int, session: Session) -> List[Dict]:
 
 
 def get_project_groups_with_projects(user_id: int, role: str, session: Session) -> Dict:
-    """Get project groups with their projects for a user"""
+    """Get project groups with their projects for a user - OPTIMIZED VERSION"""
     try:
-        return ProjectGroupService.get_grouped_projects_for_user(user_id=user_id, role=role, session=session)
-    except ValueError as e:
+        # Get project assignments for user
+        assignments_df = AuthService.get_project_assignments(session=session)
+        user_assignments = assignments_df[assignments_df["User ID"] == user_id]
+        
+        if role != "admin":
+            user_assignments = user_assignments[user_assignments["Role"] == role]
+        
+        project_ids = user_assignments["Project ID"].tolist()
+        
+        if not project_ids:
+            return {}
+        
+        # Use bulk method to get all project completion data at once
+        bulk_project_data = ProjectService.get_bulk_project_completion_data(project_ids, session)
+        
+        # Get project groups
+        project_groups = ProjectGroupService.get_grouped_projects_for_user(user_id=user_id, role=role, session=session)
+        
+        # Enhance with bulk completion data
+        enhanced_groups = {}
+        for group_name, projects in project_groups.items():
+            enhanced_projects = []
+            for project in projects:
+                project_id = project["id"]
+                if project_id in bulk_project_data:
+                    bulk_data = bulk_project_data[project_id]
+                    # Merge project data with bulk completion data
+                    enhanced_project = {**project, **bulk_data}
+                    enhanced_projects.append(enhanced_project)
+            
+            if enhanced_projects:
+                enhanced_groups[group_name] = enhanced_projects
+        
+        return enhanced_groups
+        
+    except Exception as e:
         st.error(f"Error getting grouped projects: {str(e)}")
         return {}
+
 
 def get_user_assignment_dates(user_id: int, session: Session) -> Dict[int, Dict[str, str]]:
     """Get assignment dates for all projects for a specific user"""

@@ -57,7 +57,7 @@ class QuestionGroup(Base):
     __tablename__ = "question_groups"
     id = Column(Integer, primary_key=True)
     title = Column(String(255), unique=True, nullable=False)
-    display_title = Column(String(255), unique=True, nullable=False)
+    display_title = Column(String(255), nullable=False)
     description = Column(Text)
     is_reusable = Column(Boolean, default=False)  # TRUE ⇒ can be imported by many schemas
     is_auto_submit = Column(Boolean, default=False)  # TRUE ⇒ answers are automatically submitted for annotation mode

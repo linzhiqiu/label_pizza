@@ -23,7 +23,6 @@ import concurrent.futures
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import glob
-from copy import deepcopy
 
 # --------------------------------------------------------------------------- #
 # Core operations                                                             #
@@ -302,9 +301,6 @@ def sync_videos(
 
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
-    
-    # Deep copy videos_data to avoid modifying the original list
-    videos_data = deepcopy(videos_data)
 
     print(f"\n🚀 Starting video sync pipeline with {len(videos_data)} videos...")
 
@@ -464,7 +460,7 @@ def update_users(users_data: List[Dict]) -> None:
                         changes.append("email")
                     
                     # Check password (we can't compare hashes, so we'll update if provided)
-                    if "password" in user:
+                    if "password" in user and user["password"] != user_rec.password_hash:
                         needs_update = True
                         changes.append("password")
                     
@@ -564,9 +560,6 @@ def sync_users(
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
 
-    # Deep copy users_data to avoid modifying the original list
-    users_data = deepcopy(users_data)
-
     # Convert is_active → is_archived and validate required fields
     processed: List[Dict] = []
     for idx, user in enumerate(users_data, 1):
@@ -633,6 +626,7 @@ def sync_users(
 # --------------------------------------------------------------------------- #
 
 
+
 def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], List[str]]:
     """Create new question groups with full verification and atomic transaction.
     
@@ -645,6 +639,11 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
     Raises:
         TypeError: If groups is not a list of tuples
         ValueError: If groups already exist or verification fails
+        
+    Note:
+        For existing questions, only display_text, display_values, option_weights, 
+        default_option, and archive status can be modified. New questions will be 
+        created with all provided properties.
     """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
@@ -668,14 +667,71 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
         if dup_titles:
             raise ValueError("Add aborted – already in DB: " + ", ".join(dup_titles))
 
-        # ── Phase 1: prepare each group (create missing questions) ──────────
-        prepared: List[Tuple[Dict, List[int]]] = []  # (group_data, question_ids)
+        # ── Phase 1: prepare each group (create missing questions & track existing) ──────────
+        prepared: List[Tuple[Dict, List[int], List[Dict]]] = []  # (group_data, question_ids, question_updates)
         for _, g in groups:
             q_ids: List[int] = []
+            question_updates: List[Dict] = []  # Track questions that need updates
+            
             for q in g["questions"]:
                 try:
                     q_rec = QuestionService.get_question_by_text(q["text"], sess)
                     q_ids.append(q_rec["id"])
+                    
+                    # Check if existing question needs updates
+                    needs_update = False
+                    update_types = []
+                    
+                    # Check display_text
+                    new_display_text = q.get("display_text", q["text"])
+                    if new_display_text != q_rec["display_text"]:
+                        needs_update = True
+                        update_types.append("display_text")
+                    
+                    # Check default_option for ALL question types (not just single-choice)
+                    if "default_option" in q:
+                        new_default = q["default_option"]
+                        current_default = q_rec.get("default_option")
+                        if new_default is not current_default and new_default != current_default:
+                            needs_update = True
+                            update_types.append("default_option")
+                    
+                    # For single-choice questions, check other properties
+                    if q_rec["type"] == "single":
+                        # Check display_values - use 'is not None' to allow empty lists
+                        new_display_values = q.get("display_values")
+                        if new_display_values is not None and new_display_values != q_rec.get("display_values"):
+                            needs_update = True
+                            update_types.append("display_values")
+                        
+                        # Check option_weights - use 'is not None' to allow empty lists
+                        new_option_weights = q.get("option_weights")
+                        if new_option_weights is not None and new_option_weights != q_rec.get("option_weights"):
+                            needs_update = True
+                            update_types.append("option_weights")
+                    
+                    elif q_rec["type"] == "description":
+                        # For description questions, check default_value (or whatever field stores the default)
+                        if "default_value" in q:
+                            new_default_value = q["default_value"]
+                            current_default_value = q_rec.get("default_value")
+                            if new_default_value is not current_default_value and new_default_value != current_default_value:
+                                needs_update = True
+                                update_types.append("default_value")
+                    
+                    # Check archive status
+                    if "is_archived" in q and q["is_archived"] != q_rec.get("is_archived", False):
+                        needs_update = True
+                        update_types.append("archive_status")
+                    
+                    if needs_update:
+                        question_updates.append({
+                            "question_id": q_rec["id"],
+                            "question_text": q["text"],
+                            "question_data": q,
+                            "changes": update_types
+                        })
+                        
                 except ValueError:
                     # Question doesn't exist, create it
                     q_rec = QuestionService.add_question(
@@ -690,10 +746,76 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                     )
                     questions_created.append(q["text"])
                     q_ids.append(q_rec.id)
-            prepared.append((g, q_ids))
+                    
+                    # Handle archiving for newly created questions
+                    if q.get("is_archived", False):
+                        question_updates.append({
+                            "question_id": q_rec.id,
+                            "question_text": q["text"],
+                            "question_data": q,
+                            "changes": ["archive_status"]
+                        })
+            
+            prepared.append((g, q_ids, question_updates))
 
-        # ── Phase 2: verify ALL groups before any create_group ──────────────
-        for g, q_ids in prepared:
+        # ── Phase 2: verify ALL questions first ────────────────────────────
+        for g, q_ids, question_updates in prepared:
+            for q_update in question_updates:
+                q_data = q_update["question_data"]
+                q_id = q_update["question_id"]
+                
+                # Skip archive-only changes for verification (archiving doesn't need verify_edit_question)
+                if q_update["changes"] == ["archive_status"]:
+                    continue
+                
+                # Additional validation: For auto-submit groups, don't allow None default values
+                is_auto_submit = g.get("is_auto_submit", False)
+                if is_auto_submit and "default_option" in q_update["changes"]:
+                    new_default = q_data.get("default_option")
+                    if new_default is None:
+                        raise ValueError(
+                            f"Cannot set default_option to None for question '{q_data['text']}' "
+                            f"in auto-submit group '{g['title']}'. Auto-submit groups require non-None default values."
+                        )
+                
+                # Verify question edit (this will raise ValueError if invalid)
+                QuestionService.verify_edit_question(
+                    question_id=q_id,
+                    new_display_text=q_data.get("display_text", q_data["text"]),
+                    new_opts=q_data.get("options"),
+                    new_default=q_data.get("default_option"),
+                    session=sess,
+                    new_display_values=q_data.get("display_values"),
+                    new_option_weights=q_data.get("option_weights")
+                )
+
+        # ── Phase 3: apply ALL question edits after verification ───────────
+        for g, q_ids, question_updates in prepared:
+            for q_update in question_updates:
+                q_data = q_update["question_data"]
+                q_id = q_update["question_id"]
+                
+                # Handle question archiving/unarchiving
+                if "archive_status" in q_update["changes"]:
+                    if q_data.get("is_archived", False):
+                        QuestionService.archive_question(q_id, sess)
+                    else:
+                        QuestionService.unarchive_question(q_id, sess)
+                
+                # Handle question edits (skip if only archive status changed)
+                if any(change != "archive_status" for change in q_update["changes"]):
+                    QuestionService.edit_question(
+                        question_id=q_id,
+                        new_display_text=q_data.get("display_text", q_data["text"]),
+                        new_opts=q_data.get("options"),
+                        new_default=q_data.get("default_option"),
+                        session=sess,
+                        new_display_values=q_data.get("display_values"),
+                        new_option_weights=q_data.get("option_weights")
+                    )
+
+        # ── Phase 4: verify ALL groups after questions are updated ──────────
+        for g, q_ids, question_updates in prepared:
             QuestionGroupService.verify_create_group(
                 title=g["title"],
                 display_title=g.get("display_title", g["title"]),
@@ -705,8 +827,9 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                 session=sess,
             )
 
-        # ── Phase 3: all verifications passed – perform creations ───────────
-        for g, q_ids in prepared:
+        # ── Phase 5: create groups after all verifications passed ──────────
+        for g, q_ids, question_updates in prepared:
+            # Create the group
             grp = QuestionGroupService.create_group(
                 title=g["title"],
                 display_title=g.get("display_title", g["title"]),
@@ -717,11 +840,36 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                 is_auto_submit=g.get("is_auto_submit", False),
                 session=sess,
             )
+            
+            # Handle group archiving
             if g.get("is_archived", False):
                 QuestionGroupService.archive_group(grp.id, sess)
-            created.append({"title": g["title"], "id": grp.id})
+            
+            # Prepare creation summary
+            creation_info = {"title": g["title"], "id": grp.id}
+            if question_updates:
+                # Add info about question updates
+                q_summaries = []
+                for q_update in question_updates:
+                    q_text = q_update["question_text"][:50] + "..." if len(q_update["question_text"]) > 50 else q_update["question_text"]
+                    q_summaries.append(f"'{q_text}' ({', '.join(q_update['changes'])})")
+                creation_info["question_updates"] = q_summaries
+            
+            created.append(creation_info)
 
         sess.commit()
+    
+    # Enhanced logging
+    print(f"✅ Created {len(created)} group(s)")
+    for item in created:
+        base_msg = f"   • {item['title']}"
+        if "question_updates" in item:
+            base_msg += f" (updated existing questions: {'; '.join(item['question_updates'])})"
+        print(base_msg)
+    
+    if questions_created:
+        print(f"📝 Created {len(questions_created)} new question(s)")
+    
     return created, list(set(questions_created))
 
 
@@ -737,6 +885,11 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
     Raises:
         TypeError: If groups is not a list of tuples
         ValueError: If groups not found or verification fails
+        
+    Note:
+        For questions within groups, only display_text, display_values, option_weights, 
+        default_option, and archive status can be modified. The question text and 
+        options cannot be changed (options can only be added, not removed).
     """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
@@ -865,13 +1018,127 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 needs_update = True
                 changes.append("archive_status")
             
+            # Check individual question changes
+            question_changes = []
+            for i, q_data in enumerate(g.get("questions", [])):
+                q_id = q_ids[i]
+                q_rec = QuestionService.get_question_object_by_id(q_id, sess)
+                
+                # Check for question-level changes
+                q_needs_update = False
+                q_change_types = []
+                
+                # Check display_text
+                new_display_text = q_data.get("display_text", q_data["text"])
+                if new_display_text != q_rec.display_text:
+                    q_needs_update = True
+                    q_change_types.append("display_text")
+                
+                # Check default_option for ALL question types (not just single-choice)
+                if "default_option" in q_data:
+                    new_default = q_data["default_option"]
+                    current_default = q_rec.default_option
+                    if new_default is not current_default and new_default != current_default:
+                        q_needs_update = True
+                        q_change_types.append("default_option")
+                
+                # For single-choice questions, check type-specific properties
+                if q_rec.type == "single":
+                    new_display_values = q_data.get("display_values")
+                    if new_display_values is not None and new_display_values != q_rec.display_values:
+                        q_needs_update = True
+                        q_change_types.append("display_values")
+                    
+                    # Note: We still track option_weights changes even though they're rarely modified
+                    new_option_weights = q_data.get("option_weights")
+                    if new_option_weights is not None and new_option_weights != q_rec.option_weights:
+                        q_needs_update = True
+                        q_change_types.append("option_weights")
+                
+                elif q_rec.type == "description":
+                    # For description questions, only display_text and default_option can be changed
+                    # (both are already checked above)
+                    pass
+                
+                # Check archive status
+                if "is_archived" in q_data and q_data["is_archived"] != q_rec.is_archived:
+                    q_needs_update = True
+                    q_change_types.append("archive_status")
+                
+                if q_needs_update:
+                    question_changes.append({
+                        "question_id": q_id,
+                        "question_text": q_data["text"],
+                        "question_data": q_data,
+                        "changes": q_change_types
+                    })
+                    needs_update = True
+            
+            if question_changes:
+                changes.append("questions")
+            
             if needs_update:
-                to_update.append((g, q_ids, grp, changes))
+                to_update.append((g, q_ids, grp, changes, question_changes))
             else:
                 skipped.append({"title": g["title"], "id": grp.id})
 
-        # ── Phase 3: verify ALL edits first ─────────────────────────────────
-        for g, q_ids, grp, changes in to_update:
+        # ── Phase 3: verify ALL question edits first ──────────────────────
+        for g, q_ids, grp, changes, question_changes in to_update:
+            for q_change in question_changes:
+                q_data = q_change["question_data"]
+                q_id = q_change["question_id"]
+                
+                # Skip archive-only changes for verification (archiving doesn't need verify_edit_question)
+                if q_change["changes"] == ["archive_status"]:
+                    continue
+                
+                # Additional validation: For auto-submit groups, don't allow None default values
+                if grp.is_auto_submit and "default_option" in q_change["changes"]:
+                    new_default = q_data.get("default_option")
+                    if new_default is None:
+                        raise ValueError(
+                            f"Cannot set default_option to None for question '{q_data['text']}' "
+                            f"in auto-submit group '{g['title']}'. Auto-submit groups require non-None default values."
+                        )
+                
+                # Verify question edit (this will raise ValueError if invalid)
+                QuestionService.verify_edit_question(
+                    question_id=q_id,
+                    new_display_text=q_data.get("display_text", q_data["text"]),
+                    new_opts=q_data.get("options"),
+                    new_default=q_data.get("default_option"),
+                    session=sess,
+                    new_display_values=q_data.get("display_values"),
+                    new_option_weights=q_data.get("option_weights")
+                )
+
+        # ── Phase 4: apply ALL question edits after verification ───────────
+        for g, q_ids, grp, changes, question_changes in to_update:
+            for q_change in question_changes:
+                q_data = q_change["question_data"]
+                q_id = q_change["question_id"]
+                
+                # Handle question archiving/unarchiving
+                if "archive_status" in q_change["changes"]:
+                    if q_data.get("is_archived", False):
+                        QuestionService.archive_question(q_id, sess)
+                    else:
+                        QuestionService.unarchive_question(q_id, sess)
+                
+                # Handle question edits (skip if only archive status changed)
+                if any(change != "archive_status" for change in q_change["changes"]):
+                    QuestionService.edit_question(
+                        question_id=q_id,
+                        new_display_text=q_data.get("display_text", q_data["text"]),
+                        new_opts=q_data.get("options"),
+                        new_default=q_data.get("default_option"),
+                        session=sess,
+                        new_display_values=q_data.get("display_values"),
+                        new_option_weights=q_data.get("option_weights")
+                    )
+
+        # ── Phase 5: verify ALL group edits after questions are updated ────
+        for g, q_ids, grp, changes, question_changes in to_update:
             QuestionGroupService.verify_edit_group(
                 group_id=grp.id,
                 new_display_title=g.get("display_title", g["title"]),
@@ -882,8 +1149,9 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 session=sess,
             )
 
-        # ── Phase 4: apply edits after all verifications passed ─────────────
-        for g, q_ids, grp, changes in to_update:
+        # ── Phase 6: apply group edits after all verifications passed ──────
+        for g, q_ids, grp, changes, question_changes in to_update:
+            # Apply group-level changes
             QuestionGroupService.edit_group(
                 group_id=grp.id,
                 new_display_title=g.get("display_title", g["title"]),
@@ -898,14 +1166,27 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
             if "question_order" in changes:
                 QuestionGroupService.update_question_order(grp.id, q_ids, sess)
             
-            # Handle archiving/unarchiving
+            # Handle group archiving/unarchiving
             if "archive_status" in changes:
                 if g["is_archived"]:
                     QuestionGroupService.archive_group(grp.id, sess)
                 else:
                     QuestionGroupService.unarchive_group(grp.id, sess)
             
-            updated.append({"title": g["title"], "id": grp.id, "changes": changes})
+            # Prepare detailed change summary
+            change_summary = []
+            for change in changes:
+                if change == "questions":
+                    # Add detail about question changes
+                    q_summaries = []
+                    for q_change in question_changes:
+                        q_text = q_change["question_text"][:50] + "..." if len(q_change["question_text"]) > 50 else q_change["question_text"]
+                        q_summaries.append(f"'{q_text}' ({', '.join(q_change['changes'])})")
+                    change_summary.append(f"questions: {'; '.join(q_summaries)}")
+                else:
+                    change_summary.append(change)
+            
+            updated.append({"title": g["title"], "id": grp.id, "changes": change_summary})
 
         sess.commit()
     
@@ -1323,9 +1604,6 @@ def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[D
 
     if not isinstance(schemas_data, list):
         raise TypeError("schemas_data must be list[dict]")
-
-    # Deep copy schemas_data to avoid modifying the original list
-    schemas_data = deepcopy(schemas_data)
 
     processed: List[Dict] = []
     for idx, s in enumerate(schemas_data, 1):
@@ -1965,9 +2243,6 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     if not isinstance(projects_data, list):
         raise TypeError("projects_data must be list[dict]")
 
-    # Deep copy projects_data to avoid modifying the original list
-    projects_data = deepcopy(projects_data)
-
     print("\n🚀 Starting project upload pipeline...")
     
     # Validate and normalize project data
@@ -2302,9 +2577,6 @@ def sync_project_groups(
     if not isinstance(project_groups_data, list):
         raise TypeError("project_groups_data must be list[dict]")
 
-    # Deep copy project_groups_data to avoid modifying the original list
-    project_groups_data = deepcopy(project_groups_data)
-
     # Validate and normalize project groups data
     processed: List[Dict] = []
     for idx, g in enumerate(project_groups_data, 1):
@@ -2499,9 +2771,6 @@ def sync_users_to_projects(assignment_path: str = None, assignments_data: list[d
     if not assignments_data:
         print("ℹ️  No assignments to process")
         return
-
-    # Deep copy assignments_data to avoid modifying the original list
-    assignments_data = deepcopy(assignments_data)
 
     # Add index for tracking
     for idx, assignment in enumerate(assignments_data):
@@ -2926,9 +3195,6 @@ def sync_annotations(annotations_folder: str = None,
     if not isinstance(annotations_data, list):
         raise TypeError("annotations_data must be a list of dictionaries")
     
-    # Deep copy annotations_data to avoid modifying the original list
-    annotations_data = deepcopy(annotations_data)
-
     # Check for duplicates
     check_for_duplicates(annotations_data, "annotation")
     
@@ -3162,9 +3428,6 @@ def sync_ground_truths(ground_truths_folder: str = None,
     if not isinstance(ground_truths_data, list):
         raise TypeError("ground_truths_data must be a list of dictionaries")
     
-    # Deep copy ground_truths_data to avoid modifying the original list
-    ground_truths_data = deepcopy(ground_truths_data)
-
     # Check for duplicates
     check_for_duplicates(ground_truths_data, "ground truth")
     

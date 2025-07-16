@@ -625,8 +625,6 @@ def sync_users(
 # Core operations                                                             #
 # --------------------------------------------------------------------------- #
 
-
-
 def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], List[str]]:
     """Create new question groups with full verification and atomic transaction.
     
@@ -794,13 +792,6 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
             for q_update in question_updates:
                 q_data = q_update["question_data"]
                 q_id = q_update["question_id"]
-                
-                # Handle question archiving/unarchiving
-                if "archive_status" in q_update["changes"]:
-                    if q_data.get("is_archived", False):
-                        QuestionService.archive_question(q_id, sess)
-                    else:
-                        QuestionService.unarchive_question(q_id, sess)
                 
                 # Handle question edits (skip if only archive status changed)
                 if any(change != "archive_status" for change in q_update["changes"]):
@@ -1117,13 +1108,6 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
             for q_change in question_changes:
                 q_data = q_change["question_data"]
                 q_id = q_change["question_id"]
-                
-                # Handle question archiving/unarchiving
-                if "archive_status" in q_change["changes"]:
-                    if q_data.get("is_archived", False):
-                        QuestionService.archive_question(q_id, sess)
-                    else:
-                        QuestionService.unarchive_question(q_id, sess)
                 
                 # Handle question edits (skip if only archive status changed)
                 if any(change != "archive_status" for change in q_change["changes"]):

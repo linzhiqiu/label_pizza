@@ -717,11 +717,6 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                                 needs_update = True
                                 update_types.append("default_value")
                     
-                    # Check archive status
-                    if "is_archived" in q and q["is_archived"] != q_rec.get("is_archived", False):
-                        needs_update = True
-                        update_types.append("archive_status")
-                    
                     if needs_update:
                         question_updates.append({
                             "question_id": q_rec["id"],
@@ -744,15 +739,6 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                     )
                     questions_created.append(q["text"])
                     q_ids.append(q_rec.id)
-                    
-                    # Handle archiving for newly created questions
-                    if q.get("is_archived", False):
-                        question_updates.append({
-                            "question_id": q_rec.id,
-                            "question_text": q["text"],
-                            "question_data": q,
-                            "changes": ["archive_status"]
-                        })
             
             prepared.append((g, q_ids, question_updates))
 
@@ -761,10 +747,6 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
             for q_update in question_updates:
                 q_data = q_update["question_data"]
                 q_id = q_update["question_id"]
-                
-                # Skip archive-only changes for verification (archiving doesn't need verify_edit_question)
-                if q_update["changes"] == ["archive_status"]:
-                    continue
                 
                 # Additional validation: For auto-submit groups, don't allow None default values
                 is_auto_submit = g.get("is_auto_submit", False)
@@ -793,8 +775,8 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                 q_data = q_update["question_data"]
                 q_id = q_update["question_id"]
                 
-                # Handle question edits (skip if only archive status changed)
-                if any(change != "archive_status" for change in q_update["changes"]):
+                # Handle question edits (skip if no status changed)
+                if any(q_update["changes"]):
                     QuestionService.edit_question(
                         question_id=q_id,
                         new_display_text=q_data.get("display_text", q_data["text"]),
@@ -831,10 +813,6 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                 is_auto_submit=g.get("is_auto_submit", False),
                 session=sess,
             )
-            
-            # Handle group archiving
-            if g.get("is_archived", False):
-                QuestionGroupService.archive_group(grp.id, sess)
             
             # Prepare creation summary
             creation_info = {"title": g["title"], "id": grp.id}
@@ -1004,11 +982,6 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 needs_update = True
                 changes.append("question_order")
             
-            # Check archive status
-            if "is_archived" in g and g["is_archived"] != grp.is_archived:
-                needs_update = True
-                changes.append("archive_status")
-            
             # Check individual question changes
             question_changes = []
             for i, q_data in enumerate(g.get("questions", [])):
@@ -1051,11 +1024,6 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                     # (both are already checked above)
                     pass
                 
-                # Check archive status
-                if "is_archived" in q_data and q_data["is_archived"] != q_rec.is_archived:
-                    q_needs_update = True
-                    q_change_types.append("archive_status")
-                
                 if q_needs_update:
                     question_changes.append({
                         "question_id": q_id,
@@ -1078,10 +1046,6 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
             for q_change in question_changes:
                 q_data = q_change["question_data"]
                 q_id = q_change["question_id"]
-                
-                # Skip archive-only changes for verification (archiving doesn't need verify_edit_question)
-                if q_change["changes"] == ["archive_status"]:
-                    continue
                 
                 # Additional validation: For auto-submit groups, don't allow None default values
                 if grp.is_auto_submit and "default_option" in q_change["changes"]:
@@ -1109,8 +1073,8 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
                 q_data = q_change["question_data"]
                 q_id = q_change["question_id"]
                 
-                # Handle question edits (skip if only archive status changed)
-                if any(change != "archive_status" for change in q_change["changes"]):
+                # Handle question edits (skip if no status changed)
+                if any(q_change["changes"]):
                     QuestionService.edit_question(
                         question_id=q_id,
                         new_display_text=q_data.get("display_text", q_data["text"]),
@@ -1149,13 +1113,6 @@ def update_question_groups(groups: List[Tuple[str, Dict]]) -> List[Dict]:
             # Handle question order updates
             if "question_order" in changes:
                 QuestionGroupService.update_question_order(grp.id, q_ids, sess)
-            
-            # Handle group archiving/unarchiving
-            if "archive_status" in changes:
-                if g["is_archived"]:
-                    QuestionGroupService.archive_group(grp.id, sess)
-                else:
-                    QuestionGroupService.unarchive_group(grp.id, sess)
             
             # Prepare detailed change summary
             change_summary = []
@@ -1204,7 +1161,7 @@ def sync_question_groups(
         
     Note:
         Exactly one parameter must be provided.
-        Each group dict requires: title, description, questions, is_active.
+        Each group dict requires: title, description, questions.
     """
 
     if question_groups_folder and question_groups_data:
@@ -1232,14 +1189,12 @@ def sync_question_groups(
                 raise ValueError(f"{pth.name}: file must contain a JSON object")
             
             # Validate required fields
-            for fld in ("title", "description", "questions", "is_active"):
+            for fld in ("title", "description", "questions"):
                 if fld not in data:
                     raise ValueError(f"{pth.name}: missing required field '{fld}'")
             
             # Set defaults and normalize
             data.setdefault("display_title", data["title"])
-            if "is_active" in data:
-                data["is_archived"] = not data.pop("is_active")
             
             if not isinstance(data["questions"], list):
                 raise ValueError(f"{pth.name}: 'questions' must be a list")
@@ -1259,14 +1214,12 @@ def sync_question_groups(
             data_copy = data.copy()
             
             # Validate required fields
-            for fld in ("title", "description", "questions", "is_active"):
+            for fld in ("title", "description", "questions"):
                 if fld not in data_copy:
                     raise ValueError(f"Item #{idx}: missing required field '{fld}'")
             
             # Set defaults and normalize
             data_copy.setdefault("display_title", data_copy["title"])
-            if "is_active" in data_copy:
-                data_copy["is_archived"] = not data_copy.pop("is_active")
             
             if not isinstance(data_copy["questions"], list):
                 raise ValueError(f"Item #{idx}: 'questions' must be a list")

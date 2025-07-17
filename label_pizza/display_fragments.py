@@ -3559,7 +3559,7 @@ def display_instruction_tab_content(instructions_url: Optional[str]):
 # PROJECT DASHBOARD FUNCTIONS
 ###############################################################################
 def display_project_dashboard(user_id: int, role: str, session: Session) -> Optional[int]:
-    """Display project group dashboard with enhanced clarity and pagination - OPTIMIZED VERSION"""
+    """Display project group dashboard with enhanced clarity and pagination - OPTIMIZED VERSION WITH COMPRESSED VERTICAL SPACING"""
     st.markdown("## 📂 Project Dashboard")
     
     backend_role = "admin" if role == "meta_reviewer" else role
@@ -3684,19 +3684,19 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
             search_indicator = f"🔍 Filtered by '{search_term}' • "
         
         st.markdown(f"""
-        <div style="background: #F2ECFC; border: 2px solid #F2ECFC; border-radius: 12px; padding: 18px; margin: 16px 0; position: relative;">
+        <div style="background: #F2ECFC; border: 2px solid #F2ECFC; border-radius: 12px; padding: 12px 18px; margin: 12px 0; position: relative;">
             <div style="position: absolute; top: -8px; left: 20px; background: {group_color}; color: white; padding: 4px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; ">
                 PROJECT GROUP
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
                 <div>
                     <h2 style="margin: 0; color: {group_color}; font-size: 1.8rem;" title="{display_group_name}">📁 {truncated_group_name}</h2>
-                    <p style="margin: 8px 0 0 0; color: #34495e; font-size: 1.1rem; font-weight: 500;">
+                    <p style="margin: 4px 0 0 0; color: #34495e; font-size: 1.1rem; font-weight: 500;">
                         {search_indicator}{total_projects} projects in this group {f"• Page {current_page + 1} of {total_pages}" if total_pages > 1 else ""}
                     </p>
                 </div>
                 <div style="text-align: right;">
-                    <span style="background: {group_color}; color: white; padding: 10px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; ">{total_projects} Projects</span>
+                    <span style="background: {group_color}; color: white; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; ">{total_projects} Projects</span>
                 </div>
             </div>
         </div>
@@ -3766,19 +3766,20 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                         )
                     
                     with st.container():
+                        # 🔥 COMPRESSED VERTICAL SPACING: Reduced vertical padding/margins only, keeping horizontal spacing
                         st.markdown(f"""
-                        <div style="border: 2px solid {group_color}; border-radius: 12px; padding: 18px; margin: 8px 0; background: linear-gradient(135deg, white, {group_color}05); box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-height: 200px; position: relative;" title="Group: {display_group_name}">
+                        <div style="border: 2px solid {group_color}; border-radius: 12px; padding: 12px 18px; margin: 4px 0; background: linear-gradient(135deg, white, {group_color}05); min-height: 160px; position: relative;" title="Group: {display_group_name}">
                             <div style="position: absolute; top: -6px; right: 10px; background: {group_color}; color: white; padding: 2px 6px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;" title="{display_group_name}">
                                 {truncated_tag_group_name}
                             </div>
-                            <h4 style="margin: 10px 0 8px 0; color: black; font-size: 1.1rem; line-height: 1.3; word-wrap: break-word;" title="{project_name}">{highlighted_name}</h4>
-                            <p style="margin: 8px 0; color: #666; font-size: 0.9rem; min-height: 50px;">
+                            <h4 style="margin: 6px 0 4px 0; color: black; font-size: 1.1rem; line-height: 1.2; word-wrap: break-word;" title="{project_name}">{highlighted_name}</h4>
+                            <p style="margin: 4px 0; color: #666; font-size: 0.9rem; min-height: 35px; line-height: 1.3;">
                                 {project["description"] or 'No description'}
                             </p>
-                            <div style="margin: 12px 0;">
-                                <p style="margin: 4px 0;"><strong>Mode:</strong> {mode}</p>
-                                <p style="margin: 4px 0;"><strong>Progress:</strong> {progress_text}</p>
-                                <p style="margin: 4px 0; color: #666; font-size: 0.85rem;">
+                            <div style="margin: 6px 0;">
+                                <p style="margin: 2px 0;"><strong>Mode:</strong> {mode}</p>
+                                <p style="margin: 2px 0;"><strong>Progress:</strong> {progress_text}</p>
+                                <p style="margin: 2px 0; color: #666; font-size: 0.85rem;">
                                     <strong>Assigned:</strong> {assignment_date}
                                 </p>
                             </div>
@@ -3800,7 +3801,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                 custom_info(f"No projects found in {group_name}")
         
         if group_index < len(grouped_projects) - 1:
-            st.markdown("""<div style="height: 2px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 30px 0;"></div>""", unsafe_allow_html=True)
+            st.markdown("""<div style="height: 2px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 20px 0;"></div>""", unsafe_allow_html=True)
         
         if selected_project_id:
             break

@@ -790,8 +790,8 @@ sync_users(users_data=users_data)
 users_data = [
     {
         "user_id": "Model 1",          # new user_id
-        "email": "", # the existing email
-        "password": "",        
+        "email": "",                   # Model user could not have email
+        "password": "",                # Model user could not have password
         "user_type": "model",
         "is_active": True
     }
@@ -822,6 +822,8 @@ def check_human_description(answers: Dict[str, str]) -> None:
 If you do not wish to use a verification function, you can set `verification_function` to `None` (or `null` in JSON).
 
 3.1 - Add Question Groups
+
+To add a question group, provide a unique `title` that does not already exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -876,6 +878,10 @@ sync_question_groups(question_groups_data=question_groups_data)
 
 3.2 - Update question groups
 
+To update a question group, provide the `title` that already exists in the database. You can update the following fields: `display_title`, `description`, `is_reusable`, `is_auto_submit`, `verification_function`, and `questions`. **Make sure** the `questions` list contains exactly the same entries as the existing version—no additions or removals are allowed.
+
+Within the `questions` list, you may change the order of the questions. For each question, use the existing `text` to update its corresponding `display_text`, `display_values`, and `default_option`.
+
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
@@ -900,7 +906,7 @@ question_groups_data = [
             {
                 "qtype": "single",
                 "text": "Number of people?",
-                "display_text": "Number of people?",
+                "display_text": "Number of people updated?",     # Update the display_text of a question
                 "options": [ # update the order of options
                     "3 or more"
                     "2",
@@ -908,10 +914,10 @@ question_groups_data = [
                     "0",
                 ],
                 "display_values": [ # be sure to update the display_values to match the new order of options
-                    "3+",
-                    "2",
-                    "1",
-                    "0",
+                    "3+ updated",   # Update the display_values of a question
+                    "2 updated",
+                    "1 updated",
+                    "0 updated",
                 ],
                 "option_weights": [
                     1.0,
@@ -932,7 +938,11 @@ sync_question_groups(question_groups_data=question_groups_data)
 
 ### 4. Sync Schemas
 
+Function for adding / updating / archiving schemas
+
 4.1 - Add schemas
+
+To add a schema, provide a unique `schema_name` that does not already exist in the database. Make sure all the question groups in `question_group_names` should exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -956,6 +966,8 @@ sync_schemas(schemas_data=schemas_data)
 ```
 
 4.2 - Update schemas
+
+To update a schema, provide the `schema_name` that already exists in the database. You can update the `instructions_url`, `has_custom_display`, `is_active`, and `question_group_names`. Note that you may only change the order of the `question_group_names`; the list itself must match the existing version exactly—no additions or removals are allowed.
 
 ```python
 from label_pizza.db import init_database
@@ -1007,6 +1019,8 @@ sync_schemas(schemas_data=schemas_data)
 
 5.1 - Add projects
 
+To add a schema, provide a unique `project_name` that does not already exist in the database. Make sure both the `videos` and `schema_name` should exist in the database.
+
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
@@ -1016,7 +1030,7 @@ from label_pizza.sync_utils import sync_projects
 projects_data = [
   {
     "project_name": "Human Test 0",            # Must Not exist in the database
-    "schema_name": "Questions about Humans",   # Must Not exist in the database
+    "schema_name": "Questions about Humans",   # Must exist in the database
     "description": "Test project for human questions",
     "is_active": True,
     "videos": [
@@ -1030,6 +1044,8 @@ sync_projects(projects_data=projects_data)
 ```
 
 5.2 - Update projects
+
+To update a project, provide the `project_name` that already exists in the database. You can update the `description`.
 
 ```python
 from label_pizza.db import init_database
@@ -1054,6 +1070,8 @@ sync_projects(projects_data=projects_data)
 ```
 
 5.3 - Archive projects
+
+Set `is_active` to `False` to archive the project.
 
 ```python
 from label_pizza.db import init_database
@@ -1080,6 +1098,8 @@ sync_projects(projects_data=projects_data)
 ### 6. Sync Project Groups
 
 6.1 - Adding project group
+
+To add a schema, provide a unique `project_group_name` that does not already exist in the database. Make sure all the projects in  `projects` should exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -1139,7 +1159,9 @@ sync_project_groups(project_groups_data=project_groups_data)
 
 > If you find any videos that not exist in the database, please add them to the database according to Step 1.
 
-6.2 - Update project groups
+6.2 - Update / Archive project groups
+
+To update a project group, provide the `project_group_name` that already exists in the database. You can update the `description` and modify the `projects` list to add or remove projects. To archive a project group, set `is_active` to `False`; to unarchive it, set `is_active` to `True`.
 
 ```python
 from label_pizza.db import init_database
@@ -1167,6 +1189,8 @@ project_groups_data = [
 
 7.1 - Add user to project
 
+To add a user to project, provide a unique (`user_name, project_name`) that does not already exist in the database. Make sure both the `user_name` and `project_name` should exist in the database.
+
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
@@ -1190,6 +1214,8 @@ sync_users_to_projects(assignments_data=assignments_data)
 
 7.2 - Update user in project
 
+To update a user's role in a project, provide the (`user_name`, `project_name`) pair that already exists in the database. You can then update the user's `role`.
+
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
@@ -1210,6 +1236,8 @@ sync_users_to_projects(assignments_data=assignments_data)
 ```
 
 7.3 - Remove user from project
+
+Set `is_active` to `False` to remove a user from a project. Make sure the (`user_name`, `project_name`) pair already exists in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -1380,6 +1408,13 @@ sync_projects(projects_data=projects_data)
 
 ### 3. Set Custom Display
 
+To set custom displays for any project, make sure:
+
+- Schema with `schema_name` must have `has_custom_display` == `True`.
+
+- `question_text` must exists in the database.
+- `custom_option` must matches the number and the order of the `options` of this question. 
+
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
@@ -1449,31 +1484,64 @@ After running the configuration, you'll see a summary:
 
 
 
-### Hack Functions
+## Force Override Functions
+
+### Before Using This
+
+All functions in this module provide automatic backup functionality. You can configure the backup settings at the beginning of the file:
+
+```
+# Backup configuration
+BACKUP_DIR = "./db_backups"
+MAX_BACKUPS = 10
+```
+
+**Important:** All destructive operations automatically create timestamped backups before execution. The backup system requires `backup_restore.py` to be available.
+
+#### Setup
+
+```python
+from label_pizza.db import init_database
+init_database()  # Uses DBURL environment variable
+from label_pizza.models import *  # Import all models
+```
+
+### Functions
 
 #### 1. change_question_text(original_text, new_text)
+
+Updates `text` in `Question` table.
 
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.hack_utils import change_question_text
+from label_pizza.force_override import change_question_text
 
 change_question_text(
-	original_text="original_text",
-	new_text="new_text"
+  original_text="original_text",
+  new_text="new_text"
 )
 ```
 
 > **Important:** This will update the question across all question groups and projects that use it.
 
+**Database Operations:**
+
+- **Table:** `Question`
+- **Updates:** `text` and `display_text` fields
+- **Query:** `UPDATE questions SET text = ?, display_text = ? WHERE text = ?`
+- **Validation:** Checks if question exists and new text doesn't conflict
+
 #### 2. update_question_group_titles(group_id, new_title, new_display_title=None)
+
+Update the `title` and `display_title` in `QuestionGroup` table.
 
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.hack_utils import update_question_group_titles
+from label_pizza.force_override import update_question_group_titles
 
 update_question_group_titles(
     group_id=5,
@@ -1482,13 +1550,20 @@ update_question_group_titles(
 )
 ```
 
+**Database Operations:**
+
+- **Table:** `QuestionGroup`
+- **Updates:** `title` and `display_title` fields
+- **Query:** `UPDATE question_groups SET title = ?, display_title = ? WHERE id = ?`
+- **Validation:** Checks if group exists and new title doesn't conflict with existing groups
+
 #### 3. change_project_schema_simple(project_id, new_schema_id)
 
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.hack_utils import change_project_schema_simple
+from label_pizza.force_override import change_project_schema_simple
 
 result = change_project_schema_simple(
     project_id=3,
@@ -1498,13 +1573,40 @@ result = change_project_schema_simple(
 
 > Changes a project's schema and automatically cleans up incompatible data.
 
+**Database Operations:**
+
+1. **Finds removed questions** by comparing old vs new schema
+2. Deletes ALL custom displays:
+   - `DELETE FROM project_video_question_displays WHERE project_id = ?`
+3. Deletes incompatible answers:
+   - `DELETE FROM annotator_answers WHERE project_id = ? AND question_id IN (?)`
+4. Deletes incompatible ground truth:
+   - `DELETE FROM reviewer_ground_truth WHERE project_id = ? AND question_id IN (?)`
+5. Updates project schema:
+   - `UPDATE projects SET schema_id = ? WHERE id = ?`
+6. Resets user completion status: 
+   - `UPDATE project_user_roles SET completed_at = NULL WHERE project_id = ?`
+
 #### 4. delete_all_project_data(project_id, confirm_delete=True)
+
+Before making destructive changes, you can preview what will be affected:
+
+```
+from label_pizza.force_override import (
+    check_project_data_before_delete
+)
+
+preview = check_project_data_before_delete(project_id=3)
+print(f"Total records to delete: {preview['total_records']}")
+```
+
+Then you could confirm the delete.
 
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.hack_utils import delete_all_project_data
+from label_pizza.force_override import delete_all_project_data
 
 # Delete project with confirmation prompt
 result = delete_all_project_data(
@@ -1520,6 +1622,19 @@ result = delete_all_project_data(
 ```
 
 #### 5. delete_all_schema_data(schema_id, confirm_delete=True)
+
+Before making destructive changes, you can preview what will be affected:
+
+```
+from label_pizza.force_override import (
+    check_schema_data_before_delete
+)
+
+preview = check_schema_data_before_delete(schema_id=3)
+print(f"Total records to delete: {preview['total_records']}")
+```
+
+Then you could confirm the delete.
 
 ```
 from label_pizza.db import init_database
@@ -1538,11 +1653,24 @@ result = delete_all_schema_data(
 
 #### 6. delete_all_question_group_data(question_group_id, confirm_delete=True)
 
+Before making destructive changes, you can preview what will be affected:
+
+```
+from label_pizza.force_override import (
+    check_question_group_data_before_delete
+)
+
+preview = check_question_group_data_before_delete(question_group_id=3)
+print(f"Total records to delete: {preview['total_records']}")
+```
+
+Then you could confirm the delete.
+
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.hack_utils import delete_all_question_group_data
+from label_pizza.force_override import delete_all_question_group_data
 
 # Delete question group safely
 result = delete_all_question_group_data(
@@ -1553,11 +1681,24 @@ result = delete_all_question_group_data(
 
 #### 7. delete_all_question_data(question_id, confirm_delete=True)
 
+Before making destructive changes, you can preview what will be affected:
+
+```
+from label_pizza.force_override import (
+    check_question_data_before_delete
+)
+
+preview = check_question_data_before_delete(question_id=3)
+print(f"Total records to delete: {preview['total_records']}")
+```
+
+Then you could confirm the delete.
+
 ```
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.hack_utils import delete_all_question_data
+from label_pizza.force_override import delete_all_question_data
 
 # Delete question and all its answers
 result = delete_all_question_data(

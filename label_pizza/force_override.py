@@ -10,7 +10,7 @@ from typing import Optional
 
 # Import backup functionality from init_db
 try:
-    from backup_restore import DatabaseBackupRestore
+    from label_pizza.backup_restore import DatabaseBackupRestore
     BACKUP_AVAILABLE = True
 except ImportError:
     print("⚠️  backup_restore.py not found. Backup functionality disabled.")
@@ -151,467 +151,132 @@ def update_question_group_titles(group_id: int, new_title: str, new_display_titl
         session.commit()
 
 
-def get_schema_question_ids(schema_id: int, session: Session) -> set:
-    """
-    Helper function to get question IDs in a schema (optimized for our use case)
-    """
-    # Check if schema exists
-    schema = session.query(Schema).filter(Schema.id == schema_id).first()
-    if not schema:
-        raise ValueError(f"Schema with ID {schema_id} not found")
-    
-    # Get question IDs more efficiently
-    question_ids = session.query(Question.id).join(
-        QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id
-    ).join(
-        SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id
-    ).filter(
-        SchemaQuestionGroup.schema_id == schema_id
-    ).all()
-    
-    return {q.id for q in question_ids}
-
-
-def check_project_counts_simple(project_id: int, new_schema_id: int):
-    """
-    Quick count check using optimized schema question lookup
-    """
+"""
+All the check functions that are used to check what would be deleted when running the delete functions.
+"""
+def check_user_by_id(user_id: int) -> dict:
+    """Check what would be deleted for user by ID"""
     with SessionLocal() as session:
-        # Check if project exists
-        project = session.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            raise ValueError(f"Project with ID {project_id} not found")
-        
-        # Get question sets using helper function
-        old_question_ids = get_schema_question_ids(project.schema_id, session)
-        new_question_ids = get_schema_question_ids(new_schema_id, session)
-        
-        removed_question_ids = old_question_ids - new_question_ids
-        
-        # Count custom displays (all will be deleted in clean slate approach)
-        custom_displays_count = session.query(ProjectVideoQuestionDisplay).filter(
-            ProjectVideoQuestionDisplay.project_id == project_id
-        ).count()
-        
-        # Count annotator answers (total and to be removed)
-        total_answers = session.query(AnnotatorAnswer).filter(
-            AnnotatorAnswer.project_id == project_id
-        ).count()
-        
-        answers_to_remove = 0
-        if removed_question_ids:
-            answers_to_remove = session.query(AnnotatorAnswer).filter(
-                AnnotatorAnswer.project_id == project_id,
-                AnnotatorAnswer.question_id.in_(removed_question_ids)
-            ).count()
-        
-        # Count ground truth (total and to be removed)
-        total_gt = session.query(ReviewerGroundTruth).filter(
-            ReviewerGroundTruth.project_id == project_id
-        ).count()
-        
-        gt_to_remove = 0
-        if removed_question_ids:
-            gt_to_remove = session.query(ReviewerGroundTruth).filter(
-                ReviewerGroundTruth.project_id == project_id,
-                ReviewerGroundTruth.question_id.in_(removed_question_ids)
-            ).count()
-        
-        return {
-            "project_name": project.name,
-            "current_schema": project.schema_id,
-            "new_schema": new_schema_id,
-            "questions_being_removed": len(removed_question_ids),
-            "removed_question_ids": list(removed_question_ids),  # 添加具体的问题ID列表
-            "custom_displays_to_delete": custom_displays_count,
-            "total_answers": total_answers,
-            "answers_to_delete": answers_to_remove,
-            "total_ground_truth": total_gt,
-            "ground_truth_to_delete": gt_to_remove
-        }
-
-
-def change_project_schema(project_id: int, new_schema_id: int):
-    """Change project schema and clean up data with automatic backup"""
-    # Create backup before making changes
-    backup_path = _create_operation_backup(f"change_project_schema_{project_id}")
-    
-    with SessionLocal() as session:
-        project = session.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            raise ValueError(f"Project {project_id} not found")
-        
-        # Get removed questions
-        from label_pizza.services import SchemaService
-        old_questions = {q['id'] for q in SchemaService.get_schema_questions(project.schema_id, session)}
-        new_questions = {q['id'] for q in SchemaService.get_schema_questions(new_schema_id, session)}
-        removed_questions = old_questions - new_questions
-        
-        # Delete all custom displays (clean slate)
-        session.query(ProjectVideoQuestionDisplay).filter(
-            ProjectVideoQuestionDisplay.project_id == project_id).delete()
-        
-        # Delete data for removed questions
-        if removed_questions:
-            session.query(AnnotatorAnswer).filter(
-                AnnotatorAnswer.project_id == project_id,
-                AnnotatorAnswer.question_id.in_(removed_questions)).delete()
-            session.query(ReviewerGroundTruth).filter(
-                ReviewerGroundTruth.project_id == project_id,
-                ReviewerGroundTruth.question_id.in_(removed_questions)).delete()
-        
-        # Update schema and reset completion status
-        project.schema_id = new_schema_id
-        session.query(ProjectUserRole).filter(
-            ProjectUserRole.project_id == project_id).update(
-            {ProjectUserRole.completed_at: None})
-        
-        session.commit()
-        print(f"✅ Updated project '{project.name}' to schema {new_schema_id}")
-
-
-def check_project_data_before_delete(project_id: int):
-    """
-    Args:
-        project_id: Project ID
-        
-    Returns:
-        Dictionary with counts of data that will be deleted
-    """
-    with SessionLocal() as session:
-        # Check if project exists
-        project = session.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            raise ValueError(f"Project with ID {project_id} not found")
-        
-        # Count data in each table
-        data_counts = {}
-        
-        # 1. ProjectVideo
-        data_counts["project_videos"] = session.query(ProjectVideo).filter(
-            ProjectVideo.project_id == project_id
-        ).count()
-        
-        # 2. ProjectUserRole
-        data_counts["project_user_roles"] = session.query(ProjectUserRole).filter(
-            ProjectUserRole.project_id == project_id
-        ).count()
-        
-        # 3. ProjectVideoQuestionDisplay
-        data_counts["custom_displays"] = session.query(ProjectVideoQuestionDisplay).filter(
-            ProjectVideoQuestionDisplay.project_id == project_id
-        ).count()
-        
-        # 4. AnnotatorAnswer
-        data_counts["annotator_answers"] = session.query(AnnotatorAnswer).filter(
-            AnnotatorAnswer.project_id == project_id
-        ).count()
-        
-        # 5. ReviewerGroundTruth
-        data_counts["ground_truth"] = session.query(ReviewerGroundTruth).filter(
-            ReviewerGroundTruth.project_id == project_id
-        ).count()
-        
-        # 6. ProjectGroupProject
-        data_counts["project_group_associations"] = session.query(ProjectGroupProject).filter(
-            ProjectGroupProject.project_id == project_id
-        ).count()
-        
-        # Calculate total records
-        total_records = sum(data_counts.values())
-        
-        print(f"=== PROJECT {project_id} DATA OVERVIEW ===")
-        print(f"Project: {project.name}")
-        print(f"Schema ID: {project.schema_id}")
-        print(f"Created: {project.created_at}")
-        print(f"Archived: {project.is_archived}")
-        print()
-        print(f"📊 DATA TO BE DELETED:")
-        print(f"  Project videos: {data_counts['project_videos']}")
-        print(f"  User roles: {data_counts['project_user_roles']}")
-        print(f"  Custom displays: {data_counts['custom_displays']}")
-        print(f"  Annotator answers: {data_counts['annotator_answers']}")
-        print(f"  Ground truth: {data_counts['ground_truth']}")
-        print(f"  Project group associations: {data_counts['project_group_associations']}")
-        print(f"  Project record: 1")
-        print(f"  📈 TOTAL RECORDS: {total_records + 1}")
-        print()
-        
-        return {
-            "project_info": {
-                "id": project_id,
-                "name": project.name,
-                "schema_id": project.schema_id,
-                "is_archived": project.is_archived
-            },
-            "data_counts": data_counts,
-            "total_records": total_records + 1
-        }
-
-
-def delete_all_project_data(project_id: int, confirm_delete: bool = True):
-    """
-    Delete project and all related data
-    Args:
-        project_id: Project ID
-        confirm_delete: Whether to ask for confirmation
-        
-    Returns:
-        Dictionary with deletion results
-    """
-    # First, check what data exists
-    try:
-        data_overview = check_project_data_before_delete(project_id)
-    except ValueError as e:
-        print(f"❌ Error: {e}")
-        return None
-    
-    # Ask for confirmation if needed
-    if confirm_delete:
-        print("⚠️  WARNING: This will PERMANENTLY DELETE all data for this project!")
-        print("   This includes all answers, ground truth, user assignments, and the project itself.")
-        response = input(f"\nConfirm deletion of project {project_id} '{data_overview['project_info']['name']}'? (DELETE/no): ")
-        if response != "DELETE":
-            print("❌ Deletion cancelled")
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            print(f"❌ User with ID {user_id} not found")
             return None
-    
-     # Create backup before deletion
-    backup_path = _create_operation_backup(f"delete_project_{project_id}")
-    
-    with SessionLocal() as session:
-        project = session.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            raise ValueError(f"Project {project_id} not found")
         
-        # Delete in dependency order
-        answer_ids = [a.id for a in session.query(AnnotatorAnswer.id).filter(AnnotatorAnswer.project_id == project_id)]
-        if answer_ids:
-            session.query(AnswerReview).filter(AnswerReview.answer_id.in_(answer_ids)).delete()
-        
-        session.query(AnnotatorAnswer).filter(AnnotatorAnswer.project_id == project_id).delete()
-        session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.project_id == project_id).delete()
-        session.query(ProjectVideoQuestionDisplay).filter(ProjectVideoQuestionDisplay.project_id == project_id).delete()
-        session.query(ProjectUserRole).filter(ProjectUserRole.project_id == project_id).delete()
-        session.query(ProjectVideo).filter(ProjectVideo.project_id == project_id).delete()
-        session.query(ProjectGroupProject).filter(ProjectGroupProject.project_id == project_id).delete()
-        session.delete(project)
-        
-        session.commit()
-        print(f"✅ Deleted project '{project.name}'")
-
-
-def check_schema_data_before_delete(schema_id: int):
-    """
-    Args:
-        schema_id: Schema ID
-        
-    Returns:
-        Dictionary with counts of data that will be deleted
-    """
-    with SessionLocal() as session:
-        # Check if schema exists
-        schema = session.query(Schema).filter(Schema.id == schema_id).first()
-        if not schema:
-            raise ValueError(f"Schema with ID {schema_id} not found")
-        
-        # Find all projects using this schema
-        projects_using_schema = session.query(Project).filter(
-            Project.schema_id == schema_id
-        ).all()
-        
-        project_ids = [p.id for p in projects_using_schema]
-        
-        data_counts = {}
-        
-        # 1. Projects using this schema
-        data_counts["projects"] = len(project_ids)
-        
-        if project_ids:
-            # 2. Project-related data that will be deleted
-            data_counts["project_videos"] = session.query(ProjectVideo).filter(
-                ProjectVideo.project_id.in_(project_ids)
-            ).count()
-            
-            data_counts["project_user_roles"] = session.query(ProjectUserRole).filter(
-                ProjectUserRole.project_id.in_(project_ids)
-            ).count()
-            
-            data_counts["custom_displays"] = session.query(ProjectVideoQuestionDisplay).filter(
-                ProjectVideoQuestionDisplay.project_id.in_(project_ids)
-            ).count()
-            
-            # 3. All annotator answers for projects using this schema
-            data_counts["annotator_answers"] = session.query(AnnotatorAnswer).filter(
-                AnnotatorAnswer.project_id.in_(project_ids)
-            ).count()
-            
-            # 4. All ground truth for projects using this schema
-            data_counts["ground_truth"] = session.query(ReviewerGroundTruth).filter(
-                ReviewerGroundTruth.project_id.in_(project_ids)
-            ).count()
-            
-            # 5. Answer reviews for annotator answers
-            answer_ids = session.query(AnnotatorAnswer.id).filter(
-                AnnotatorAnswer.project_id.in_(project_ids)
-            ).subquery()
-            
-            data_counts["answer_reviews"] = session.query(AnswerReview).filter(
-                AnswerReview.answer_id.in_(answer_ids)
-            ).count()
-            
-            # 6. Project group associations
-            data_counts["project_group_associations"] = session.query(ProjectGroupProject).filter(
-                ProjectGroupProject.project_id.in_(project_ids)
-            ).count()
-        else:
-            # No projects using this schema
-            for key in ["project_videos", "project_user_roles", "custom_displays", 
-                       "annotator_answers", "ground_truth", "answer_reviews", 
-                       "project_group_associations"]:
-                data_counts[key] = 0
-        
-        # 7. Schema-question group relationships
-        data_counts["schema_question_groups"] = session.query(SchemaQuestionGroup).filter(
-            SchemaQuestionGroup.schema_id == schema_id
-        ).count()
-        
-        # Calculate total records
-        total_records = sum(data_counts.values()) + 1  # +1 for schema itself
-        
-        print(f"=== SCHEMA {schema_id} DATA OVERVIEW ===")
-        print(f"Schema: {schema.name}")
-        print(f"Created: {schema.created_at}")
-        print(f"Archived: {schema.is_archived}")
+        print(f"=== USER {user_id} DELETION PREVIEW ===")
+        print(f"User: {user.user_id_str} ({user.email})")
+        print(f"Type: {user.user_type}")
+        print(f"Created: {user.created_at}")
+        print(f"Archived: {user.is_archived}")
         print()
-        print(f"📊 DATA TO BE DELETED:")
-        print(f"  Projects using this schema: {data_counts['projects']}")
-        print(f"  Project videos: {data_counts['project_videos']}")
-        print(f"  User roles: {data_counts['project_user_roles']}")
-        print(f"  Custom displays: {data_counts['custom_displays']}")
-        print(f"  Annotator answers: {data_counts['annotator_answers']}")
-        print(f"  Ground truth: {data_counts['ground_truth']}")
-        print(f"  Answer reviews: {data_counts['answer_reviews']}")
-        print(f"  Project group associations: {data_counts['project_group_associations']}")
-        print(f"  Schema question groups: {data_counts['schema_question_groups']}")
-        print(f"  Schema record: 1")
-        print(f"  📈 TOTAL RECORDS: {total_records}")
-        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  User record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
         
         return {
-            "schema_info": {
-                "id": schema_id,
-                "name": schema.name,
-                "is_archived": schema.is_archived
+            "user_info": {
+                "id": user_id,
+                "user_id_str": user.user_id_str,
+                "email": user.email,
+                "user_type": user.user_type,
+                "is_archived": user.is_archived
             },
-            "projects_using_schema": [{"id": p.id, "name": p.name} for p in projects_using_schema],
-            "data_counts": data_counts,
-            "total_records": total_records
+            "total_records": 1
         }
 
 
-def delete_all_schema_data(schema_id: int, confirm_delete: bool = True):
-    """
-    delete all the data related to a schema (including all projects using it)
-    Args:
-        schema_id: Schema ID
-        confirm_delete: Whether to ask for confirmation
-        
-    Returns:
-        Dictionary with deletion results
-    """
-    # First, check what data exists
-    try:
-        data_overview = check_schema_data_before_delete(schema_id)
-    except ValueError as e:
-        print(f"❌ Error: {e}")
-        return None
-    
-    # Ask for confirmation if needed
-    if confirm_delete:
-        print("⚠️  WARNING: This will PERMANENTLY DELETE the schema and ALL projects using it!")
-        print("   This includes all answers, ground truth, user assignments, and projects.")
-        projects_list = ', '.join([f"'{p['name']}'" for p in data_overview['projects_using_schema']])
-        if projects_list:
-            print(f"   Projects to be deleted: {projects_list}")
-        
-        response = input(f"\nConfirm deletion of schema {schema_id} '{data_overview['schema_info']['name']}'? (DELETE/no): ")
-        if response != "DELETE":
-            print("❌ Deletion cancelled")
+def check_user_by_user_id_str(user_id_str: str) -> dict:
+    """Check what would be deleted for user by user_id_str"""
+    with SessionLocal() as session:
+        user = session.query(User).filter(User.user_id_str == user_id_str).first()
+        if not user:
+            print(f"❌ User with user_id_str '{user_id_str}' not found")
             return None
-    
-    # Create backup before deletion
-    backup_path = _create_operation_backup(f"delete_schema_{schema_id}")
-    
-    with SessionLocal() as session:
-        schema = session.query(Schema).filter(Schema.id == schema_id).first()
-        if not schema:
-            raise ValueError(f"Schema {schema_id} not found")
         
-        project_ids = [p.id for p in session.query(Project).filter(Project.schema_id == schema_id)]
-        
-        if project_ids:
-            answer_ids = [a.id for a in session.query(AnnotatorAnswer.id).filter(AnnotatorAnswer.project_id.in_(project_ids))]
-            if answer_ids:
-                session.query(AnswerReview).filter(AnswerReview.answer_id.in_(answer_ids)).delete()
-            
-            session.query(AnnotatorAnswer).filter(AnnotatorAnswer.project_id.in_(project_ids)).delete()
-            session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.project_id.in_(project_ids)).delete()
-            session.query(ProjectVideoQuestionDisplay).filter(ProjectVideoQuestionDisplay.project_id.in_(project_ids)).delete()
-            session.query(ProjectUserRole).filter(ProjectUserRole.project_id.in_(project_ids)).delete()
-            session.query(ProjectVideo).filter(ProjectVideo.project_id.in_(project_ids)).delete()
-            session.query(ProjectGroupProject).filter(ProjectGroupProject.project_id.in_(project_ids)).delete()
-            session.query(Project).filter(Project.id.in_(project_ids)).delete()
-        
-        session.query(SchemaQuestionGroup).filter(SchemaQuestionGroup.schema_id == schema_id).delete()
-        session.delete(schema)
-        
-        session.commit()
-        print(f"✅ Deleted schema '{schema.name}' and {len(project_ids)} projects")
+        return check_user_by_id(user.id)
 
 
-def check_question_group_data_before_delete(question_group_id: int):
-    """
-    Args:
-        question_group_id: Question Group ID
-        
-    Returns:
-        Dictionary with counts of data that will be deleted
-    """
+def check_video_by_id(video_id: int) -> dict:
+    """Check what would be deleted for video by ID"""
     with SessionLocal() as session:
-        # Check if question group exists
+        video = session.query(Video).filter(Video.id == video_id).first()
+        if not video:
+            print(f"❌ Video with ID {video_id} not found")
+            return None
+        
+        print(f"=== VIDEO {video_id} DELETION PREVIEW ===")
+        print(f"Video: {video.video_uid}")
+        print(f"URL: {video.url}")
+        print(f"Created: {video.created_at}")
+        print(f"Archived: {video.is_archived}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  Video record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "video_info": {
+                "id": video_id,
+                "video_uid": video.video_uid,
+                "url": video.url,
+                "is_archived": video.is_archived
+            },
+            "total_records": 1
+        }
+
+
+def check_video_by_uid(video_uid: str) -> dict:
+    """Check what would be deleted for video by video_uid"""
+    with SessionLocal() as session:
+        video = session.query(Video).filter(Video.video_uid == video_uid).first()
+        if not video:
+            print(f"❌ Video with video_uid '{video_uid}' not found")
+            return None
+        
+        return check_video_by_id(video.id)
+
+
+def check_video_tag_by_video_id(video_id: int) -> dict:
+    """Check what would be deleted for video tags by video_id"""
+    with SessionLocal() as session:
+        tags = session.query(VideoTag).filter(VideoTag.video_id == video_id).all()
+        tag_count = len(tags)
+        
+        print(f"=== VIDEO TAGS FOR VIDEO {video_id} DELETION PREVIEW ===")
+        if tag_count == 0:
+            print("❌ No video tags found")
+            return None
+        
+        print(f"Video ID: {video_id}")
+        print(f"Tags: {[tag.tag for tag in tags]}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  Video tag records: {tag_count}")
+        print(f"  📈 TOTAL RECORDS: {tag_count}")
+        
+        return {
+            "video_id": video_id,
+            "tags": [{"tag": tag.tag, "source": tag.tag_source} for tag in tags],
+            "total_records": tag_count
+        }
+
+
+def check_question_group_by_id(question_group_id: int) -> dict:
+    """Check what would be deleted for question group by ID"""
+    with SessionLocal() as session:
         qg = session.query(QuestionGroup).filter(QuestionGroup.id == question_group_id).first()
         if not qg:
-            raise ValueError(f"Question Group with ID {question_group_id} not found")
+            print(f"❌ QuestionGroup with ID {question_group_id} not found")
+            return None
         
-        data_counts = {}
-        
-        # 1. Question group relationships
-        data_counts["question_group_questions"] = session.query(QuestionGroupQuestion).filter(
-            QuestionGroupQuestion.question_group_id == question_group_id
-        ).count()
-        
-        data_counts["schema_question_groups"] = session.query(SchemaQuestionGroup).filter(
-            SchemaQuestionGroup.question_group_id == question_group_id
-        ).count()
-        
-        # Calculate total records
-        total_records = sum(data_counts.values()) + 1  # +1 for question group itself
-        
-        print(f"=== QUESTION GROUP {question_group_id} DATA OVERVIEW ===")
+        print(f"=== QUESTION GROUP {question_group_id} DELETION PREVIEW ===")
         print(f"Question Group: {qg.title}")
         print(f"Display Title: {qg.display_title}")
-        print(f"Is Reusable: {qg.is_reusable}")
-        print(f"Is Archived: {qg.is_archived}")
+        print(f"Reusable: {qg.is_reusable}")
+        print(f"Archived: {qg.is_archived}")
         print()
-        print(f"📊 DATA TO BE DELETED:")
-        print(f"  Question group questions: {data_counts['question_group_questions']}")
-        print(f"  Schema question groups: {data_counts['schema_question_groups']}")
+        print("📊 RECORDS THAT WOULD BE DELETED:")
         print(f"  Question group record: 1")
-        print(f"  📈 TOTAL RECORDS: {total_records}")
-        print()
-        print("⚠️  NOTE: This will NOT delete Questions, Schemas, or project data.")
-        print("   Only the question group and its relationships will be deleted.")
-        print()
+        print(f"  📈 TOTAL RECORDS: 1")
         
         return {
             "question_group_info": {
@@ -621,117 +286,39 @@ def check_question_group_data_before_delete(question_group_id: int):
                 "is_reusable": qg.is_reusable,
                 "is_archived": qg.is_archived
             },
-            "data_counts": data_counts,
-            "total_records": total_records
+            "total_records": 1
         }
 
 
-def delete_all_question_group_data(question_group_id: int, confirm_delete: bool = True):
-    """
-    Args:
-        question_group_id: Question Group ID
-        confirm_delete: Whether to ask for confirmation
-        
-    Returns:
-        Dictionary with deletion results
-    """
-    # First, check what data exists
-    try:
-        data_overview = check_question_group_data_before_delete(question_group_id)
-    except ValueError as e:
-        print(f"❌ Error: {e}")
-        return None
-    
-    # Ask for confirmation if needed
-    if confirm_delete:
-        print("⚠️  WARNING: This will PERMANENTLY DELETE the question group and its relationships!")
-        print("   This will NOT delete Questions, Schemas, or project data.")
-        print("   Only the question group itself and its relationship records will be deleted.")
-        
-        response = input(f"\nConfirm deletion of question group {question_group_id} '{data_overview['question_group_info']['title']}'? (DELETE/no): ")
-        if response != "DELETE":
-            print("❌ Deletion cancelled")
-            return None
-    
-    # Create backup before deletion
-    backup_path = _create_operation_backup(f"delete_qgroup_{question_group_id}")
-    
+def check_question_group_by_title(title: str) -> dict:
+    """Check what would be deleted for question group by title"""
     with SessionLocal() as session:
-        qg = session.query(QuestionGroup).filter(QuestionGroup.id == question_group_id).first()
+        qg = session.query(QuestionGroup).filter(QuestionGroup.title == title).first()
         if not qg:
-            raise ValueError(f"QuestionGroup {question_group_id} not found")
+            print(f"❌ QuestionGroup with title '{title}' not found")
+            return None
         
-        session.query(SchemaQuestionGroup).filter(SchemaQuestionGroup.question_group_id == question_group_id).delete()
-        session.query(QuestionGroupQuestion).filter(QuestionGroupQuestion.question_group_id == question_group_id).delete()
-        session.delete(qg)
-        
-        session.commit()
-        print(f"✅ Deleted question group '{qg.title}'")
+        return check_question_group_by_id(qg.id)
 
 
-def check_question_data_before_delete(question_id: int):
-    """
-    Args:
-        question_id: Question ID
-        
-    Returns:
-        Dictionary with counts of data that will be deleted
-    """
+def check_question_by_id(question_id: int) -> dict:
+    """Check what would be deleted for question by ID"""
     with SessionLocal() as session:
-        # Check if question exists
         question = session.query(Question).filter(Question.id == question_id).first()
         if not question:
-            raise ValueError(f"Question with ID {question_id} not found")
+            print(f"❌ Question with ID {question_id} not found")
+            return None
         
-        data_counts = {}
-        
-        # 1. Direct question relationships
-        data_counts["question_group_questions"] = session.query(QuestionGroupQuestion).filter(
-            QuestionGroupQuestion.question_id == question_id
-        ).count()
-        
-        # 2. All answers to this question
-        data_counts["annotator_answers"] = session.query(AnnotatorAnswer).filter(
-            AnnotatorAnswer.question_id == question_id
-        ).count()
-        
-        # 3. All ground truth for this question
-        data_counts["ground_truth"] = session.query(ReviewerGroundTruth).filter(
-            ReviewerGroundTruth.question_id == question_id
-        ).count()
-        
-        # 4. Custom displays for this question
-        data_counts["custom_displays"] = session.query(ProjectVideoQuestionDisplay).filter(
-            ProjectVideoQuestionDisplay.question_id == question_id
-        ).count()
-        
-        # 5. Answer reviews for answers to this question
-        answer_ids = session.query(AnnotatorAnswer.id).filter(
-            AnnotatorAnswer.question_id == question_id
-        ).subquery()
-        
-        data_counts["answer_reviews"] = session.query(AnswerReview).filter(
-            AnswerReview.answer_id.in_(answer_ids)
-        ).count()
-        
-        # Calculate total records
-        total_records = sum(data_counts.values()) + 1  # +1 for question itself
-        
-        print(f"=== QUESTION {question_id} DATA OVERVIEW ===")
+        print(f"=== QUESTION {question_id} DELETION PREVIEW ===")
         print(f"Question: {question.text}")
         print(f"Display Text: {question.display_text}")
         print(f"Type: {question.type}")
-        print(f"Is Archived: {question.is_archived}")
+        print(f"Options: {question.options}")
+        print(f"Archived: {question.is_archived}")
         print()
-        print(f"📊 DATA TO BE DELETED:")
-        print(f"  Question group questions: {data_counts['question_group_questions']}")
-        print(f"  Annotator answers: {data_counts['annotator_answers']}")
-        print(f"  Ground truth: {data_counts['ground_truth']}")
-        print(f"  Custom displays: {data_counts['custom_displays']}")
-        print(f"  Answer reviews: {data_counts['answer_reviews']}")
+        print("📊 RECORDS THAT WOULD BE DELETED:")
         print(f"  Question record: 1")
-        print(f"  📈 TOTAL RECORDS: {total_records}")
-        print()
+        print(f"  📈 TOTAL RECORDS: 1")
         
         return {
             "question_info": {
@@ -739,307 +326,2038 @@ def check_question_data_before_delete(question_id: int):
                 "text": question.text,
                 "display_text": question.display_text,
                 "type": question.type,
+                "options": question.options,
                 "is_archived": question.is_archived
             },
-            "data_counts": data_counts,
-            "total_records": total_records
+            "total_records": 1
         }
 
 
-def delete_all_question_data(question_id: int, confirm_delete: bool = True):
-    """Delete question and all related data"""
-    # First, check what data exists
-    try:
-        data_overview = check_question_data_before_delete(question_id)
-    except ValueError as e:
-        print(f"❌ Error: {e}")
-        return None
-    
-    # Ask for confirmation if needed
-    if confirm_delete:
-        print("⚠️  WARNING: This will PERMANENTLY DELETE the question and all related data!")
-        print("   This includes all answers to this question across all projects.")
-        
-        response = input(f"\nConfirm deletion of question {question_id}? (DELETE/no): ")
-        if response != "DELETE":
-            print("❌ Deletion cancelled")
+def check_question_by_text(text: str) -> dict:
+    """Check what would be deleted for question by text"""
+    with SessionLocal() as session:
+        question = session.query(Question).filter(Question.text == text).first()
+        if not question:
+            print(f"❌ Question with text '{text}' not found")
             return None
         
-    # Create backup before deletion
-    backup_path = _create_operation_backup(f"delete_qgroup_{question_id}")
-        
+        return check_question_by_id(question.id)
+
+
+def check_question_group_question_by_group_id(question_group_id: int) -> dict:
+    """Check what would be deleted for QuestionGroupQuestion records by group_id"""
     with SessionLocal() as session:
-        question = session.query(Question).filter(Question.id == question_id).first()
-        if not question:
-            raise ValueError(f"Question {question_id} not found")
-        
-        answer_ids = [a.id for a in session.query(AnnotatorAnswer.id).filter(AnnotatorAnswer.question_id == question_id)]
-        if answer_ids:
-            session.query(AnswerReview).filter(AnswerReview.answer_id.in_(answer_ids)).delete()
-        
-        session.query(AnnotatorAnswer).filter(AnnotatorAnswer.question_id == question_id).delete()
-        session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.question_id == question_id).delete()
-        session.query(ProjectVideoQuestionDisplay).filter(ProjectVideoQuestionDisplay.question_id == question_id).delete()
-        session.query(QuestionGroupQuestion).filter(QuestionGroupQuestion.question_id == question_id).delete()
-        session.delete(question)
-        
-        session.commit()
-        print(f"✅ Deleted question '{question.text}'")
-
-
-# 便捷函数
-def quick_delete_schema(schema_id: int):
-    """快速删除 schema (无确认提示)"""
-    return delete_all_schema_data(schema_id, confirm_delete=False)
-
-
-def safe_delete_schema(schema_id: int):
-    """安全删除 schema (带确认提示)"""
-    return delete_all_schema_data(schema_id, confirm_delete=True)
-
-
-def preview_schema_deletion(schema_id: int):
-    """预览 schema 删除 (只查看，不删除)"""
-    try:
-        return check_schema_data_before_delete(schema_id)
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return None
-
-
-def quick_delete_question_group(question_group_id: int):
-    """快速删除 question group (无确认提示)"""
-    return delete_all_question_group_data(question_group_id, confirm_delete=False)
-
-
-def safe_delete_question_group(question_group_id: int):
-    """安全删除 question group (带确认提示)"""
-    return delete_all_question_group_data(question_group_id, confirm_delete=True)
-
-
-def preview_question_group_deletion(question_group_id: int):
-    """预览 question group 删除 (只查看，不删除)"""
-    try:
-        return check_question_group_data_before_delete(question_group_id)
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return None
-
-
-def quick_delete_question(question_id: int):
-    """快速删除 question (无确认提示)"""
-    return delete_all_question_data(question_id, confirm_delete=False)
-
-
-def safe_delete_question(question_id: int):
-    """安全删除 question (带确认提示)"""
-    return delete_all_question_data(question_id, confirm_delete=True)
-
-
-def preview_question_deletion(question_id: int):
-    """预览 question 删除 (只查看，不删除)"""
-    try:
-        return check_question_data_before_delete(question_id)
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return None
-
-
-def find_questions_with_none_default():
-    """
-    只返回 default_option 为 None 的问题
-    
-    Returns:
-        List of questions with None default_option
-    """
-    with SessionLocal() as session:
-        questions_with_none = session.query(Question).filter(
-            Question.default_option.is_(None)
+        records = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_group_id == question_group_id
         ).all()
         
-        print(f"=== QUESTIONS WITH default_option = None ===")
-        print(f"Found {len(questions_with_none)} questions")
+        count = len(records)
+        print(f"=== QUESTION GROUP QUESTIONS FOR GROUP {question_group_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No QuestionGroupQuestion records found")
+            return None
+        
+        print(f"Question Group ID: {question_group_id}")
+        print(f"Question IDs: {[r.question_id for r in records]}")
         print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  QuestionGroupQuestion records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
         
-        result = []
-        for question in questions_with_none:
-            q_info = {
-                "id": question.id,
-                "text": question.text,
-                "display_text": question.display_text,
-                "type": question.type,
-                "options": question.options,
-                "display_values": question.display_values,
-                "is_archived": question.is_archived
-            }
-            result.append(q_info)
-            
-            archived_str = " [ARCHIVED]" if question.is_archived else ""
-            print(f"ID {question.id}: {question.text}{archived_str}")
-            print(f"  Type: {question.type}")
-            if question.options:
-                print(f"  Options: {question.options}")
-            if question.display_values:
-                print(f"  Display Values: {question.display_values}")
-            print()
-        
-        return result
+        return {
+            "question_group_id": question_group_id,
+            "question_ids": [r.question_id for r in records],
+            "total_records": count
+        }
 
 
-def update_question_default_option(question_id: int, new_default_option: str):
-    """
+def check_question_group_question_by_question_id(question_id: int) -> dict:
+    """Check what would be deleted for QuestionGroupQuestion records by question_id"""
+    with SessionLocal() as session:
+        records = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_id == question_id
+        ).all()
+        
+        count = len(records)
+        print(f"=== QUESTION GROUP QUESTIONS FOR QUESTION {question_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No QuestionGroupQuestion records found")
+            return None
+        
+        print(f"Question ID: {question_id}")
+        print(f"Question Group IDs: {[r.question_group_id for r in records]}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  QuestionGroupQuestion records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "question_id": question_id,
+            "question_group_ids": [r.question_group_id for r in records],
+            "total_records": count
+        }
+
+
+def check_question_group_question_by_both_ids(question_group_id: int, question_id: int) -> dict:
+    """Check what would be deleted for specific QuestionGroupQuestion record by both IDs"""
+    with SessionLocal() as session:
+        qgq = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_group_id == question_group_id,
+            QuestionGroupQuestion.question_id == question_id
+        ).first()
+        
+        if not qgq:
+            print(f"❌ QuestionGroupQuestion record not found for question_group_id {question_group_id}, question_id {question_id}")
+            return None
+        
+        print(f"=== QUESTION GROUP QUESTION DELETION PREVIEW ===")
+        print(f"Question Group ID: {question_group_id}")
+        print(f"Question ID: {question_id}")
+        print(f"Display Order: {qgq.display_order}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  QuestionGroupQuestion record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "question_group_id": question_group_id,
+            "question_id": question_id,
+            "display_order": qgq.display_order,
+            "total_records": 1
+        }
+
+
+def check_schema_by_id(schema_id: int) -> dict:
+    """Check what would be deleted for schema by ID"""
+    with SessionLocal() as session:
+        schema = session.query(Schema).filter(Schema.id == schema_id).first()
+        if not schema:
+            print(f"❌ Schema with ID {schema_id} not found")
+            return None
+        
+        print(f"=== SCHEMA {schema_id} DELETION PREVIEW ===")
+        print(f"Schema: {schema.name}")
+        print(f"Instructions URL: {schema.instructions_url}")
+        print(f"Created: {schema.created_at}")
+        print(f"Archived: {schema.is_archived}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  Schema record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "schema_info": {
+                "id": schema_id,
+                "name": schema.name,
+                "instructions_url": schema.instructions_url,
+                "is_archived": schema.is_archived
+            },
+            "total_records": 1
+        }
+
+
+def check_schema_by_name(name: str) -> dict:
+    """Check what would be deleted for schema by name"""
+    with SessionLocal() as session:
+        schema = session.query(Schema).filter(Schema.name == name).first()
+        if not schema:
+            print(f"❌ Schema with name '{name}' not found")
+            return None
+        
+        return check_schema_by_id(schema.id)
+
+
+def check_project_by_id(project_id: int) -> dict:
+    """Check what would be deleted for project by ID"""
+    with SessionLocal() as session:
+        project = session.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            print(f"❌ Project with ID {project_id} not found")
+            return None
+        
+        print(f"=== PROJECT {project_id} DELETION PREVIEW ===")
+        print(f"Project: {project.name}")
+        print(f"Schema ID: {project.schema_id}")
+        print(f"Description: {project.description}")
+        print(f"Created: {project.created_at}")
+        print(f"Archived: {project.is_archived}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  Project record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "project_info": {
+                "id": project_id,
+                "name": project.name,
+                "schema_id": project.schema_id,
+                "description": project.description,
+                "is_archived": project.is_archived
+            },
+            "total_records": 1
+        }
+
+
+def check_project_by_name(name: str) -> dict:
+    """Check what would be deleted for project by name"""
+    with SessionLocal() as session:
+        project = session.query(Project).filter(Project.name == name).first()
+        if not project:
+            print(f"❌ Project with name '{name}' not found")
+            return None
+        
+        return check_project_by_id(project.id)
+
+
+def check_project_video_by_project_id(project_id: int) -> dict:
+    """Check what would be deleted for ProjectVideo records by project_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectVideo).filter(ProjectVideo.project_id == project_id).all()
+        
+        count = len(records)
+        print(f"=== PROJECT VIDEOS FOR PROJECT {project_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectVideo records found")
+            return None
+        
+        print(f"Project ID: {project_id}")
+        print(f"Video IDs: {[r.video_id for r in records]}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideo records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "video_ids": [r.video_id for r in records],
+            "total_records": count
+        }
+
+
+def check_project_video_by_video_id(video_id: int) -> dict:
+    """Check what would be deleted for ProjectVideo records by video_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectVideo).filter(ProjectVideo.video_id == video_id).all()
+        
+        count = len(records)
+        print(f"=== PROJECT VIDEOS FOR VIDEO {video_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectVideo records found")
+            return None
+        
+        print(f"Video ID: {video_id}")
+        print(f"Project IDs: {[r.project_id for r in records]}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideo records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "video_id": video_id,
+            "project_ids": [r.project_id for r in records],
+            "total_records": count
+        }
+
+
+def check_project_video_by_both_ids(project_id: int, video_id: int) -> dict:
+    """Check what would be deleted for specific ProjectVideo record by both IDs"""
+    with SessionLocal() as session:
+        pv = session.query(ProjectVideo).filter(
+            ProjectVideo.project_id == project_id,
+            ProjectVideo.video_id == video_id
+        ).first()
+        
+        if not pv:
+            print(f"❌ ProjectVideo record not found for project_id {project_id}, video_id {video_id}")
+            return None
+        
+        print(f"=== PROJECT VIDEO DELETION PREVIEW ===")
+        print(f"Project ID: {project_id}")
+        print(f"Video ID: {video_id}")
+        print(f"Added: {pv.added_at}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideo record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "project_id": project_id,
+            "video_id": video_id,
+            "added_at": pv.added_at,
+            "total_records": 1
+        }
+
+
+def check_project_user_role_by_project_id(project_id: int) -> dict:
+    """Check what would be deleted for ProjectUserRole records by project_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectUserRole).filter(ProjectUserRole.project_id == project_id).all()
+        
+        count = len(records)
+        print(f"=== PROJECT USER ROLES FOR PROJECT {project_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectUserRole records found")
+            return None
+        
+        print(f"Project ID: {project_id}")
+        print(f"User roles:")
+        for record in records:
+            print(f"  User {record.user_id}: {record.role} (weight: {record.user_weight})")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectUserRole records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "user_roles": [(r.user_id, r.role, r.user_weight) for r in records],
+            "total_records": count
+        }
+
+
+def check_project_user_role_by_user_id(user_id: int) -> dict:
+    """Check what would be deleted for ProjectUserRole records by user_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectUserRole).filter(ProjectUserRole.user_id == user_id).all()
+        
+        count = len(records)
+        print(f"=== PROJECT USER ROLES FOR USER {user_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectUserRole records found")
+            return None
+        
+        print(f"User ID: {user_id}")
+        print(f"Project roles:")
+        for record in records:
+            print(f"  Project {record.project_id}: {record.role} (weight: {record.user_weight})")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectUserRole records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "user_id": user_id,
+            "project_roles": [(r.project_id, r.role, r.user_weight) for r in records],
+            "total_records": count
+        }
+
+
+def check_project_user_role_by_both_ids(project_id: int, user_id: int) -> dict:
+    """Check what would be deleted for ProjectUserRole records by project_id and user_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectUserRole).filter(
+            ProjectUserRole.project_id == project_id,
+            ProjectUserRole.user_id == user_id
+        ).all()
+        
+        count = len(records)
+        if count == 0:
+            print(f"❌ No ProjectUserRole records found for project_id {project_id}, user_id {user_id}")
+            return None
+        
+        print(f"=== PROJECT USER ROLES DELETION PREVIEW ===")
+        print(f"Project ID: {project_id}")
+        print(f"User ID: {user_id}")
+        print(f"Roles to be deleted:")
+        for record in records:
+            print(f"  Role: {record.role}")
+            print(f"    Weight: {record.user_weight}")
+            print(f"    Assigned: {record.assigned_at}")
+            print(f"    Completed: {record.completed_at}")
+            print(f"    Archived: {record.is_archived}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectUserRole records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "user_id": user_id,
+            "roles": [
+                {
+                    "role": r.role,
+                    "user_weight": r.user_weight,
+                    "assigned_at": r.assigned_at,
+                    "completed_at": r.completed_at,
+                    "is_archived": r.is_archived
+                } for r in records
+            ],
+            "total_records": count
+        }
+
+
+def check_project_group_by_id(project_group_id: int) -> dict:
+    """Check what would be deleted for project group by ID"""
+    with SessionLocal() as session:
+        pg = session.query(ProjectGroup).filter(ProjectGroup.id == project_group_id).first()
+        if not pg:
+            print(f"❌ ProjectGroup with ID {project_group_id} not found")
+            return None
+        
+        print(f"=== PROJECT GROUP {project_group_id} DELETION PREVIEW ===")
+        print(f"Project Group: {pg.name}")
+        print(f"Description: {pg.description}")
+        print(f"Created: {pg.created_at}")
+        print(f"Archived: {pg.is_archived}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  Project group record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "project_group_info": {
+                "id": project_group_id,
+                "name": pg.name,
+                "description": pg.description,
+                "is_archived": pg.is_archived
+            },
+            "total_records": 1
+        }
+
+
+def check_project_group_by_name(name: str) -> dict:
+    """Check what would be deleted for project group by name"""
+    with SessionLocal() as session:
+        pg = session.query(ProjectGroup).filter(ProjectGroup.name == name).first()
+        if not pg:
+            print(f"❌ ProjectGroup with name '{name}' not found")
+            return None
+        
+        return check_project_group_by_id(pg.id)
+
+
+def check_project_group_project_by_group_id(project_group_id: int) -> dict:
+    """Check what would be deleted for ProjectGroupProject records by project_group_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_group_id == project_group_id
+        ).all()
+        
+        count = len(records)
+        print(f"=== PROJECT GROUP PROJECTS FOR GROUP {project_group_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectGroupProject records found")
+            return None
+        
+        print(f"Project Group ID: {project_group_id}")
+        print(f"Project IDs: {[r.project_id for r in records]}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectGroupProject records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_group_id": project_group_id,
+            "project_ids": [r.project_id for r in records],
+            "total_records": count
+        }
+
+
+def check_project_group_project_by_project_id(project_id: int) -> dict:
+    """Check what would be deleted for ProjectGroupProject records by project_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_id == project_id
+        ).all()
+        
+        count = len(records)
+        print(f"=== PROJECT GROUP PROJECTS FOR PROJECT {project_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectGroupProject records found")
+            return None
+        
+        print(f"Project ID: {project_id}")
+        print(f"Project Group IDs: {[r.project_group_id for r in records]}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectGroupProject records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "project_group_ids": [r.project_group_id for r in records],
+            "total_records": count
+        }
+
+
+def check_project_group_project_by_both_ids(project_group_id: int, project_id: int) -> dict:
+    """Check what would be deleted for specific ProjectGroupProject record by both IDs"""
+    with SessionLocal() as session:
+        pgp = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_group_id == project_group_id,
+            ProjectGroupProject.project_id == project_id
+        ).first()
+        
+        if not pgp:
+            print(f"❌ ProjectGroupProject record not found for project_group_id {project_group_id}, project_id {project_id}")
+            return None
+        
+        print(f"=== PROJECT GROUP PROJECT DELETION PREVIEW ===")
+        print(f"Project Group ID: {project_group_id}")
+        print(f"Project ID: {project_id}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectGroupProject record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "project_group_id": project_group_id,
+            "project_id": project_id,
+            "total_records": 1
+        }
+
+
+def check_project_video_question_display_by_project_id(project_id: int) -> dict:
+    """Check what would be deleted for ProjectVideoQuestionDisplay records by project_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.project_id == project_id
+        ).all()
+        
+        count = len(records)
+        print(f"=== PROJECT VIDEO QUESTION DISPLAYS FOR PROJECT {project_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectVideoQuestionDisplay records found")
+            return None
+        
+        print(f"Project ID: {project_id}")
+        print(f"Custom displays:")
+        for record in records:
+            print(f"  Video {record.video_id}, Question {record.question_id}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideoQuestionDisplay records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "video_question_pairs": [(r.video_id, r.question_id) for r in records],
+            "total_records": count
+        }
+
+
+def check_project_video_question_display_by_video_id(video_id: int) -> dict:
+    """Check what would be deleted for ProjectVideoQuestionDisplay records by video_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.video_id == video_id
+        ).all()
+        
+        count = len(records)
+        print(f"=== PROJECT VIDEO QUESTION DISPLAYS FOR VIDEO {video_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectVideoQuestionDisplay records found")
+            return None
+        
+        print(f"Video ID: {video_id}")
+        print(f"Custom displays:")
+        for record in records:
+            print(f"  Project {record.project_id}, Question {record.question_id}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideoQuestionDisplay records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "video_id": video_id,
+            "project_question_pairs": [(r.project_id, r.question_id) for r in records],
+            "total_records": count
+        }
+
+
+def check_project_video_question_display_by_question_id(question_id: int) -> dict:
+    """Check what would be deleted for ProjectVideoQuestionDisplay records by question_id"""
+    with SessionLocal() as session:
+        records = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.question_id == question_id
+        ).all()
+        
+        count = len(records)
+        print(f"=== PROJECT VIDEO QUESTION DISPLAYS FOR QUESTION {question_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ProjectVideoQuestionDisplay records found")
+            return None
+        
+        print(f"Question ID: {question_id}")
+        print(f"Custom displays:")
+        for record in records:
+            print(f"  Project {record.project_id}, Video {record.video_id}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideoQuestionDisplay records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "question_id": question_id,
+            "project_video_pairs": [(r.project_id, r.video_id) for r in records],
+            "total_records": count
+        }
+
+
+def check_project_video_question_display_by_both_ids(project_id: int, video_id: int, question_id: int) -> dict:
+    """Check what would be deleted for specific ProjectVideoQuestionDisplay record by all three IDs"""
+    with SessionLocal() as session:
+        pvqd = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.project_id == project_id,
+            ProjectVideoQuestionDisplay.video_id == video_id,
+            ProjectVideoQuestionDisplay.question_id == question_id
+        ).first()
+        
+        if not pvqd:
+            print(f"❌ ProjectVideoQuestionDisplay record not found for project_id {project_id}, video_id {video_id}, question_id {question_id}")
+            return None
+        
+        print(f"=== PROJECT VIDEO QUESTION DISPLAY DELETION PREVIEW ===")
+        print(f"Project ID: {project_id}")
+        print(f"Video ID: {video_id}")
+        print(f"Question ID: {question_id}")
+        print(f"Custom Display Text: {pvqd.custom_display_text}")
+        print(f"Custom Option Display Map: {pvqd.custom_option_display_map}")
+        print(f"Created: {pvqd.created_at}")
+        print(f"Updated: {pvqd.updated_at}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ProjectVideoQuestionDisplay record: 1")
+        print(f"  📈 TOTAL RECORDS: 1")
+        
+        return {
+            "project_id": project_id,
+            "video_id": video_id,
+            "question_id": question_id,
+            "custom_display_text": pvqd.custom_display_text,
+            "custom_option_display_map": pvqd.custom_option_display_map,
+            "created_at": pvqd.created_at,
+            "updated_at": pvqd.updated_at,
+            "total_records": 1
+        }
+
+
+def check_annotator_answer_by_project_id(project_id: int) -> dict:
+    """Check what would be deleted for AnnotatorAnswer records by project_id"""
+    with SessionLocal() as session:
+        count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.project_id == project_id).count()
+        
+        print(f"=== ANNOTATOR ANSWERS FOR PROJECT {project_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No AnnotatorAnswer records found")
+            return None
+        
+        # Get some sample data
+        samples = session.query(AnnotatorAnswer).filter(
+            AnnotatorAnswer.project_id == project_id
+        ).limit(5).all()
+        
+        print(f"Project ID: {project_id}")
+        print(f"Total answers: {count}")
+        print(f"Sample answers (first 5):")
+        for answer in samples:
+            print(f"  ID {answer.id}: video {answer.video_id}, question {answer.question_id}, user {answer.user_id}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  AnnotatorAnswer records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "total_records": count
+        }
+     
+def check_annotator_answers_by_video_id(video_id: int) -> dict:
+    """Check what would be deleted for AnnotatorAnswer records by video_id"""
+    with SessionLocal() as session:
+        count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.video_id == video_id).count()
+        
+        print(f"=== ANNOTATOR ANSWERS FOR VIDEO {video_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No AnnotatorAnswer records found")
+            return None
+        
+        # Get project distribution
+        project_counts = session.query(
+            AnnotatorAnswer.project_id,
+            func.count(AnnotatorAnswer.id).label('count')
+        ).filter(
+            AnnotatorAnswer.video_id == video_id
+        ).group_by(AnnotatorAnswer.project_id).all()
+        
+        print(f"Video ID: {video_id}")
+        print(f"Total answers: {count}")
+        print(f"Answers by project:")
+        for project_id, proj_count in project_counts:
+            print(f"  Project {project_id}: {proj_count} answers")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  AnnotatorAnswer records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "video_id": video_id,
+            "total_records": count,
+            "project_distribution": dict(project_counts)
+        }
+
+
+def check_annotator_answers_by_user_id(user_id: int) -> dict:
+    """Check what would be deleted for AnnotatorAnswer records by user_id"""
+    with SessionLocal() as session:
+        count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.user_id == user_id).count()
+        
+        print(f"=== ANNOTATOR ANSWERS FOR USER {user_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No AnnotatorAnswer records found")
+            return None
+        
+        # Get project distribution
+        project_counts = session.query(
+            AnnotatorAnswer.project_id,
+            func.count(AnnotatorAnswer.id).label('count')
+        ).filter(
+            AnnotatorAnswer.user_id == user_id
+        ).group_by(AnnotatorAnswer.project_id).all()
+        
+        print(f"User ID: {user_id}")
+        print(f"Total answers: {count}")
+        print(f"Answers by project:")
+        for project_id, proj_count in project_counts:
+            print(f"  Project {project_id}: {proj_count} answers")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  AnnotatorAnswer records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "user_id": user_id,
+            "total_records": count,
+            "project_distribution": dict(project_counts)
+        }
+   
+
+def check_reviewer_ground_truth_by_project_id(project_id: int) -> dict:
+    """Check what would be deleted for ReviewerGroundTruth records by project_id"""
+    with SessionLocal() as session:
+        count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.project_id == project_id).count()
+        
+        print(f"=== REVIEWER GROUND TRUTH FOR PROJECT {project_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ReviewerGroundTruth records found")
+            return None
+        
+        print(f"Project ID: {project_id}")
+        print(f"Total ground truth records: {count}")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ReviewerGroundTruth records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "project_id": project_id,
+            "total_records": count
+        }
+
+def check_reviewer_ground_truth_by_video_id(video_id: int) -> dict:
+    """Check what would be deleted for ReviewerGroundTruth records by video_id"""
+    with SessionLocal() as session:
+        count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.video_id == video_id).count()
+        
+        print(f"=== REVIEWER GROUND TRUTH FOR VIDEO {video_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ReviewerGroundTruth records found")
+            return None
+        
+        # Get project distribution
+        project_counts = session.query(
+            ReviewerGroundTruth.project_id,
+            func.count().label('count')
+        ).filter(
+            ReviewerGroundTruth.video_id == video_id
+        ).group_by(ReviewerGroundTruth.project_id).all()
+        
+        # Get reviewer distribution
+        reviewer_counts = session.query(
+            ReviewerGroundTruth.reviewer_id,
+            func.count().label('count')
+        ).filter(
+            ReviewerGroundTruth.video_id == video_id
+        ).group_by(ReviewerGroundTruth.reviewer_id).all()
+        
+        print(f"Video ID: {video_id}")
+        print(f"Total ground truth records: {count}")
+        print(f"Ground truth by project:")
+        for project_id, proj_count in project_counts:
+            print(f"  Project {project_id}: {proj_count} records")
+        print(f"Ground truth by reviewer:")
+        for reviewer_id, rev_count in reviewer_counts:
+            print(f"  Reviewer {reviewer_id}: {rev_count} records")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ReviewerGroundTruth records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "video_id": video_id,
+            "total_records": count,
+            "project_distribution": dict(project_counts),
+            "reviewer_distribution": dict(reviewer_counts)
+        }
+
+
+def check_reviewer_ground_truth_by_reviewer_id(reviewer_id: int) -> dict:
+    """Check what would be deleted for ReviewerGroundTruth records by reviewer_id"""
+    with SessionLocal() as session:
+        count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.reviewer_id == reviewer_id).count()
+        
+        print(f"=== REVIEWER GROUND TRUTH FOR REVIEWER {reviewer_id} DELETION PREVIEW ===")
+        if count == 0:
+            print("❌ No ReviewerGroundTruth records found")
+            return None
+        
+        # Get project distribution
+        project_counts = session.query(
+            ReviewerGroundTruth.project_id,
+            func.count().label('count')
+        ).filter(
+            ReviewerGroundTruth.reviewer_id == reviewer_id
+        ).group_by(ReviewerGroundTruth.project_id).all()
+        
+        # Get video distribution (top 10)
+        video_counts = session.query(
+            ReviewerGroundTruth.video_id,
+            func.count().label('count')
+        ).filter(
+            ReviewerGroundTruth.reviewer_id == reviewer_id
+        ).group_by(ReviewerGroundTruth.video_id).order_by(func.count().desc()).limit(10).all()
+        
+        print(f"Reviewer ID: {reviewer_id}")
+        print(f"Total ground truth records: {count}")
+        print(f"Ground truth by project:")
+        for project_id, proj_count in project_counts:
+            print(f"  Project {project_id}: {proj_count} records")
+        print(f"Ground truth by video (top 10):")
+        for video_id, vid_count in video_counts:
+            print(f"  Video {video_id}: {vid_count} records")
+        print()
+        print("📊 RECORDS THAT WOULD BE DELETED:")
+        print(f"  ReviewerGroundTruth records: {count}")
+        print(f"  📈 TOTAL RECORDS: {count}")
+        
+        return {
+            "reviewer_id": reviewer_id,
+            "total_records": count,
+            "project_distribution": dict(project_counts),
+            "top_video_distribution": dict(video_counts)
+        }
+
+
+"""
+All the delete functions that are used to delete the records.
+"""
+
+def delete_user_by_id(user_id: int = None, confirm: bool = True) -> bool:
+    """Delete user by ID"""
+    # First show what would be deleted
+    check_result = check_user_by_id(user_id)
+    if not check_result:
+        return False
     
-    Args:
-        question_id: Question ID
-        new_default_option: New default option value
+    with SessionLocal() as session:
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            print(f"❌ User with ID {user_id} not found")
+            return False
         
-    Returns:
-        Boolean indicating success
-    """
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the user!")
+            response = input(f"\nConfirm deletion of user '{user.user_id_str}' (ID: {user_id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_user_{user_id}")
+        
+        session.delete(user)
+        session.commit()
+        print(f"✅ Deleted user '{user.user_id_str}' (ID: {user_id})")
+        return True
+
+
+def delete_user_by_user_id_str(user_id_str: str = None, confirm: bool = True) -> bool:
+    """Delete user by user_id_str"""
+    # Show what would be deleted
+    check_result = check_user_by_id(user.id)
+    if not check_result:
+        return False    
+
+    with SessionLocal() as session:
+        user = session.query(User).filter(User.user_id_str == user_id_str).first()
+        if not user:
+            print(f"❌ User with user_id_str '{user_id_str}' not found")
+            return False
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the user!")
+            response = input(f"\nConfirm deletion of user '{user_id_str}' (ID: {user.id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_user_{user_id_str}")
+        
+        session.delete(user)
+        session.commit()
+        print(f"✅ Deleted user '{user_id_str}' (ID: {user.id})")
+        return True
+
+
+# ==================== VIDEO FUNCTIONS ====================
+
+def delete_video_by_id(video_id: int = None, confirm: bool = True) -> bool:
+    """Delete video by ID"""
+    # First show what would be deleted
+    check_result = check_video_by_id(video_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        video = session.query(Video).filter(Video.id == video_id).first()
+        if not video:
+            print(f"❌ Video with ID {video_id} not found")
+            return False
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the video!")
+            response = input(f"\nConfirm deletion of video '{video.video_uid}' (ID: {video_id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_video_{video_id}")
+        
+        session.delete(video)
+        session.commit()
+        print(f"✅ Deleted video '{video.video_uid}' (ID: {video_id})")
+        return True
+
+
+def delete_video_by_uid(video_uid: str, confirm: bool = True) -> bool:
+    """Delete video by video_uid"""
+    # Show what would be deleted
+    check_result = check_video_by_id(video.id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        video = session.query(Video).filter(Video.video_uid == video_uid).first()
+        if not video:
+            print(f"❌ Video with video_uid '{video_uid}' not found")
+            return False
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the video!")
+            response = input(f"\nConfirm deletion of video '{video_uid}' (ID: {video.id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_video_{video_uid}")
+        
+        session.delete(video)
+        session.commit()
+        print(f"✅ Deleted video '{video_uid}' (ID: {video.id})")
+        return True
+
+
+# ==================== VIDEO TAG FUNCTIONS ====================
+
+def delete_video_tag_by_video_id(video_id: int = None, confirm: bool = True) -> int:
+    """Delete all video tags for a specific video_id"""
+    # First show what would be deleted
+    check_result = check_video_tag_by_video_id(video_id)
+    if not check_result:
+        return 0
+    
+    with SessionLocal() as session:
+        tags = session.query(VideoTag).filter(VideoTag.video_id == video_id).all()
+        if not tags:
+            print(f"❌ No video tags found for video_id {video_id}")
+            return 0
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE all video tags for this video!")
+            response = input(f"\nConfirm deletion of {len(tags)} video tags for video_id {video_id}? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_video_tags_{video_id}")
+        
+        count = session.query(VideoTag).filter(VideoTag.video_id == video_id).delete()
+        session.commit()
+        print(f"✅ Deleted {count} video tags for video_id {video_id}")
+        return count
+
+
+# ==================== QUESTION GROUP FUNCTIONS ====================
+
+def delete_question_group_by_id(question_group_id: int = None, confirm: bool = True) -> bool:
+    """Delete question group by ID"""
+    # First show what would be deleted
+    check_result = check_question_group_by_id(question_group_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        qg = session.query(QuestionGroup).filter(QuestionGroup.id == question_group_id).first()
+        if not qg:
+            print(f"❌ QuestionGroup with ID {question_group_id} not found")
+            return False
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the question group!")
+            response = input(f"\nConfirm deletion of question group '{qg.title}' (ID: {question_group_id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_question_group_{question_group_id}")
+        
+        session.delete(qg)
+        session.commit()
+        print(f"✅ Deleted question group '{qg.title}' (ID: {question_group_id})")
+        return True
+
+
+def delete_question_group_by_title(title: str = None, confirm: bool = True) -> bool:
+    """Delete question group by title"""
+    # Show what would be deleted
+    check_result = check_question_group_by_id(qg.id)
+    if not check_result:
+        return False
+        
+    with SessionLocal() as session:
+        qg = session.query(QuestionGroup).filter(QuestionGroup.title == title).first()
+        if not qg:
+            print(f"❌ QuestionGroup with title '{title}' not found")
+            return False
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the question group!")
+            response = input(f"\nConfirm deletion of question group '{title}' (ID: {qg.id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_question_group_{title}")
+        
+        session.delete(qg)
+        session.commit()
+        print(f"✅ Deleted question group '{title}' (ID: {qg.id})")
+        return True
+
+
+# ==================== QUESTION FUNCTIONS ====================
+
+def delete_question_by_id(question_id: int = None, confirm: bool = True) -> bool:
+    """Delete question by ID"""
+    # First show what would be deleted
+    check_result = check_question_by_id(question_id)
+    if not check_result:
+        return False
+    
     with SessionLocal() as session:
         question = session.query(Question).filter(Question.id == question_id).first()
         if not question:
             print(f"❌ Question with ID {question_id} not found")
             return False
         
-        old_default = question.default_option
-        question.default_option = new_default_option
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the question!")
+            response = input(f"\nConfirm deletion of question '{question.text}' (ID: {question_id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
         
-        try:
-            session.commit()
-            print(f"✅ Updated question {question_id} default_option:")
-            print(f"  From: {old_default}")
-            print(f"  To: {new_default_option}")
-            return True
-        except Exception as e:
-            session.rollback()
-            print(f"❌ Failed to update question {question_id}: {e}")
-            return False
-from sqlalchemy import text
-
-
-def update_project_schema(project_name: str, new_schema_id: int):
-    from label_pizza.services import ProjectService
-    """
-    Update project's schema and clear existing annotation data.
-    
-    Args:
-        project_name: Name of the project to update
-        new_schema_id: ID of the new schema to assign
-    """
-    with SessionLocal() as session:
-        # Get project by name
-        project = ProjectService.get_project_by_name(project_name, session)
+        backup_path = _create_operation_backup(f"delete_question_{question_id}")
         
-        # Check if the new schema exists and is not archived
-        new_schema = session.query(Schema).filter(Schema.id == new_schema_id).first()
-        if not new_schema:
-            raise ValueError(f"Schema with id {new_schema_id} not found")
-        if new_schema.is_archived:
-            raise ValueError(f"Schema with id {new_schema_id} is archived")
-        
-        # Clear existing annotation data
-        session.query(AnnotatorAnswer).filter(AnnotatorAnswer.project_id == project.id).delete()
-        session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.project_id == project.id).delete()
-        
-        # Update schema
-        project.schema_id = new_schema_id
-        
+        session.delete(question)
         session.commit()
-        print(f"✅ Updated Project '{project_name}': schema_id changed to {new_schema_id}")
+        print(f"✅ Deleted question '{question.text}' (ID: {question_id})")
+        return True
 
-# for i in range(6, 44):
-#     update_project_schema(project_name=f"Subject Lighting {i}", new_schema_id=11)
 
-def check_question_78():
-    """Check all data for question_id = 78"""
-    question_id = 78
-    
+def delete_question_by_text(text: str = None, confirm: bool = True) -> bool:
+    """Delete question by text"""
+    # Show what would be deleted
+    check_result = check_question_by_text(text)
+    if not check_result:
+        return False
+        
     with SessionLocal() as session:
-        # Check if question exists
-        question = session.query(Question).filter(Question.id == question_id).first()
+        question = session.query(Question).filter(Question.text == text).first()
         if not question:
-            print(f"❌ Question {question_id} not found!")
-            return
+            print(f"❌ Question with text '{text}' not found")
+            return False
         
-        print(f"Question {question_id}: {question.text}")
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE the question!")
+            response = input(f"\nConfirm deletion of question '{text}' (ID: {question.id})? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return False
         
-        # Count all related data
-        counts = {
-            "question_groups": session.query(QuestionGroupQuestion).filter(QuestionGroupQuestion.question_id == question_id).count(),
-            "annotator_answers": session.query(AnnotatorAnswer).filter(AnnotatorAnswer.question_id == question_id).count(),
-            "ground_truth": session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.question_id == question_id).count(),
-            "custom_displays": session.query(ProjectVideoQuestionDisplay).filter(ProjectVideoQuestionDisplay.question_id == question_id).count()
-        }
+        backup_path = _create_operation_backup(f"delete_question_{text.replace(' ', '_')}")
         
-        total = sum(counts.values())
-        print(f"📊 Related records: {counts} | Total: {total}")
-        
-        return counts
-
-
-def get_question_78_details():
-    """Get detailed data for question_id = 78"""
-    question_id = 78
-    
-    with SessionLocal() as session:
-        # Question groups
-        qg_questions = session.query(QuestionGroupQuestion).filter(QuestionGroupQuestion.question_id == question_id).all()
-        print(f"Question Groups: {[qgq.question_group_id for qgq in qg_questions]}")
-        
-        # Projects using this question
-        project_ids = session.query(AnnotatorAnswer.project_id).filter(AnnotatorAnswer.question_id == question_id).distinct().all()
-        project_ids = [p[0] for p in project_ids]
-        print(f"Projects with answers: {project_ids}")
-        
-        # Answers by project
-        for pid in project_ids[:3]:  # Show first 3 projects
-            count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.question_id == question_id, AnnotatorAnswer.project_id == pid).count()
-            print(f"  Project {pid}: {count} answers")
-
-
-# Quick SQL queries
-def sql_for_question_78():
-    """Generate SQL queries for question_id = 78"""
-    q_id = 78
-    
-    queries = [
-        f"SELECT * FROM questions WHERE id = {q_id};",
-        f"SELECT COUNT(*) FROM question_group_questions WHERE question_id = {q_id};",
-        f"SELECT COUNT(*) FROM annotator_answers WHERE question_id = {q_id};",
-        f"SELECT COUNT(*) FROM reviewer_ground_truth WHERE question_id = {q_id};",
-        f"SELECT COUNT(*) FROM project_video_question_displays WHERE question_id = {q_id};"
-    ]
-    
-    for query in queries:
-        print(query)
-
-def replace_question(old_id: int, new_id: int):
-    """Replace all question_id old_id with new_id and delete original question"""
-    with SessionLocal() as session:
-        # Check if both questions exist
-        old_question = session.query(Question).filter(Question.id == old_id).first()
-        if not old_question:
-            raise ValueError(f"Question with id {old_id} not found in database")
-        
-        new_question = session.query(Question).filter(Question.id == new_id).first()
-        if not new_question:
-            raise ValueError(f"Question with id {new_id} not found in database")
-        
-        # Update all tables with old_id to new_id
-        session.query(QuestionGroupQuestion).filter(QuestionGroupQuestion.question_id == old_id).update({QuestionGroupQuestion.question_id: new_id})
-        session.query(AnnotatorAnswer).filter(AnnotatorAnswer.question_id == old_id).update({AnnotatorAnswer.question_id: new_id})
-        session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.question_id == old_id).update({ReviewerGroundTruth.question_id: new_id})
-        session.query(ProjectVideoQuestionDisplay).filter(ProjectVideoQuestionDisplay.question_id == old_id).update({ProjectVideoQuestionDisplay.question_id: new_id})
-        
-        # Delete old question
-        session.query(Question).filter(Question.id == old_id).delete()
-        
+        session.delete(question)
         session.commit()
-        print(f"✅ Replaced question {old_id} with {new_id} and deleted original")
+        print(f"✅ Deleted question '{text}' (ID: {question.id})")
+        return True
+
+
+# ==================== QUESTION GROUP QUESTION FUNCTIONS ====================
+
+def delete_question_group_question_by_group_id(question_group_id: int, confirm: bool = True) -> int:
+    """Delete all QuestionGroupQuestion records for a specific question_group_id"""
+    # First show what would be deleted
+    check_result = check_question_group_question_by_group_id(question_group_id)
+    if not check_result:
+        return 0
+    
+    with SessionLocal() as session:
+        count = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_group_id == question_group_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No QuestionGroupQuestion records found for question_group_id {question_group_id}")
+            return 0
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE all question-group relationships!")
+            response = input(f"\nConfirm deletion of {count} QuestionGroupQuestion records for question_group_id {question_group_id}? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_qgq_group_{question_group_id}")
+        
+        deleted_count = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_group_id == question_group_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} QuestionGroupQuestion records for question_group_id {question_group_id}")
+        return deleted_count
+
+
+def delete_question_group_question_by_question_id(question_id: int, confirm: bool = True) -> int:
+    """Delete all QuestionGroupQuestion records for a specific question_id"""
+    # First show what would be deleted
+    check_result = check_question_group_question_by_question_id(question_id)
+    if not check_result:
+        return 0
+    
+    with SessionLocal() as session:
+        count = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_id == question_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No QuestionGroupQuestion records found for question_id {question_id}")
+            return 0
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE all question-group relationships!")
+            response = input(f"\nConfirm deletion of {count} QuestionGroupQuestion records for question_id {question_id}? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_qgq_question_{question_id}")
+        
+        deleted_count = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_id == question_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} QuestionGroupQuestion records for question_id {question_id}")
+        return deleted_count
+
+
+def delete_question_group_question_by_both_ids(question_group_id: int, question_id: int, confirm: bool = True) -> bool:
+    """Delete specific QuestionGroupQuestion record by both IDs"""
+    # First show what would be deleted
+    check_result = check_question_group_question_by_both_ids(question_group_id, question_id)
+    if not check_result:
+        return 0
+    with SessionLocal() as session:
+        qgq = session.query(QuestionGroupQuestion).filter(
+            QuestionGroupQuestion.question_group_id == question_group_id,
+            QuestionGroupQuestion.question_id == question_id
+        ).first()
+        
+        if not qgq:
+            print(f"❌ QuestionGroupQuestion record not found for question_group_id {question_group_id}, question_id {question_id}")
+            return False
+        
+        if confirm:
+            response = input(f"Delete QuestionGroupQuestion record (group_id: {question_group_id}, question_id: {question_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_qgq_{question_group_id}_{question_id}")
+        
+        session.delete(qgq)
+        session.commit()
+        print(f"✅ Deleted QuestionGroupQuestion record (group_id: {question_group_id}, question_id: {question_id})")
+        return True
+
+
+# ==================== SCHEMA FUNCTIONS ====================
+
+def delete_schema_by_id(schema_id: int, confirm: bool = True) -> bool:
+    """Delete schema by ID"""
+    # First show what would be deleted
+    check_result = check_schema_by_id(schema_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        schema = session.query(Schema).filter(Schema.id == schema_id).first()
+        if not schema:
+            print(f"❌ Schema with ID {schema_id} not found")
+            return False
+        
+        if confirm:
+            response = input(f"Delete schema '{schema.name}' (ID: {schema_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_schema_{schema_id}")
+        
+        session.delete(schema)
+        session.commit()
+        print(f"✅ Deleted schema '{schema.name}' (ID: {schema_id})")
+        return True
+
+
+def delete_schema_by_name(name: str, confirm: bool = True) -> bool:
+    """Delete schema by name"""
+    # Show what would be deleted
+    check_result = check_schema_by_name(schema.id)
+    if not check_result:
+        return False
+        
+    with SessionLocal() as session:
+        schema = session.query(Schema).filter(Schema.name == name).first()
+        if not schema:
+            print(f"❌ Schema with name '{name}' not found")
+            return False
+        
+        if confirm:
+            response = input(f"Delete schema '{name}' (ID: {schema.id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_schema_{name}")
+        
+        session.delete(schema)
+        session.commit()
+        print(f"✅ Deleted schema '{name}' (ID: {schema.id})")
+        return True
+
+
+# ==================== SCHEMA QUESTION GROUP FUNCTIONS ====================
+
+def delete_schema_question_group_by_schema_id(schema_id: int = None, confirm: bool = True) -> int:
+    """Delete all SchemaQuestionGroup records for a specific schema_id"""
+    # First show what would be deleted
+    check_result = check_schema_question_group_by_schema_id(schema_id)
+    if not check_result:
+        return 0
+    
+    with SessionLocal() as session:
+        count = session.query(SchemaQuestionGroup).filter(
+            SchemaQuestionGroup.schema_id == schema_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No SchemaQuestionGroup records found for schema_id {schema_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} SchemaQuestionGroup records for schema_id {schema_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_sqg_schema_{schema_id}")
+        
+        deleted_count = session.query(SchemaQuestionGroup).filter(
+            SchemaQuestionGroup.schema_id == schema_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} SchemaQuestionGroup records for schema_id {schema_id}")
+        return deleted_count
+
+
+def delete_schema_question_group_by_question_group_id(question_group_id: int = None, confirm: bool = True) -> int:
+    """Delete all SchemaQuestionGroup records for a specific question_group_id"""
+    # First show what would be deleted
+    check_result = check_schema_question_group_by_question_group_id(question_group_id)
+    if not check_result:
+        return 0
+    
+    with SessionLocal() as session:
+        count = session.query(SchemaQuestionGroup).filter(
+            SchemaQuestionGroup.question_group_id == question_group_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No SchemaQuestionGroup records found for question_group_id {question_group_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} SchemaQuestionGroup records for question_group_id {question_group_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_sqg_qgroup_{question_group_id}")
+        
+        deleted_count = session.query(SchemaQuestionGroup).filter(
+            SchemaQuestionGroup.question_group_id == question_group_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} SchemaQuestionGroup records for question_group_id {question_group_id}")
+        return deleted_count
+
+
+def delete_schema_question_group_by_both_ids(schema_id: int = None, question_group_id: int = None, confirm: bool = True) -> bool:
+    """Delete specific SchemaQuestionGroup record by both IDs"""
+    # First show what would be deleted
+    check_result = check_schema_question_group_by_both_ids(schema_id, question_group_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        sqg = session.query(SchemaQuestionGroup).filter(
+            SchemaQuestionGroup.schema_id == schema_id,
+            SchemaQuestionGroup.question_group_id == question_group_id
+        ).first()
+        
+        if not sqg:
+            print(f"❌ SchemaQuestionGroup record not found for schema_id {schema_id}, question_group_id {question_group_id}")
+            return False
+        
+        if confirm:
+            response = input(f"Delete SchemaQuestionGroup record (schema_id: {schema_id}, question_group_id: {question_group_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_sqg_{schema_id}_{question_group_id}")
+        
+        session.delete(sqg)
+        session.commit()
+        print(f"✅ Deleted SchemaQuestionGroup record (schema_id: {schema_id}, question_group_id: {question_group_id})")
+        return True
+
+
+# ==================== PROJECT FUNCTIONS ====================
+
+def delete_project_by_id(project_id: int = None, confirm: bool = True) -> bool:
+    """Delete project by ID"""
+    # First show what would be deleted
+    check_result = check_project_by_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        project = session.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            print(f"❌ Project with ID {project_id} not found")
+            return False
+        
+        if confirm:
+            response = input(f"Delete project '{project.name}' (ID: {project_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_project_{project_id}")
+        
+        session.delete(project)
+        session.commit()
+        print(f"✅ Deleted project '{project.name}' (ID: {project_id})")
+        return True
+
+
+def delete_project_by_name(name: str = None, confirm: bool = True) -> bool:
+    """Delete project by name"""
+    # First show what would be deleted
+    check_result = check_project_by_name(name)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        project = session.query(Project).filter(Project.name == name).first()
+        if not project:
+            print(f"❌ Project with name '{name}' not found")
+            return False
+        
+        if confirm:
+            response = input(f"Delete project '{name}' (ID: {project.id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_project_{name}")
+        
+        session.delete(project)
+        session.commit()
+        print(f"✅ Deleted project '{name}' (ID: {project.id})")
+        return True
+
+
+# ==================== PROJECT VIDEO FUNCTIONS ====================
+
+def delete_project_video_by_project_id(project_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectVideo records for a specific project_id"""
+    # First show what would be deleted
+    check_result = check_project_video_by_project_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectVideo).filter(ProjectVideo.project_id == project_id).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectVideo records found for project_id {project_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectVideo records for project_id {project_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_project_videos_{project_id}")
+        
+        deleted_count = session.query(ProjectVideo).filter(ProjectVideo.project_id == project_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectVideo records for project_id {project_id}")
+        return deleted_count
+
+
+def delete_project_video_by_video_id(video_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectVideo records for a specific video_id"""
+    # First show what would be deleted
+    check_result = check_project_video_by_video_id(video_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectVideo).filter(ProjectVideo.video_id == video_id).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectVideo records found for video_id {video_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectVideo records for video_id {video_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_project_videos_vid_{video_id}")
+        
+        deleted_count = session.query(ProjectVideo).filter(ProjectVideo.video_id == video_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectVideo records for video_id {video_id}")
+        return deleted_count
+
+
+def delete_project_video_by_both_ids(project_id: int = None, video_id: int = None, confirm: bool = True) -> bool:
+    """Delete specific ProjectVideo record by both IDs"""
+    # First show what would be deleted
+    check_result = check_project_video_by_both_ids(project_id, video_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        pv = session.query(ProjectVideo).filter(
+            ProjectVideo.project_id == project_id,
+            ProjectVideo.video_id == video_id
+        ).first()
+        
+        if not pv:
+            print(f"❌ ProjectVideo record not found for project_id {project_id}, video_id {video_id}")
+            return False
+        
+        if confirm:
+            response = input(f"Delete ProjectVideo record (project_id: {project_id}, video_id: {video_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_project_video_{project_id}_{video_id}")
+        
+        session.delete(pv)
+        session.commit()
+        print(f"✅ Deleted ProjectVideo record (project_id: {project_id}, video_id: {video_id})")
+        return True
+
+
+# ==================== PROJECT USER ROLE FUNCTIONS ====================
+
+def delete_project_user_role_by_project_id(project_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectUserRole records for a specific project_id"""
+    # First show what would be deleted
+    check_result = check_project_user_role_by_project_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectUserRole).filter(ProjectUserRole.project_id == project_id).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectUserRole records found for project_id {project_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectUserRole records for project_id {project_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_project_user_roles_{project_id}")
+        
+        deleted_count = session.query(ProjectUserRole).filter(ProjectUserRole.project_id == project_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectUserRole records for project_id {project_id}")
+        return deleted_count
+
+
+def delete_project_user_role_by_user_id(user_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectUserRole records for a specific user_id"""
+    # First show what would be deleted
+    check_result = check_project_user_role_by_user_id(user_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectUserRole).filter(ProjectUserRole.user_id == user_id).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectUserRole records found for user_id {user_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectUserRole records for user_id {user_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_project_user_roles_user_{user_id}")
+        
+        deleted_count = session.query(ProjectUserRole).filter(ProjectUserRole.user_id == user_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectUserRole records for user_id {user_id}")
+        return deleted_count
+
+
+def delete_project_user_role_by_both_ids(project_id: int = None, user_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectUserRole records for a specific project_id and user_id combination"""
+    # First show what would be deleted
+    check_result = check_project_user_role_by_both_ids(project_id, user_id)
+    if not check_result:
+        return 0
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectUserRole).filter(
+            ProjectUserRole.project_id == project_id,
+            ProjectUserRole.user_id == user_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectUserRole records found for project_id {project_id}, user_id {user_id}")
+            return 0
+        
+        if confirm:
+            print("⚠️  WARNING: This will PERMANENTLY DELETE all user roles for this project-user combination!")
+            response = input(f"\nConfirm deletion of {count} ProjectUserRole records for project_id {project_id}, user_id {user_id}? (DELETE/no): ")
+            if response != "DELETE":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_project_user_role_{project_id}_{user_id}")
+        
+        deleted_count = session.query(ProjectUserRole).filter(
+            ProjectUserRole.project_id == project_id,
+            ProjectUserRole.user_id == user_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectUserRole records for project_id {project_id}, user_id {user_id}")
+        return deleted_count
+
+
+# ==================== PROJECT GROUP FUNCTIONS ====================
+
+def delete_project_group_by_id(project_group_id: int = None, confirm: bool = True) -> bool:
+    """Delete project group by ID"""
+    # First show what would be deleted
+    check_result = check_project_group_by_id(project_group_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        pg = session.query(ProjectGroup).filter(ProjectGroup.id == project_group_id).first()
+        if not pg:
+            print(f"❌ ProjectGroup with ID {project_group_id} not found")
+            return False
+        
+        if confirm:
+            response = input(f"Delete project group '{pg.name}' (ID: {project_group_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_project_group_{project_group_id}")
+        
+        session.delete(pg)
+        session.commit()
+        print(f"✅ Deleted project group '{pg.name}' (ID: {project_group_id})")
+        return True
+
+
+def delete_project_group_by_name(name: str = None, confirm: bool = True) -> bool:
+    """Delete project group by name"""
+    # First show what would be deleted
+    check_result = check_project_group_by_name(name)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        pg = session.query(ProjectGroup).filter(ProjectGroup.name == name).first()
+        if not pg:
+            print(f"❌ ProjectGroup with name '{name}' not found")
+            return False
+        
+        if confirm:
+            response = input(f"Delete project group '{name}' (ID: {pg.id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_project_group_{name}")
+        
+        session.delete(pg)
+        session.commit()
+        print(f"✅ Deleted project group '{name}' (ID: {pg.id})")
+        return True
+
+
+# ==================== PROJECT GROUP PROJECT FUNCTIONS ====================
+
+def delete_project_group_project_by_group_id(project_group_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectGroupProject records for a specific project_group_id"""
+    # First show what would be deleted
+    check_result = check_project_group_project_by_group_id(project_group_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_group_id == project_group_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectGroupProject records found for project_group_id {project_group_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectGroupProject records for project_group_id {project_group_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_pgp_group_{project_group_id}")
+        
+        deleted_count = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_group_id == project_group_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectGroupProject records for project_group_id {project_group_id}")
+        return deleted_count
+
+
+def delete_project_group_project_by_project_id(project_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectGroupProject records for a specific project_id"""
+    # First show what would be deleted
+    check_result = check_project_group_project_by_project_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_id == project_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectGroupProject records found for project_id {project_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectGroupProject records for project_id {project_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_pgp_project_{project_id}")
+        
+        deleted_count = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_id == project_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectGroupProject records for project_id {project_id}")
+        return deleted_count
+
+
+def delete_project_group_project_by_both_ids(project_group_id: int = None, project_id: int = None, confirm: bool = True) -> bool:
+    """Delete specific ProjectGroupProject record by both IDs"""
+    # First show what would be deleted
+    check_result = check_project_group_project_by_both_ids(project_group_id, project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        pgp = session.query(ProjectGroupProject).filter(
+            ProjectGroupProject.project_group_id == project_group_id,
+            ProjectGroupProject.project_id == project_id
+        ).first()
+        
+        if not pgp:
+            print(f"❌ ProjectGroupProject record not found for project_group_id {project_group_id}, project_id {project_id}")
+            return False
+        
+        if confirm:
+            response = input(f"Delete ProjectGroupProject record (project_group_id: {project_group_id}, project_id: {project_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_pgp_{project_group_id}_{project_id}")
+        
+        session.delete(pgp)
+        session.commit()
+        print(f"✅ Deleted ProjectGroupProject record (project_group_id: {project_group_id}, project_id: {project_id})")
+        return True
+
+
+# ==================== PROJECT VIDEO QUESTION DISPLAY FUNCTIONS ====================
+
+def delete_project_video_question_display_by_project_id(project_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectVideoQuestionDisplay records for a specific project_id"""
+    # First show what would be deleted
+    check_result = check_project_video_question_display_by_project_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.project_id == project_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectVideoQuestionDisplay records found for project_id {project_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectVideoQuestionDisplay records for project_id {project_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_pvqd_project_{project_id}")
+        
+        deleted_count = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.project_id == project_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectVideoQuestionDisplay records for project_id {project_id}")
+        return deleted_count
+
+
+def delete_project_video_question_displays_by_video_id(video_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectVideoQuestionDisplay records for a specific video_id"""
+    # First show what would be deleted
+    check_result = check_project_video_question_display_by_video_id(video_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.video_id == video_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectVideoQuestionDisplay records found for video_id {video_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectVideoQuestionDisplay records for video_id {video_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_pvqd_video_{video_id}")
+        
+        deleted_count = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.video_id == video_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectVideoQuestionDisplay records for video_id {video_id}")
+        return deleted_count
+
+
+def delete_project_video_question_displays_by_question_id(question_id: int = None, confirm: bool = True) -> int:
+    """Delete all ProjectVideoQuestionDisplay records for a specific question_id"""
+    # First show what would be deleted
+    check_result = check_project_video_question_display_by_question_id(question_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.question_id == question_id
+        ).count()
+        
+        if count == 0:
+            print(f"❌ No ProjectVideoQuestionDisplay records found for question_id {question_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ProjectVideoQuestionDisplay records for question_id {question_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_pvqd_question_{question_id}")
+        
+        deleted_count = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.question_id == question_id
+        ).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ProjectVideoQuestionDisplay records for question_id {question_id}")
+        return deleted_count
+
+
+def delete_project_video_question_display_by_ids(project_id: int = None, video_id: int = None, question_id: int = None, confirm: bool = True) -> bool:
+    """Delete specific ProjectVideoQuestionDisplay record by all three IDs"""
+    # First show what would be deleted
+    check_result = check_project_video_question_display_by_both_ids(project_id, video_id, question_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        pvqd = session.query(ProjectVideoQuestionDisplay).filter(
+            ProjectVideoQuestionDisplay.project_id == project_id,
+            ProjectVideoQuestionDisplay.video_id == video_id,
+            ProjectVideoQuestionDisplay.question_id == question_id
+        ).first()
+        
+        if not pvqd:
+            print(f"❌ ProjectVideoQuestionDisplay record not found for project_id {project_id}, video_id {video_id}, question_id {question_id}")
+            return False
+        
+        if confirm:
+            response = input(f"Delete ProjectVideoQuestionDisplay record (project_id: {project_id}, video_id: {video_id}, question_id: {question_id})? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return False
+        
+        backup_path = _create_operation_backup(f"delete_pvqd_{project_id}_{video_id}_{question_id}")
+        
+        session.delete(pvqd)
+        session.commit()
+        print(f"✅ Deleted ProjectVideoQuestionDisplay record (project_id: {project_id}, video_id: {video_id}, question_id: {question_id})")
+        return True
+
+
+# ==================== ANNOTATOR ANSWER FUNCTIONS ====================
+
+def delete_annotator_answer_by_project_id(project_id: int = None, confirm: bool = True) -> int:
+    """Delete all AnnotatorAnswer records for a specific project_id"""
+    # First show what would be deleted
+    check_result = check_annotator_answer_by_project_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.project_id == project_id).count()
+        
+        if count == 0:
+            print(f"❌ No AnnotatorAnswer records found for project_id {project_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} AnnotatorAnswer records for project_id {project_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_annotator_answers_project_{project_id}")
+        
+        deleted_count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.project_id == project_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} AnnotatorAnswer records for project_id {project_id}")
+        return deleted_count
+
+
+def delete_annotator_answers_by_video_id(video_id: int = None, confirm: bool = True) -> int:
+    """Delete all AnnotatorAnswer records for a specific video_id"""
+    # First show what would be deleted
+    check_result = check_annotator_answers_by_video_id(video_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.video_id == video_id).count()
+        
+        if count == 0:
+            print(f"❌ No AnnotatorAnswer records found for video_id {video_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} AnnotatorAnswer records for video_id {video_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_annotator_answers_video_{video_id}")
+        
+        deleted_count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.video_id == video_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} AnnotatorAnswer records for video_id {video_id}")
+        return deleted_count
+
+
+def delete_annotator_answers_by_user_id(user_id: int = None, confirm: bool = True) -> int:
+    """Delete all AnnotatorAnswer records for a specific user_id"""
+    # First show what would be deleted
+    check_result = check_annotator_answers_by_user_id(user_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.user_id == user_id).count()
+        
+        if count == 0:
+            print(f"❌ No AnnotatorAnswer records found for user_id {user_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} AnnotatorAnswer records for user_id {user_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_annotator_answers_user_{user_id}")
+        
+        deleted_count = session.query(AnnotatorAnswer).filter(AnnotatorAnswer.user_id == user_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} AnnotatorAnswer records for user_id {user_id}")
+        return deleted_count
+
+
+# ==================== REVIEWER GROUND TRUTH FUNCTIONS ====================
+
+def delete_reviewer_ground_truth_by_project_id(project_id: int = None, confirm: bool = True) -> int:
+    """Delete all ReviewerGroundTruth records for a specific project_id"""
+    # First show what would be deleted
+    check_result = check_reviewer_ground_truth_by_project_id(project_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.project_id == project_id).count()
+        
+        if count == 0:
+            print(f"❌ No ReviewerGroundTruth records found for project_id {project_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ReviewerGroundTruth records for project_id {project_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_rgt_project_{project_id}")
+        
+        deleted_count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.project_id == project_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ReviewerGroundTruth records for project_id {project_id}")
+        return deleted_count
+
+
+def delete_reviewer_ground_truth_by_video_id(video_id: int = None, confirm: bool = True) -> int:
+    """Delete all ReviewerGroundTruth records for a specific video_id"""
+    # First show what would be deleted
+    check_result = check_reviewer_ground_truth_by_video_id(video_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.video_id == video_id).count()
+        
+        if count == 0:
+            print(f"❌ No ReviewerGroundTruth records found for video_id {video_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ReviewerGroundTruth records for video_id {video_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_rgt_video_{video_id}")
+        
+        deleted_count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.video_id == video_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ReviewerGroundTruth records for video_id {video_id}")
+        return deleted_count
+
+
+def delete_reviewer_ground_truth_by_reviewer_id(reviewer_id: int = None, confirm: bool = True) -> int:
+    """Delete all ReviewerGroundTruth records for a specific reviewer_id"""
+    # First show what would be deleted
+    check_result = check_reviewer_ground_truth_by_reviewer_id(reviewer_id)
+    if not check_result:
+        return False
+    
+    with SessionLocal() as session:
+        count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.reviewer_id == reviewer_id).count()
+        
+        if count == 0:
+            print(f"❌ No ReviewerGroundTruth records found for reviewer_id {reviewer_id}")
+            return 0
+        
+        if confirm:
+            response = input(f"Delete {count} ReviewerGroundTruth records for reviewer_id {reviewer_id}? (yes/no): ")
+            if response.lower() != "yes":
+                print("❌ Deletion cancelled")
+                return 0
+        
+        backup_path = _create_operation_backup(f"delete_rgt_reviewer_{reviewer_id}")
+        
+        deleted_count = session.query(ReviewerGroundTruth).filter(ReviewerGroundTruth.reviewer_id == reviewer_id).delete()
+        session.commit()
+        print(f"✅ Deleted {deleted_count} ReviewerGroundTruth records for reviewer_id {reviewer_id}")
+        return deleted_count
+
         
 # replace_question(old_id=78, new_id=58)
-change_question_text("Glassy surface reflection?", "Glossy surface reflection?")
+# change_question_text("Glassy surface reflection?", "Glossy surface reflection?")
 
 # with SessionLocal() as session:
 #     # 查看所有约束
@@ -1059,3 +2377,8 @@ change_question_text("Glassy surface reflection?", "Glossy surface reflection?")
 # delete_all_question_group_data(question_group_id=15)
 # delete_all_question_data(question_id=77)
 # change_question_text("Aerial / atmospheric Perspective?", "Aerial / atmospheric perspective?")
+
+
+
+
+

@@ -1,22 +1,11 @@
-# Label Pizza Setup Guide
+.# Label Pizza Setup Guide
 
 ## Quick Setup
 
-**For a quick start, use the below command:**
+**For a quick start, use the single command‑line tool:**
 
 ```bash
-# Initialize database using the database url (DBURL) defined in your .env
-python label_pizza/init_or_reset_db.py \
-  --mode init \
-  --database-url-name DBURL \
-  --email admin1@example.com \
-  --password admin111 \
-  --user-id "Admin 1"
-
-# Import data from example folder
-python sync_from_folder.py \
-  --database-url-name DBURL \
-  --folder-path ./example
+python sync_from_folder.py --folder-path ./example
 ```
 
 This single command imports everything in the `example/` folder — videos, users, question groups, schemas, projects, and even sample annotations — so you get a fully‑working demo in seconds. If you just want to see Label Pizza in action, run it and explore the UI. When you’re ready to tailor the workflow to your own data, continue with the rest of this guide to learn how to batch‑upload users, videos, question groups, schemas, and projects.
@@ -455,7 +444,7 @@ Each JSON file is a list of dictionaries. Each dictionary represents one submiss
       "Number of people?": "1",
       "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    "is_ground_truth": false
+    "is_grou nd_truth": false
   },
   {
     "question_group_title": "Human",
@@ -631,9 +620,9 @@ sync_videos(videos_data=[{...}, {...}])
 
 Some of the helpers can also take:
 
-* **A path to a single `.json` file** like
+* **A path to a single `.json` file**
   `sync_videos(videos_path="workspace/videos.json")`
-* **A folder of many `.json` files** (for `sync_annotations` and `sync_ground_truths`) like 
+* **A folder of many `.json` files** (for `sync_annotations` and `sync_ground_truths`)
   `sync_annotations(annotations_folder="workspace/annotations")`
 
 For this guide, we'll use the Python list of dictionaries.
@@ -678,16 +667,12 @@ Archive      :  annotations / ground_truths → assignments → projects → sch
 Upload things **before** anything that depends on them, and archive in the reverse direction to avoid dependency errors.
 
 
-### Detailed instructions
-
-Some steps build on the ones before them. We recommend running the commands in the listed order so that you don't run into errors.
-
-#### 0. Prerequisite: `init_database`
+#### Prerequisite: `init_database`
 
 **Important:** You must run this once before **importing** any other helper functions, otherwise you will get an error.
 
 ```python
-from label_pizza.db import init_database
+from label_pizza.sync_utils import init_database
 init_database("DBURL")  # or change DBURL to another key in .env
 ```
 
@@ -696,7 +681,7 @@ init_database("DBURL")  # or change DBURL to another key in .env
 
 Function for adding / updating / archiving videos
 
-1.1 - Add a video
+1.1 - Add videos
 
 To add a video, you must provide a `video_uid` that does not already exist in the database.
 
@@ -707,7 +692,7 @@ init_database("DBURL")
 from label_pizza.sync_utils import sync_videos
 videos_data = [
   {
-    "video_uid": "human.mp4", # must NOT exist in the database
+    "video_uid": "human.mp4", # Must NOT exist in the database
     "url": "https://your-repo/human.mp4",
     "is_active": True,
     "metadata": {
@@ -720,7 +705,7 @@ videos_data = [
 sync_videos(videos_data=videos_data)
 ```
 
-1.2 - Update or archive a video
+1.2 - Update or archive videos
 
 To update a video record, keep the `video_uid` fixed and modify other fields such as `url`, `is_active`, or `metadata`.
 
@@ -729,9 +714,9 @@ To update a video record, keep the `video_uid` fixed and modify other fields suc
 
 videos_data = [
   {
-    "video_uid": "human.mp4",                       # must already exist in the database
-    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",           # update url (Must not exist in the database)
-    "is_active": True,                              # keep this True (set to False if you want to archive the video)
+    "video_uid": "human.mp4",                       # Must already exist in the database
+    "url": "https://your-repo-new/human.mp4",       # update url (Must not exist in the database)
+    "is_active": False,                             # Set to False to archive the video
     "metadata": {
        # update metadata to be an empty dictionary
     }
@@ -745,7 +730,7 @@ sync_videos(videos_data=videos_data)
 
 Function for adding / updating / archiving users
 
-2.1 - Add a user
+2.1 - Add users
 
 To add a user, provide a unique `user_id` that does not already exist in the database. If specifying an `email`, it must also be unique.
 
@@ -757,8 +742,8 @@ from label_pizza.sync_utils import sync_users
 
 users_data = [
     {
-        "user_id": "User 1",          # must NOT exist in the database
-        "email": "user1@example.com", # must NOT exist in the database
+        "user_id": "User 1",          # Must NOT exist in the database
+        "email": "user1@example.com", # Must NOT exist in the database
         "password": "user111",
         "user_type": "human",
         "is_active": True
@@ -768,21 +753,21 @@ users_data = [
 sync_users(users_data=users_data)
 ```
 
-2.2 - Update or archive a user
+2.2 - Update or archive users
 
 To update a user, provide the `user_id` that already exists in the database to update the `email`, `password`, `user_type`, or `is_active`.
 
 ```python
 # ...After step 2.1
 
-# update email using user_id
+# Update email using user_id
 users_data = [
     {
         "user_id": "User 1",              # the existing user_id
         "email": "user1-new@example.com", # new email
         "password": "user111-new",        # new password
-        "user_type": "human",             # could only select from "admin", "human"
-        "is_active": False                # set to False to archive the user
+        "user_type": "human",             # Could only select from "admin", "human"
+        "is_active": True
     }
 ]
 
@@ -794,8 +779,8 @@ users_data = [
         "user_id": "User 1 New",          # new user_id
         "email": "user1-new@example.com", # the existing email
         "password": "user111-new",        
-        "user_type": "human",             # could only select from "admin", "human"
-        "is_active": True                 # set to True to unarchive the user
+        "user_type": "human",             # Could only select from "admin", "human"
+        "is_active": False
     }
 ]
 
@@ -805,8 +790,8 @@ sync_users(users_data=users_data)
 users_data = [
     {
         "user_id": "Model 1",          # new user_id
-        "email": "",                   # model user could not have email
-        "password": "",                # model user could not have password
+        "email": "",                   # Model user could not have email
+        "password": "",                # Model user could not have password
         "user_type": "model",
         "is_active": True
     }
@@ -817,11 +802,11 @@ sync_users(users_data=users_data)
 
 > **Note:** You cannot change a human/admin user to a model user because model users do not have `email` and might have `confidence_score` in the `annotations` table.
 
-### 3. Sync Question Groups and Their Questions
+### 3. Sync Question Groups
 
-Before creating question groups, it is important to decide whether you need a **verification function**. This optional Python function (which you can define in `label_pizza/verify.py`) checks that all answers in a group are logically consistent *before* they are submitted.
-
-> **For example:** Annotators must describe a person if there are more than 0 people in the video; otherwise, the description must be blank. The `check_human_description` function enforces this rule.
+> Before creating question groups, it's important to understand the role of the (optional) `verification_function`. This function ensures that the answers within a group are logically consistent.
+>
+> **For example:** Annotators must describe a person if there are more than 0 people in the video; otherwise, the description should be left blank. The following `check_human_description` function enforces this rule.
 
 ```python
 def check_human_description(answers: Dict[str, str]) -> None:
@@ -834,11 +819,11 @@ def check_human_description(answers: Dict[str, str]) -> None:
         raise ValueError("Description must be provided when there are people")
 ```
 
-If you do not need such a check, set `verification_function` to `None` (`null` in JSON).
+If you do not wish to use a verification function, you can set `verification_function` to `None` (or `null` in JSON).
 
-3.1 - Add question groups and their questions
+3.1 - Add Question Groups
 
-To add a question group, use a unique `title` that does not yet exist.
+To add a question group, provide a unique `title` that does not already exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -847,12 +832,12 @@ init_database("DBURL")
 from label_pizza.sync_utils import sync_question_groups
 question_groups_data = [
     {
-        "title": "Human",           # must NOT exist in the database
+        "title": "Human",           # Must NOT exist in the database
         "display_title": "Human",
         "description": "Detect and describe all humans in the video.",
         "is_reusable": False,
         "is_auto_submit": False,
-        "verification_function": None,
+        "verification_function": "check_human_description",
         "questions": [
             {
                 "qtype": "single",
@@ -885,51 +870,17 @@ question_groups_data = [
                 "default_option": None
             }
         ]
-    },
-    {
-        "title": "NSFW",
-        "display_title": "NSFW",
-        "description": "Check whether the video is not safe for work.",
-        "is_reusable": True,
-        "is_auto_submit": True,
-        "verification_function": None,
-        "is_active": True,
-        "questions": [
-            {
-                "text": "Is the video not safe for work?",
-                "qtype": "single",
-                "options": [
-                    "No",
-                    "Yes"
-                ],
-                "display_values": [
-                    "No",
-                    "Yes"
-                ],
-                "option_weights": [
-                    1.0,
-                    99.0 # If any annotator selects “Yes,” most of the weight is given to it.
-                ],
-                "default_option": "No",
-                "display_text": "Is the video not safe for work?"
-            }
-        ]
     }
 ]
 
 sync_question_groups(question_groups_data=question_groups_data)
 ```
 
-3.2 - Update a question group and its questions
+3.2 - Update question groups
 
-To update an existing question group, keep the same `title` and include the complete current list of `questions`. You may modify
-- `display_title`, `description`, `is_reusable`, `is_auto_submit`, `verification_function`
-- The **order** of questions. 
-- For each question, its `display_text`, `display_values`, and `default_option`. For `single` questions, you may also reorder `options` and adjust their `option_weights`.
+To update a question group, provide the `title` that already exists in the database. You can update the following fields: `display_title`, `description`, `is_reusable`, `is_auto_submit`, `verification_function`, and `questions`. **Make sure** the `questions` list contains exactly the same entries as the existing version—no additions or removals are allowed.
 
-> **Note 1:** You cannot add or remove questions from a question group. This ensures existing annotations aren’t affected.
-
-> **Note 2:** You cannot change the `qtype` of a question. For `single` questions, you may append new options, but you may not delete existing ones. Updating a question (using `text` as the unique identifier) in one group will automatically update it in every other group that includes that question.
+Within the `questions` list, you may change the order of the questions. For each question, use the existing `text` to update its corresponding `display_text`, `display_values`, and `default_option`.
 
 ```python
 from label_pizza.db import init_database
@@ -939,34 +890,34 @@ from label_pizza.sync_utils import sync_question_groups
 
 question_groups_data = [
     {
-        "title": "Human",                  # must exist in the database
-        "display_title": "Human (Updated)",  # update display_title
+        "title": "Human",                  # Must exist in the database
+        "display_title": "Human Updated",  # update display_title
         "description": "Detect and describe all humans in the video. (Updated)", # update description here
         "is_reusable": True,               # update is_reusable
         "is_auto_submit": True,            # update is_auto_submit
-        "verification_function": "check_human_description",     # add verification_function
+        "verification_function": None,     # remove verification_function
         "questions": [                     # update the question order to move description to the first question
             {
                 "qtype": "description",
                 "text": "If there are people, describe them.",
                 "display_text": "If there are people, describe them.",
-                "default_option": "Auto‑submit requires a default answer." # update the default answer (for description questions)
+                "default_option": "This answer will be pre-filled for all annotators."
             },
             {
                 "qtype": "single",
                 "text": "Number of people?",
-                "display_text": "Number of people (Updated)",     # update the display_text of a question
-                "options": [ # reorder the options
+                "display_text": "Number of people updated?",     # Update the display_text of a question
+                "options": [ # update the order of options
                     "3 or more",
                     "2",
                     "1",
                     "0",
                 ],
                 "display_values": [ # be sure to update the display_values to match the new order of options
-                    "3+",
-                    "2",
-                    "1",
-                    "0",
+                    "3+ updated",   # Update the display_values of a question
+                    "2 updated",
+                    "1 updated",
+                    "0 updated",
                 ],
                 "option_weights": [
                     1.0,
@@ -974,7 +925,7 @@ question_groups_data = [
                     1.0,
                     1.0
                 ],
-                "default_option": "3 or more" # update the default option for single questions
+                "default_option": "3 or more" # update the default option
             }
         ]
     }
@@ -983,13 +934,15 @@ question_groups_data = [
 sync_question_groups(question_groups_data=question_groups_data)
 ```
 
+> **Note:** Updating a question in one question group will also update it in all other groups that include the same question.
+
 ### 4. Sync Schemas
 
-Function for adding / updating / archiving schemas (a schema collects one or more question groups into a task)
+Function for adding / updating / archiving schemas
 
 4.1 - Add schemas
 
-To add a schema, use a unique `schema_name` that is not yet in the database. For `question_group_names`, use the `title` of the question groups you have already added.
+To add a schema, provide a unique `schema_name` that does not already exist in the database. Make sure all the question groups in `question_group_names` should exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -999,10 +952,10 @@ from label_pizza.sync_utils import sync_schemas
 
 schemas_data = [
   {
-    "schema_name": "Questions about Humans",   # must NOT exist in the database
+    "schema_name": "Questions about Humans",   # Must NOT exist in the database
     "instructions_url": "",
     "question_group_names": [
-       "NSFW", "Human"
+      "Human", "NSFW"
     ],
     "has_custom_display": False,
     "is_active": True
@@ -1012,11 +965,9 @@ schemas_data = [
 sync_schemas(schemas_data=schemas_data)
 ```
 
-4.2 - Update or archive schemas
+4.2 - Update schemas
 
-To update a schema, use the `schema_name` that exists in the database. You may update `instructions_url`, `has_custom_display`, `is_active`, and reorder `question_group_names`. You cannot add or remove question groups from a schema.
-
-> **Note:** You cannot archive a schema if it is still used by an active project.
+To update a schema, provide the `schema_name` that already exists in the database. You can update the `instructions_url`, `has_custom_display`, `is_active`, and `question_group_names`. Note that you may only change the order of the `question_group_names`; the list itself must match the existing version exactly—no additions or removals are allowed.
 
 ```python
 from label_pizza.db import init_database
@@ -1026,13 +977,38 @@ from label_pizza.sync_utils import sync_schemas
 
 schemas_data = [
   {
-    "schema_name": "Questions about Humans",                    # must exist in the database
-    "instructions_url": "https://en.wikipedia.org/wiki/Human",  # update instruction_url
-    "question_group_names": [                                   # new question group order
+    "schema_name": "Questions about Humans",             # Must exist in the database
+    "instructions_url": "https://your-instruction-rul",  # Update instruction_url
+    "question_group_names": [                            # New group order applied; question groups should remain exactly the same as before
+      "NSFW", "Human"
+    ],
+    "has_custom_display": True,                          # Update has_custom_display
+    "is_active": True
+  }
+]
+
+sync_schemas(schemas_data=schemas_data)
+```
+
+4.3 - Archive schemas
+
+> If you want to archive any schema, you should ensure that all the projects that use the schema have been archived. You could see Step4 and Step5 to see how to archive schemas and projects separately.
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_schemas
+
+schemas_data = [
+  {
+    "schema_name": "Questions about Humans",   # Must exist in the database
+    "instructions_url": "",
+    "question_group_names": [
       "Human", "NSFW"
     ],
-    "has_custom_display": True,                          # update has_custom_display
-    "is_active": True                                    # keep this True (set to False if you want to archive the schema)
+    "has_custom_display": True,
+    "is_active": False                         # Set False to archive schema
   }
 ]
 
@@ -1041,13 +1017,9 @@ sync_schemas(schemas_data=schemas_data)
 
 ### 5. Sync Projects
 
-Function for adding / updating / archiving projects (a project combines a set of videos and a schema)
-
 5.1 - Add projects
 
-To add a project, use a unique `project_name` that is not yet in the database.
-
-> **Note:** We recommend using at most 50-100 videos per project for better user experience.
+To add a schema, provide a unique `project_name` that does not already exist in the database. Make sure both the `videos` and `schema_name` should exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -1057,13 +1029,13 @@ from label_pizza.sync_utils import sync_projects
 
 projects_data = [
   {
-    "project_name": "Human Test 0",            # must NOT exist in the database
-    "schema_name": "Questions about Humans",
+    "project_name": "Human Test 0",            # Must Not exist in the database
+    "schema_name": "Questions about Humans",   # Must exist in the database
     "description": "Test project for human questions",
     "is_active": True,
     "videos": [
       "human.mp4",
-      "human.mp4"
+      "pizza.mp4"
     ]
   }
 ]
@@ -1071,9 +1043,9 @@ projects_data = [
 sync_projects(projects_data=projects_data)
 ```
 
-5.2 - Update / archive projects
+5.2 - Update projects
 
-You can update a project using the `project_name` that already exists in the database. Only `description` and `is_active` can be changed. If you want to remove videos, you can do so by archiving them (across all projects). If you want to add videos, we recommend creating a new project.
+To update a project, provide the `project_name` that already exists in the database. You can update the `description`.
 
 ```python
 from label_pizza.db import init_database
@@ -1083,12 +1055,13 @@ from label_pizza.sync_utils import sync_projects
 
 projects_data = [
   {
-    "project_name": "Human Test 0",            # must exist in the database
-    "schema_name": "Questions about Humans",   # must exist in the database
-    "description": "Test project for human questions (Updated)",   # you could only update the description
-    "is_active": True,                         # keep this True (set to False if you want to archive the project)
+    "project_name": "Human Test 0",            # Must exist in the database
+    "schema_name": "Questions about Humans",   # Must exist in the database
+    "description": "Test project for human questions updated",   # You could only update the description
+    "is_active": True,
     "videos": [
-      "human.mp4"
+      "human.mp4",
+      "pizza.mp4"
     ]
   }
 ]
@@ -1096,13 +1069,125 @@ projects_data = [
 sync_projects(projects_data=projects_data)
 ```
 
-### 6. Sync Users to Projects
+5.3 - Archive projects
 
-Function for adding / updating / archiving project-user assignments
+Set `is_active` to `False` to archive the project.
 
-6.1 - Add user to project
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
 
-To assign a user to a project, provide a unique (`user_name, project_name`) pair that does not already exist in the database.
+from label_pizza.sync_utils import sync_projects
+
+projects_data = [
+  {
+    "project_name": "Human Test 0",           # Must exist in the database
+    "schema_name": "Questions about Humans",  # Must exist in the database
+    "description": "Test project for human questions",
+    "is_active": False,                       # Set False to archive the project
+    "videos": [
+      "human.mp4",
+      "pizza.mp4"
+    ]
+  }
+]
+
+sync_projects(projects_data=projects_data)
+```
+
+### 6. Sync Project Groups
+
+6.1 - Adding project group
+
+To add a schema, provide a unique `project_group_name` that does not already exist in the database. Make sure all the projects in  `projects` should exist in the database.
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_projects, sync_project_groups
+
+"""
+Before creating / editing project groups, we need to make sure that all the projects we used are already in the database.
+"""
+
+"""
+Adding projects first
+"""
+projects_data = [
+  {
+    "project_name": "Human Test 0",
+    "schema_name": "Questions about Humans",
+    "description": "Test project for humans",
+    "is_active": True,
+    "videos": [
+      "human.mp4",
+      "pizza.mp4"
+    ]
+  },
+  {
+    "project_name": "Human Test 1",
+    "schema_name": "Questions about Humans",
+    "description": "Test project for humans",
+    "is_active": True,
+    "videos": [
+      "human2.mp4",
+      "human3.mp4"
+    ]
+  }
+]
+
+sync_projects(projects_data=projects_data)
+
+"""
+Adding project groups
+"""
+project_groups_data = [
+    {
+        "project_group_name": "Example Project Group",                # Must NOT exist in the database
+        "description": "This is a project group for human test",
+        "projects": [             # All these projects MUST exist in the database
+            "Human Test 0",
+            "Human Test 1"
+        ]
+    }
+]
+
+sync_project_groups(project_groups_data=project_groups_data)
+```
+
+> If you find any videos that not exist in the database, please add them to the database according to Step 1.
+
+6.2 - Update project groups
+
+To update a project group, provide the `project_group_name` that already exists in the database. You can update the `description` and modify the `projects` list to add or remove projects.
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_project_groups
+
+"""
+Assuming we already have Human Test 2 in our database.
+"""
+project_groups_data = [
+  {
+      "project_group_name": "Example Project Group",                         # Must exist in the database
+      "description": "This is a project group for human test updated",       # Update the description
+      "projects": [            # Adding / deleting existing project names to update the project groups
+          "Human Test 0",
+          "Human Test 2"
+      ]
+  }
+]
+```
+
+### 7. Sync Users to Projects
+
+7.1 - Add user to project
+
+To add a user to project, provide a unique (`user_name, project_name`) that does not already exist in the database. Make sure both the `user_name` and `project_name` should exist in the database.
 
 ```python
 from label_pizza.db import init_database
@@ -1112,36 +1197,35 @@ from label_pizza.sync_utils import sync_users_to_projects
 
 assignments_data = [
   {
-    "user_name": "Model 1",          
-    "project_name": "Human Test 0", 
-    "role": "model",                 # `model` users could only be assigned as `model`
-    "user_weight": 1.0,              
-    "is_active": True
-  },
-  {
-    "user_name": "User 1",            
-    "project_name": "Human Test 0",
-    "role": "annotator",             # `human` users could only be assigned as `reviewer` or `annotator`
+    "user_name": "User 1",             # Must exists in the database
+    "project_name": "Human Test 0",    # Must exists in the database
+    "role": "annotator",               # You could only select from ["annotator", "reviewer", "admin", "model"]
     "user_weight": 1.0,              
     "is_active": True
   }
 ]
+
 sync_users_to_projects(assignments_data=assignments_data)
 ```
 
+> Notice that you cannot assign an "Admin" user to a non-"Admin" role.
 
-6.2 - Update a user's role in a project
+7.2 - Update user in project
 
-You can modify the user's `role` and `user_weight` in a project.
+To update a user's role in a project, provide the (`user_name`, `project_name`) pair that already exists in the database. You can then update the user's `role`.
 
-```python
-#...After step 6.1
+```
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_users_to_projects
+
 assignments_data = [
   {
-    "user_name": "User 1 New",            
-    "project_name": "Human Test 0",
-    "role": "reviewer", # update the role to reviewer
-    "user_weight": 2.0, # update the user weight              
+    "user_name": "User 1",             # Must exists in the database
+    "project_name": "Human Test 0",    # Must exists in the database
+    "role": "reviewer",                # Update it to reviewer
+    "user_weight": 1.0,              
     "is_active": True
   }
 ]
@@ -1149,70 +1233,27 @@ assignments_data = [
 sync_users_to_projects(assignments_data=assignments_data)
 ```
 
-6.3 - Remove a user from a project
+7.3 - Remove user from project
 
-Set `is_active` to `False` to remove a user from a project. Note that this will not delete any of their existing annotations or ground truth answers within the project.
-
-> **Note:** If you want to remove a user completely from a project, you must set `is_active` to `False` and `role` to `annotator`. If you only want to remove a user's reviewer role, you can set `is_active` to `False` and `role` to `reviewer`.
-
-```python
-#...After step 6.2
-assignments_data = [
-  {
-    "user_name": "User 1 New",
-    "project_name": "Human Test 0",
-    "role": "annotator",
-    "user_weight": 2.0,
-    "is_active": False  # set False to remove user from this project
-  }
-]
-
-sync_users_to_projects(assignments_data=assignments_data)
-```
-
-### 7. Sync Project Groups
-
-Function for adding / updating / archiving project groups (a project group collects one or more projects for better organization)
-
-7.1 - Adding project group
-
-To add a project group, use a unique `project_group_name` that does not already exist in the database.
+Set `is_active` to `False` to remove a user from a project. Make sure the (`user_name`, `project_name`) pair already exists in the database.
 
 ```python
 from label_pizza.db import init_database
 init_database("DBURL")
 
-from label_pizza.sync_utils import sync_project_groups
-project_groups_data = [
-    {
-        "project_group_name": "Human Test Projects",
-        "description": "This is a project group for human test with a single project",
-        "projects": [
-            "Human Test 0"
-        ]
-    }
-]
+from label_pizza.sync_utils import sync_users_to_projects
 
-sync_project_groups(project_groups_data=project_groups_data)
-```
-
-7.2 - Update / archive project groups
-
-You can use the `project_group_name` to update a project group's `description` and modify the `projects` list to add or remove projects.
-
-```python
-#...After step 7.1
-project_groups_data = [
+assignments_data = [
   {
-      "project_group_name": "Human Test Projects",
-      "description": "This is an empty project group",  # Update the description
-      "projects": [ # Remove all projects from the project group
-      ],
-      "is_active": False # Please remove this line
+    "user_name": "User 1",
+    "project_name": "Human Test 0",
+    "role": "annotator",
+    "user_weight": 1.0,
+    "is_active": False                 # Set False to remove user from this project
   }
 ]
 
-sync_project_groups(project_groups_data=project_groups_data)
+sync_users_to_projects(assignments_data=assignments_data)
 ```
 
 ### 8. Sync Annotations and Reviews
@@ -1231,8 +1272,8 @@ from label_pizza.sync_utils import sync_annotations
 
 annotations_data = [
   {
-    "question_group_title": "Human",    # must exist in the database
-    "project_name": "Human Test 0",     # must exist in the database
+    "question_group_title": "Human",    # Must exist in the database
+    "project_name": "Human Test 0",     # Must exist in the database
     "user_name": "User 1",              # User must have at least "annotation" privileges
     "video_uid": "human.mp4",           # Video must exist in the project
     "answers": {        # Answers must include all and only the questions defined in the question group
@@ -1256,15 +1297,15 @@ from label_pizza.sync_utils import sync_ground_truths
 
 ground_truths_data = [
   {
-    "question_group_title": "Human",    # must exist in the database
-    "project_name": "Human Test 0",     # must exist in the database
+    "question_group_title": "Human",    # Must exist in the database
+    "project_name": "Human Test 0",     # Must exist in the database
     "user_name": "User 1",              # User must have at least "annotation" privileges
     "video_uid": "human.mp4",           # Video must exist in the project
     "answers": {        # Answers must include all and only the questions defined in the question group
       "Number of people?": "1",
       "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    "is_ground_truth": True             # must be True
+    "is_ground_truth": True             # Must be True
   }
 ]
 
@@ -1455,7 +1496,7 @@ MAX_BACKUPS = 10
 
 **Important:** All destructive operations automatically create timestamped backups before execution. The backup system requires `backup_restore.py` to be available.
 
-#### setup
+#### Setup
 
 ```python
 from label_pizza.db import init_database

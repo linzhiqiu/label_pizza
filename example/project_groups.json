@@ -1,11 +1,17 @@
 [
     {
-        "project_group_name": "Example Project Group",
+        "project_group_name": "Human Project Group",
         "description": "This is a project group for human test",
         "projects": [
             "Human Test 0",
-            "Camera Movement 0",
-            "Camera Movement 1"
+            "Human Test 1"
+        ]
+    },
+    {
+        "project_group_name": "Pizza Project Group",
+        "description": "This is a project group for pizza test",
+        "projects": [
+            "Pizza Test 0"
         ]
     }
 ]

@@ -134,6 +134,23 @@ class VideoService:
         session.commit()
     
     @staticmethod
+    def unarchive_video(video_id: int, session: Session) -> None:
+        """Unarchive a video by its ID.
+        
+        Args:
+            video_id: The ID of the video to unarchive
+            session: Database session
+            
+        Raises:
+            ValueError: If video not found
+        """
+        video = session.get(Video, video_id)
+        if not video:
+            raise ValueError(f"Video with ID {video_id} not found")
+        video.is_archived = False
+        session.commit()
+    
+    @staticmethod
     def get_all_videos(session: Session) -> pd.DataFrame:
         """Get all videos.
         
@@ -941,7 +958,7 @@ class ProjectService:
         session.commit()
     
     @staticmethod
-    def verify_update_project_description(project_id: int, description: str, session: Session) -> None:
+    def verify_update_project_description(project_id: int, description: str, is_archived: bool, session: Session) -> None:
         """Verify that a project exists and is not archived.
         
         Args:
@@ -955,11 +972,11 @@ class ProjectService:
         project = session.get(Project, project_id)
         if not project:
             raise ValueError(f"Project with ID {project_id} not found")
-        if project.is_archived:
+        if project.is_archived and is_archived:
             raise ValueError(f"Project with ID {project_id} is archived")
     
     @staticmethod
-    def update_project_description(project_id: int, description: str, session: Session) -> None:
+    def update_project_description(project_id: int, description: str, is_archived: bool, session: Session) -> None:
         """Update the description of a project.
         
         Args:
@@ -970,7 +987,7 @@ class ProjectService:
         Raises:
             ValueError: If project not found or not archived
         """
-        ProjectService.verify_update_project_description(project_id=project_id, description=description, session=session)
+        ProjectService.verify_update_project_description(project_id=project_id, description=description, is_archived=is_archived, session=session)
         
         project = session.get(Project, project_id)
         project.description = description

@@ -210,7 +210,7 @@ def _render_custom_player(video_url, video_uid, aspect_ratio, autoplay, loop, sh
             </div>
         '''
     else:
-        video_attributes = 'preload="metadata"'
+        video_attributes = 'preload="metadata" muted'
         if autoplay:
             video_attributes += ' autoplay muted'
         if loop:  # Natural looping for direct videos
@@ -392,9 +392,9 @@ def _render_custom_player(video_url, video_uid, aspect_ratio, autoplay, loop, sh
                 
                 <div class="controls">
                     <button class="control-btn" id="playPauseBtn" title="Play/Pause">{"⏸️" if autoplay else "▶️"}</button>
-                    <button class="control-btn" id="muteBtn" title="Mute/Unmute">🔊</button>
+                    <button class="control-btn" id="muteBtn" title="Mute/Unmute">🔇</button>
                     <div class="volume-control">
-                        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100" title="Volume">
+                        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="0" title="Volume">
                     </div>
                     <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
                     {segment_button_html}
@@ -497,6 +497,10 @@ def _render_custom_player(video_url, video_uid, aspect_ratio, autoplay, loop, sh
                         events: {{
                             'onReady': function(event) {{
                                 window.youtubePlayer = youtubePlayer;
+
+                                // Add these lines to mute by default
+                                youtubePlayer.mute();
+                                youtubePlayer.setVolume(0);
                                 
                                 if (startTime !== null) {{
                                     youtubePlayer.seekTo(startTime, true);

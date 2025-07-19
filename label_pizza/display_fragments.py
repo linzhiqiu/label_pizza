@@ -39,36 +39,21 @@ from label_pizza.accuracy_analytics import display_user_accuracy_simple, display
 ###############################################################################
 
 @st.fragment
-def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: str, mode: str, session: Session):
-    """Display a single video-answer pair in side-by-side layout with tabs - OPTIMIZED"""
+def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: str, mode: str):
+    """Display a single video-answer pair - FULLY OPTIMIZED WITH SINGLE BATCH OPERATION"""
     try:
-        # 🚀 OPTIMIZED: Pre-load bulk cache data once for this video
-        selected_annotators = st.session_state.get("selected_annotators", [])
-        annotator_user_ids = []
-        bulk_cache_data = None
-        
-        if selected_annotators and role in ["reviewer", "meta_reviewer"]:
-            annotator_user_ids = get_optimized_annotator_user_ids(
-                display_names=selected_annotators, project_id=project_id, session=session
+        # 🚀 MEGA OPTIMIZATION: Get ALL data for this video in ONE database call
+        with get_db_session() as session:
+            bulk_video_data = GroundTruthService.get_complete_video_data_for_display(
+                video_id=video["id"], project_id=project_id, user_id=user_id, role=role, session=session
             )
-            
-            if annotator_user_ids:
-                bulk_cache_data = get_video_reviewer_data_from_bulk(
-                    video_id=video["id"], project_id=project_id, 
-                    annotator_user_ids=annotator_user_ids
-                )
         
-        project = get_project_metadata_cached(project_id=project_id, session=session)
-        
-        # Add transaction recovery for question groups
-        try:
-            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
-        except Exception as qg_error:
-            # Try to recover by creating a new session
-            st.error(f"Database error occurred. Refreshing...")
-            print(f"Database error occurred: {qg_error}")
-            st.rerun()
+        if not bulk_video_data:
+            st.error("Error loading video data")
             return
+        
+        project = bulk_video_data["project"]
+        question_groups = bulk_video_data["question_groups"]
         
         # Apply custom question group order if set
         order_key = f"question_order_{project_id}_{role}"
@@ -81,19 +66,14 @@ def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: 
             custom_info("No question groups found for this project.")
             return
         
-        # Check completion status
-        completion_status = {}
-        for group in question_groups:
-            completion_status[group["ID"]] = check_question_group_completion(
-                video_id=video["id"], project_id=project_id, user_id=user_id, 
-                question_group_id=group["ID"], role=role, session=session
-            )
+        # Get completion status from batch data
+        completion_status = bulk_video_data["completion_status_by_group"]
         
-        completed_count = sum(completion_status.values())
+        completed_count = sum(1 for group in question_groups if completion_status.get(group["ID"], False))
         total_count = len(question_groups)
         
         completion_details = [
-            f"✅ {group['Display Title']}" if completion_status[group["ID"]] 
+            f"✅ {group['Display Title']}" if completion_status.get(group["ID"], False)
             else f"<span style='color: #A1A1A1;'>{group['Display Title']}</span>"
             for group in question_groups
         ]
@@ -121,11 +101,16 @@ def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: 
             
             for tab, group in zip(tabs, question_groups):
                 with tab:
+                    # Pass the bulk data to the existing function
                     display_question_group_in_fixed_container(
-                        video=video, project_id=project_id, user_id=user_id, 
-                        group_id=group["ID"], role=role, mode=mode, 
-                        session=session, container_height=video_height,
-                        bulk_cache_data=bulk_cache_data  # 🚀 Pass bulk data
+                        video=video, 
+                        project_id=project_id, 
+                        user_id=user_id, 
+                        group_id=group["ID"], 
+                        role=role, 
+                        mode=mode, 
+                        container_height=video_height,
+                        bulk_cache_data=bulk_video_data  # Pass the complete bulk data
                     )
         
         if st.session_state.get(f"rerun_needed_{project_id}_{user_id}", False):
@@ -137,15 +122,15 @@ def display_video_answer_pair(video: Dict, project_id: int, user_id: int, role: 
         if st.button("🔄 Refresh Page", key=f"refresh_{video['id']}_{project_id}"):
             st.rerun()
 
-def display_question_group_in_fixed_container(video: Dict, project_id: int, user_id: int, group_id: int, role: str, mode: str, session: Session, container_height: int, bulk_cache_data: Dict = None):
-    """Display question group content with preloaded answers support - OPTIMIZED"""
+def display_question_group_in_fixed_container(video: Dict, project_id: int, user_id: int, group_id: int, role: str, mode: str, container_height: int=None, bulk_cache_data: Dict = None):
+    """Display question group content with preloaded answers support - FIXED CUSTOM DISPLAY HANDLING"""
 
     try:
+        # 🚀 ALWAYS apply custom display properly - this is crucial!
         questions = get_questions_with_custom_display_if_enabled(
             group_id=group_id, 
             project_id=project_id, 
-            video_id=video["id"], 
-            session=session
+            video_id=video["id"]
         )
         
         if not questions:
@@ -155,20 +140,20 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                 st.form_submit_button("No Actions Available", disabled=True)
             return
         
-        # Get preloaded answers if available - SIMPLIFIED
+        # Get preloaded answers if available
         preloaded_answers = st.session_state.get(f"current_preloaded_answers_{role}_{project_id}", {})
         
         # Get selected annotators for reviewer/meta-reviewer roles
         selected_annotators = None
-        cache_data = bulk_cache_data  # 🚀 Use passed bulk cache data
+        cache_data = None
 
         if role in ["reviewer", "meta_reviewer"]:
             selected_annotators = st.session_state.get("selected_annotators", [])
             
-            # Only get cache data if not provided (fallback for compatibility)
-            if selected_annotators and not cache_data:
+            # Get properly formatted cache data for display functions
+            if selected_annotators:
                 annotator_user_ids = get_optimized_annotator_user_ids(
-                    display_names=selected_annotators, project_id=project_id, session=session
+                    display_names=selected_annotators, project_id=project_id
                 )
                 if annotator_user_ids:
                     cache_data = get_video_reviewer_data_from_bulk(
@@ -176,57 +161,109 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                         annotator_user_ids=annotator_user_ids
                     )
         
-        # Check admin modifications
-        has_any_admin_modified_questions = False
-        if role == "reviewer":
-            for question in questions:
-                if GroundTruthService.check_question_modified_by_admin(
-                    video_id=video["id"], project_id=project_id, question_id=question["id"], session=session
-                ):
-                    has_any_admin_modified_questions = True
-                    break
-        
-        display_data = _get_question_display_data(
-            video["id"], project_id, user_id, group_id, role, mode, session,
-            has_any_admin_modified_questions
-        )
-        
-        if display_data["error"]:
-            custom_info(display_data["error"])
-            with st.form(f"error_form_{video['id']}_{group_id}_{role}"):
-                st.error(display_data["error"])
-                st.form_submit_button("Unable to Load", disabled=True)
-            return
-        
-        questions = display_data["questions"]
-        all_questions_modified_by_admin = display_data["all_questions_modified_by_admin"]
-        existing_answers = display_data["existing_answers"]
-        form_disabled = display_data["form_disabled"]
-        
-        # Get ground truth for training mode
-        gt_answers = {}
-        if mode == "Training" and role == "annotator":
-            try:
-                gt_df = GroundTruthService.get_ground_truth_for_question_group(video_id=video["id"], project_id=project_id, question_group_id=group_id, session=session)
-                if not gt_df.empty:
-                    question_map = {q["id"]: q for q in questions}
-                    for _, gt_row in gt_df.iterrows():
-                        question_id = gt_row["Question ID"]
-                        if question_id in question_map:
-                            question_text = question_map[question_id]["text"]
-                            gt_answers[question_text] = gt_row["Answer Value"]
-            except Exception as e:
-                print(f"Error getting ground truth: {e}")
-                pass
+        # 🚀 OPTIMIZATION: Use bulk data if available, otherwise fall back to individual queries
+        if bulk_cache_data and "admin_modifications" in bulk_cache_data:
+            # Extract data from bulk cache (but questions are already handled above with custom display)
+            question_ids = [q["id"] for q in questions]
+            
+            if role in ["reviewer", "meta_reviewer"]:
+                admin_modifications = bulk_cache_data.get("admin_modifications", {})
+                preloaded_gt_status = bulk_cache_data.get("gt_status_by_question", {})
+                has_any_admin_modified_questions = any(
+                    admin_modifications.get(qid, {"is_modified": False})["is_modified"] 
+                    for qid in question_ids
+                )
+                
+                existing_answers = {
+                    q["text"]: bulk_cache_data.get("gt_data", {}).get(q["id"], "") 
+                    for q in questions
+                }
+                
+                form_disabled = has_any_admin_modified_questions if role == "reviewer" else False
+                
+            else:  # annotator
+                admin_modifications = {}
+                preloaded_gt_status = {}
+                has_any_admin_modified_questions = False
+                
+                annotator_data = bulk_cache_data.get("annotator_data", {})
+                existing_answers = annotator_data.get("answer_dict", {})
+                
+                is_training = bulk_cache_data.get("is_training_mode", False)
+                has_submitted = bulk_cache_data.get("completion_status_by_group", {}).get(group_id, False)
+                form_disabled = is_training and has_submitted
+            
+            # Get training ground truth from bulk data
+            gt_answers = bulk_cache_data.get("training_gt_by_group", {}).get(group_id, {})
+            
+            # Get answer reviews from bulk data
+            answer_reviews = bulk_cache_data.get("answer_reviews_by_group", {}).get(group_id, {})
+            
+        else:
+            # FALLBACK: Use individual database queries (original behavior)
+            # Single database session for all operations
+            with get_db_session() as session:
+                question_ids = [q["id"] for q in questions]
+                
+                if role in ["reviewer", "meta_reviewer"]:
+                    gt_data = GroundTruthService.get_all_ground_truth_data_for_video(
+                        video_id=video["id"], project_id=project_id, session=session
+                    )
+                    admin_modifications = gt_data["admin_modifications"]
+                    preloaded_gt_status = gt_data["gt_status_by_question"]
+                    has_any_admin_modified_questions = gt_data["has_any_admin_modifications"]
+                    existing_answers = {q["text"]: gt_data["ground_truth_dict"].get(q["id"], "") for q in questions}
+                    form_disabled = has_any_admin_modified_questions if role == "reviewer" else False
+                else:
+                    admin_modifications = {}
+                    preloaded_gt_status = {}
+                    has_any_admin_modified_questions = False
+                    
+                    annotator_data = AnnotatorService.get_all_annotator_data_for_video(
+                        video_id=video["id"], project_id=project_id, user_id=user_id, session=session
+                    )
+                    existing_answers = annotator_data["answer_dict"]
+                    form_disabled = (mode == "Training" and 
+                                   annotator_data["submission_status_by_group"].get(group_id, False))
+                
+                # Get ground truth for training mode
+                gt_answers = {}
+                if mode == "Training" and role == "annotator":
+                    try:
+                        gt_df = GroundTruthService.get_ground_truth_for_question_group(
+                            video_id=video["id"], project_id=project_id, 
+                            question_group_id=group_id, session=session
+                        )
+                        if not gt_df.empty:
+                            question_map = {q["id"]: q for q in questions}
+                            for _, gt_row in gt_df.iterrows():
+                                question_id = gt_row["Question ID"]
+                                if question_id in question_map:
+                                    question_text = question_map[question_id]["text"]
+                                    gt_answers[question_text] = gt_row["Answer Value"]
+                    except Exception as e:
+                        print(f"Error getting ground truth: {e}")
+                        pass
+                
+                # Get answer reviews
+                answer_reviews = {}
+                if role in ["reviewer", "meta_reviewer"]:
+                    for question in questions:
+                        if question["type"] == "description":
+                            question_text = question["text"]
+                            existing_review_data = load_existing_answer_reviews(
+                                video_id=video["id"], project_id=project_id, 
+                                question_id=question["id"],
+                                cache_data=cache_data
+                            )
+                            answer_reviews[question_text] = existing_review_data
         
         # Check if we have editable questions
         has_any_editable_questions = False
         for question in questions:
             if role == "reviewer":
-                is_admin_modified = GroundTruthService.check_question_modified_by_admin(
-                    video_id=video["id"], project_id=project_id, question_id=question["id"], session=session
-                )
-                if not is_admin_modified:
+                admin_data = admin_modifications.get(question["id"], {"is_modified": False})
+                if not admin_data["is_modified"]:
                     has_any_editable_questions = True
                     break
             elif role == "meta_reviewer":
@@ -238,14 +275,20 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
         
         is_group_complete = check_question_group_completion(
             video_id=video["id"], project_id=project_id, user_id=user_id, 
-            question_group_id=group_id, role=role, session=session
+            question_group_id=group_id, role=role
         )
         
         ground_truth_exists = False
         if role == "meta_reviewer":
             ground_truth_exists = check_ground_truth_exists_for_group(
-                video_id=video["id"], project_id=project_id, question_group_id=group_id, session=session
+                video_id=video["id"], project_id=project_id, question_group_id=group_id
             )
+        
+        all_questions_modified_by_admin = (
+            role == "reviewer" and 
+            len(admin_modifications) > 0 and
+            all(admin_modifications.get(q["id"], {"is_modified": False})["is_modified"] for q in questions)
+        )
         
         button_text, button_disabled = _get_submit_button_config(
             role, form_disabled, all_questions_modified_by_admin, 
@@ -253,27 +296,13 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
             has_any_admin_modified_questions
         )
         
-        # Initialize answer review states
-        answer_reviews = {}
-        if role in ["reviewer", "meta_reviewer"]:
-            for question in questions:
-                if question["type"] == "description":
-                    question_text = question["text"]
-                    existing_review_data = load_existing_answer_reviews(
-                        video_id=video["id"], project_id=project_id, 
-                        question_id=question["id"], session=session,
-                        cache_data=cache_data
-                    )
-                    answer_reviews[question_text] = existing_review_data
-        
-        # Create form - ensure it always has questions and a submit button
+        # Create form
         form_key = f"form_{video['id']}_{group_id}_{role}"
         with st.form(form_key):
             answers = {}
             
-            content_height = max(350, container_height - 121)
+            content_height = max(350, container_height - 121) if container_height else 350
             
-            # Ensure we always display content even if questions fail to load
             try:
                 with st.container(height=content_height, border=False):
                     for i, question in enumerate(questions):
@@ -282,24 +311,18 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                         existing_value = existing_answers.get(question_text, "")
                         gt_value = gt_answers.get(question_text, "")
                         
-                        is_modified_by_admin = False
-                        admin_info = None
-                        if role in ["reviewer", "meta_reviewer"]:
-                            is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
-                                video_id=video["id"], project_id=project_id, question_id=question_id, session=session
-                            )
-                            if is_modified_by_admin:
-                                admin_info = GroundTruthService.get_admin_modification_details(
-                                    video_id=video["id"], project_id=project_id, question_id=question_id, session=session
-                                )
+                        # Get admin info from batch result
+                        admin_data = admin_modifications.get(question_id, {"is_modified": False, "admin_info": None})
+                        is_modified_by_admin = admin_data["is_modified"]
+                        admin_info = admin_data["admin_info"]
                         
                         if i > 0:
                             st.markdown('<div style="margin: 8px 0;"></div>', unsafe_allow_html=True)
                         
-                        # Pass group_id and cache_data to question display functions
+                        # Display question with proper custom display applied
                         if question["type"] == "single":
                             answers[question_text] = display_single_choice_question(
-                                question=question,
+                                question=question,  # This now has custom display applied!
                                 video_id=video["id"],
                                 project_id=project_id,
                                 group_id=group_id,
@@ -308,16 +331,16 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                                 is_modified_by_admin=is_modified_by_admin,
                                 admin_info=admin_info,
                                 form_disabled=form_disabled,
-                                session=session,
                                 gt_value=gt_value,
                                 mode=mode,
                                 selected_annotators=selected_annotators,
                                 preloaded_answers=preloaded_answers,
-                                cache_data=cache_data  # 🚀 Pass bulk cache data
+                                cache_data=cache_data,
+                                preloaded_gt_status=preloaded_gt_status
                             )
                         else:
                             answers[question_text] = display_description_question(
-                                question=question,
+                                question=question,  # This now has custom display applied!
                                 video_id=video["id"],
                                 project_id=project_id,
                                 group_id=group_id,
@@ -326,33 +349,32 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                                 is_modified_by_admin=is_modified_by_admin,
                                 admin_info=admin_info,
                                 form_disabled=form_disabled,
-                                session=session,
                                 gt_value=gt_value,
                                 mode=mode,
                                 answer_reviews=answer_reviews,
                                 selected_annotators=selected_annotators,
                                 preloaded_answers=preloaded_answers,
-                                cache_data=cache_data  # 🚀 Pass bulk cache data
+                                cache_data=cache_data,
+                                preloaded_gt_status=preloaded_gt_status
                             )
             except Exception as e:
                 st.error(f"Error displaying questions: {str(e)}")
-                # Still provide empty answers dict for form submission
                 answers = {}
             
-            # ALWAYS include a submit button
+            # Submit button and form submission logic (unchanged)
             submitted = st.form_submit_button(button_text, use_container_width=True, disabled=button_disabled)
             
-            # Handle form submission (existing logic unchanged)
             if submitted and not button_disabled:
                 try:
                     if role == "annotator":
-                        AnnotatorService.submit_answer_to_question_group(
-                            video_id=video["id"], project_id=project_id, user_id=user_id,
-                            question_group_id=group_id, answers=answers, session=session
-                        )
+                        with get_db_session() as session:
+                            AnnotatorService.submit_answer_to_question_group(
+                                video_id=video["id"], project_id=project_id, user_id=user_id,
+                                question_group_id=group_id, answers=answers, session=session
+                            )
                         
                         try:
-                            overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
+                            overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id)
                             if overall_progress >= 100 and not is_group_complete:
                                 show_annotator_completion(project_id=project_id)
                                 return
@@ -364,13 +386,14 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                     
                     elif role == "meta_reviewer":
                         try:
-                            GroundTruthService.override_ground_truth_to_question_group(
-                                video_id=video["id"], project_id=project_id, question_group_id=group_id,
-                                admin_id=user_id, answers=answers, session=session
-                            )
+                            with get_db_session() as session:
+                                GroundTruthService.override_ground_truth_to_question_group(
+                                    video_id=video["id"], project_id=project_id, question_group_id=group_id,
+                                    admin_id=user_id, answers=answers, session=session
+                                )
                             
                             if answer_reviews:
-                                submit_answer_reviews(answer_reviews, video["id"], project_id, user_id, session)
+                                submit_answer_reviews(answer_reviews, video["id"], project_id, user_id)
                             
                             st.success("✅ Ground truth overridden!")
                             
@@ -382,22 +405,21 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                             st.warning("Cannot submit: Some questions have been overridden by admin.")
                             return
                         
-                        editable_answers = {
-                            question["text"]: answers[question["text"]]
-                            for question in questions
-                            if not GroundTruthService.check_question_modified_by_admin(
-                                video_id=video["id"], project_id=project_id, question_id=question["id"], session=session
-                            )
-                        }
+                        with get_db_session() as session:
+                            editable_answers = {
+                                question["text"]: answers[question["text"]]
+                                for question in questions
+                                if not admin_modifications.get(question["id"], {"is_modified": False})["is_modified"]
+                            }
                         
-                        if editable_answers:
-                            GroundTruthService.submit_ground_truth_to_question_group(
-                                video_id=video["id"], project_id=project_id, reviewer_id=user_id,
-                                question_group_id=group_id, answers=editable_answers, session=session
-                            )
+                            if editable_answers:
+                                GroundTruthService.submit_ground_truth_to_question_group(
+                                    video_id=video["id"], project_id=project_id, reviewer_id=user_id,
+                                    question_group_id=group_id, answers=editable_answers, session=session
+                                )
                             
                             if answer_reviews:
-                                submit_answer_reviews(answer_reviews, video["id"], project_id, user_id, session)
+                                submit_answer_reviews(answer_reviews, video["id"], project_id, user_id)
                             
                             try:
                                 project_progress = ProjectService.progress(project_id=project_id, session=session)
@@ -408,19 +430,17 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                                 print(f"Error showing reviewer completion: {e}")
                                 pass
                             
-                            st.success("✅ Ground truth submitted!")
-                        else:
-                            st.warning("No editable questions to submit.")
+                            if editable_answers:
+                                st.success("✅ Ground truth submitted!")
+                            else:
+                                st.warning("No editable questions to submit.")
                     
                     # Clear preloaded answers after successful submission
                     preloaded_answers = st.session_state.get(f"current_preloaded_answers_{role}_{project_id}", {})
                     if preloaded_answers:
-                        # Remove only the answers for this video/group
                         keys_to_remove = [key for key in preloaded_answers.keys() if key[0] == video["id"] and key[1] == group_id]
                         for key in keys_to_remove:
                             del preloaded_answers[key]
-                        
-                        # Update session state
                         st.session_state[f"current_preloaded_answers_{role}_{project_id}"] = preloaded_answers
                 
                     st.session_state[f"rerun_needed_{project_id}_{user_id}"] = True
@@ -430,32 +450,159 @@ def display_question_group_in_fixed_container(video: Dict, project_id: int, user
                     
     except ValueError as e:
         st.error(f"Error loading question group: {str(e)}")
-        # Create fallback form to prevent missing submit button error
         with st.form(f"fallback_form_{video['id']}_{group_id}_{role}"):
             st.error("Failed to load question group properly")
             st.form_submit_button("Unable to Load Questions", disabled=True)
+                        
+def preload_gt_status_for_questions(video_id: int, project_id: int, question_ids: List[int], session: Session) -> Dict[int, str]:
+    """Preload GT status for all questions in one query"""
+    try:
+        from sqlalchemy import select
+        from label_pizza.models import ReviewerGroundTruth, User
+        
+        gt_status = {}
+        
+        if not question_ids:
+            return gt_status
+        
+        # Single query to get all GT data
+        query = select(
+            ReviewerGroundTruth.question_id,
+            ReviewerGroundTruth.reviewer_id,
+            ReviewerGroundTruth.modified_by_admin_id
+        ).where(
+            ReviewerGroundTruth.video_id == video_id,
+            ReviewerGroundTruth.project_id == project_id,
+            ReviewerGroundTruth.question_id.in_(question_ids)
+        )
+        
+        results = session.execute(query).all()
+        
+        # Get all user info in one query
+        all_user_ids = set()
+        for result in results:
+            all_user_ids.add(result.reviewer_id)
+            if result.modified_by_admin_id:
+                all_user_ids.add(result.modified_by_admin_id)
+        
+        user_info = {}
+        if all_user_ids:
+            users_query = select(User.id, User.user_id_str).where(User.id.in_(all_user_ids))
+            user_results = session.execute(users_query).all()
+            user_info = {r.id: r.user_id_str for r in user_results}
+        
+        # Build status strings
+        for result in results:
+            question_id = result.question_id
+            reviewer_name = user_info.get(result.reviewer_id, f"User {result.reviewer_id}")
+            
+            if result.modified_by_admin_id:
+                admin_name = user_info.get(result.modified_by_admin_id, f"Admin {result.modified_by_admin_id}")
+                gt_status[question_id] = f"🏆 GT by: {reviewer_name} (Overridden by {admin_name})"
+            else:
+                gt_status[question_id] = f"🏆 GT by: {reviewer_name}"
+        
+        # Add "No GT" for questions without ground truth
+        for question_id in question_ids:
+            if question_id not in gt_status:
+                gt_status[question_id] = "📭 No GT"
+        
+        return gt_status
+        
+    except Exception as e:
+        print(f"Error preloading GT status: {e}")
+        return {qid: "📭 GT error" for qid in question_ids}
+
+def _get_question_display_data(video_id: int, project_id: int, user_id: int, group_id: int, role: str, mode: str, has_any_admin_modified_questions: bool, session: Session = None) -> Dict:
+    """Get all the data needed to display a question group - FULLY OPTIMIZED WITH BATCH OPERATIONS"""
+    
+    questions = get_questions_with_custom_display_if_enabled(
+        group_id=group_id, project_id=project_id, video_id=video_id
+    )
+    
+    if not questions:
+        return {"questions": [], "error": "No questions in this group."}
+    
+    # 🚀 OPTIMIZATION: Use batch operations instead of individual calls
+    if session is not None:
+        if role == "annotator":
+            # Use batch annotator data
+            annotator_data = AnnotatorService.get_all_annotator_data_for_video(
+                video_id=video_id, project_id=project_id, user_id=user_id, session=session
+            )
+            existing_answers = annotator_data["answer_dict"]
+            form_disabled = (mode == "Training" and 
+                           annotator_data["submission_status_by_group"].get(group_id, False))
+        else:
+            # Use batch ground truth data
+            gt_data = GroundTruthService.get_all_ground_truth_data_for_video(
+                video_id=video_id, project_id=project_id, session=session
+            )
+            question_ids = [q["id"] for q in questions]
+            existing_answers = {q["text"]: gt_data["ground_truth_dict"].get(q["id"], "") for q in questions}
+            form_disabled = has_any_admin_modified_questions if role == "reviewer" else False
+            
+            # Check if all questions modified by admin
+            all_questions_modified_by_admin = (
+                len(question_ids) > 0 and
+                all(gt_data["admin_modifications"].get(qid, {"is_modified": False})["is_modified"] 
+                    for qid in question_ids)
+            )
+        
+        if role == "annotator":
+            all_questions_modified_by_admin = False
+    else:
+        # Fallback to old method for backward compatibility
+        with get_db_session() as new_session:
+            if role == "annotator":
+                annotator_data = AnnotatorService.get_all_annotator_data_for_video(
+                    video_id=video_id, project_id=project_id, user_id=user_id, session=new_session
+                )
+                existing_answers = annotator_data["answer_dict"]
+                form_disabled = (mode == "Training" and 
+                               annotator_data["submission_status_by_group"].get(group_id, False))
+                all_questions_modified_by_admin = False
+            else:
+                gt_data = GroundTruthService.get_all_ground_truth_data_for_video(
+                    video_id=video_id, project_id=project_id, session=new_session
+                )
+                question_ids = [q["id"] for q in questions]
+                existing_answers = {q["text"]: gt_data["ground_truth_dict"].get(q["id"], "") for q in questions}
+                form_disabled = has_any_admin_modified_questions if role == "reviewer" else False
+                
+                all_questions_modified_by_admin = (
+                    len(question_ids) > 0 and
+                    all(gt_data["admin_modifications"].get(qid, {"is_modified": False})["is_modified"] 
+                        for qid in question_ids)
+                )
+
+    return {
+        "questions": questions,
+        "all_questions_modified_by_admin": all_questions_modified_by_admin,
+        "existing_answers": existing_answers,
+        "form_disabled": form_disabled,
+        "error": None
+    }
 
 def get_questions_with_custom_display_if_enabled(
     group_id: int, 
     project_id: int, 
-    video_id: int, 
-    session: Session
+    video_id: int
 ) -> List[Dict]:
     """Load questions with custom display if enabled, otherwise use cached version"""
     
     # Get custom display data for project (cached)
-    custom_display_data = get_project_custom_display_data(project_id, session)
+    custom_display_data = get_project_custom_display_data(project_id)
     if custom_display_data["has_custom_display"]:
         # Use custom display version with cached data
         return get_questions_by_group_with_custom_display_cached(
             group_id=group_id, 
             project_id=project_id, 
-            video_id=video_id, 
-            session=session
+            video_id=video_id
         )
     else:
         # Use original cached version
-        return get_questions_by_group_cached(group_id=group_id, session=session)
+        return get_questions_by_group_cached(group_id=group_id)
 
 
 
@@ -473,13 +620,13 @@ def display_single_choice_question(
     is_modified_by_admin: bool, 
     admin_info: Optional[Dict], 
     form_disabled: bool, 
-    session: Session, 
     gt_value: str = "", 
     mode: str = "", 
     selected_annotators: List[str] = None, 
     key_prefix: str = "", 
     preloaded_answers: Dict = None,
-    cache_data: Dict = None  # 🚀 NEW: Accept bulk cache data
+    cache_data: Dict = None,
+    preloaded_gt_status: Dict = None  # 🚀 NEW OPTIONAL PARAMETER - Won't break existing code
 ) -> str:
     """OPTIMIZED: Display a single choice question with preloaded answer support"""
     
@@ -537,10 +684,10 @@ def display_single_choice_question(
             video_id=video_id, 
             project_id=project_id, 
             question_id=question_id, 
-            session=session,
             show_annotators=show_annotators,
             selected_annotators=selected_annotators or [],
-            cache_data=cache_data  # 🚀 Pass bulk cache data
+            cache_data=cache_data,
+            preloaded_gt_status=preloaded_gt_status  # 🚀 Pass preloaded data (None if not provided)
         )
     
     # Question content with UNIQUE KEYS using key_prefix
@@ -551,7 +698,7 @@ def display_single_choice_question(
         # 🚀 OPTIMIZED: Pass cache_data to _get_options_for_reviewer
         enhanced_options = _get_options_for_reviewer(
             video_id=video_id, project_id=project_id, question_id=question_id, 
-            original_options=original_options, display_values=display_values, session=session,
+            original_options=original_options, display_values=display_values,
             selected_annotators=selected_annotators or [],
             cache_data=cache_data  # 🚀 Pass bulk cache data
         )
@@ -580,7 +727,7 @@ def display_single_choice_question(
         # 🚀 OPTIMIZED: Pass cache_data to _get_options_for_reviewer
         enhanced_options = _get_options_for_reviewer(
             video_id=video_id, project_id=project_id, question_id=question_id, 
-            original_options=original_options, display_values=display_values, session=session,
+            original_options=original_options, display_values=display_values,
             selected_annotators=selected_annotators or [],
             cache_data=cache_data  # 🚀 Pass bulk cache data
         )
@@ -646,6 +793,7 @@ def display_single_choice_question(
     
     return result
 
+
 def display_description_question(
     question: Dict, 
     video_id: int, 
@@ -656,14 +804,14 @@ def display_description_question(
     is_modified_by_admin: bool, 
     admin_info: Optional[Dict], 
     form_disabled: bool, 
-    session: Session, 
     gt_value: str = "", 
     mode: str = "", 
     answer_reviews: Optional[Dict] = None, 
     selected_annotators: List[str] = None, 
     key_prefix: str = "", 
     preloaded_answers: Dict = None,
-    cache_data: Dict = None
+    cache_data: Dict = None,
+    preloaded_gt_status: Dict = None  # 🚀 NEW OPTIONAL PARAMETER - Won't break existing code
 ) -> str:
     """OPTIMIZED: Display a description question with preloaded answer support"""
     
@@ -757,10 +905,10 @@ def display_description_question(
             video_id=video_id, 
             project_id=project_id, 
             question_id=question_id, 
-            session=session,
             show_annotators=show_annotators,
             selected_annotators=selected_annotators or [],
-            cache_data=cache_data
+            cache_data=cache_data,
+            preloaded_gt_status=preloaded_gt_status  # 🚀 Pass preloaded data (None if not provided)
         )
         
         # Show enhanced helper text if annotators selected OR if we have ground truth (for search portal)
@@ -769,7 +917,7 @@ def display_description_question(
                 video_id=video_id, project_id=project_id, question_id=question_id, 
                 question_text=question_original_text, text_key=text_key,
                 gt_value=existing_value if role in ["meta_reviewer", "reviewer_resubmit"] else "",
-                role=role, answer_reviews=answer_reviews, session=session,
+                role=role, answer_reviews=answer_reviews,
                 selected_annotators=selected_annotators or [],
                 cache_data=cache_data
             )
@@ -800,56 +948,23 @@ def display_description_question(
     
     return result
 
-###############################################################################
-# DISPLAY HELPER FUNCTIONS
-###############################################################################
-
-def show_training_feedback(video_id: int, project_id: int, group_id: int, user_answers: Dict[str, str], session: Session):
-    """Show training feedback comparing user answers to ground truth"""
-    try:
-        gt_df = GroundTruthService.get_ground_truth_for_question_group(video_id=video_id, project_id=project_id, question_group_id=group_id, session=session)
-        questions = get_questions_by_group_cached(group_id=group_id, session=session)
-        question_map = {q["id"]: q for q in questions}
-        
-        st.subheader("📊 Training Feedback")
-        
-        for _, gt_row in gt_df.iterrows():
-            question_id = gt_row["Question ID"]
-            if question_id not in question_map:
-                continue
-                
-            question = question_map[question_id]
-            question_text = question["text"]
-            gt_answer = gt_row["Answer Value"]
-            user_answer = user_answers.get(question_text, "")
-            
-            is_correct = user_answer == gt_answer
-            
-            if is_correct:
-                st.success(f"✅ **{question_text}**: Correct!")
-            else:
-                st.error(f"❌ **{question_text}**: Incorrect")
-                st.write(f"Your answer: {user_answer}")
-                st.write(f"Correct answer: {gt_answer}")
-                
-    except ValueError as e:
-        st.error(f"Error showing training feedback: {str(e)}")
-
 
 def display_question_status(
     video_id: int, project_id: int, question_id: int, 
-    session: Session, show_annotators: bool = False, 
-    selected_annotators: List[str] = None, cache_data: Dict = None
+    show_annotators: bool = False, 
+    selected_annotators: List[str] = None, 
+    cache_data: Dict = None,
+    preloaded_gt_status: Dict = None  # 🚀 NEW OPTIONAL PARAMETER - Won't break existing code
 ):
-    """OPTIMIZED: Display status using bulk cached data"""
+    """OPTIMIZED: Display status using bulk cached data and preloaded GT status"""
     
     status_parts = []
     
-    # Get annotator status using bulk cache
+    # Get annotator status using bulk cache (no change needed)
     if show_annotators and selected_annotators:
         try:
             annotator_user_ids = get_optimized_annotator_user_ids(
-                display_names=selected_annotators, project_id=project_id, session=session
+                display_names=selected_annotators, project_id=project_id
             )
             
             if annotator_user_ids:
@@ -894,47 +1009,58 @@ def display_question_status(
             print(f"Error in annotator status: {e}")
             status_parts.append(f"⚠️ Status error")
     
-    # Ground truth status (always fresh)
-    try:
-        gt_row = GroundTruthService.get_ground_truth_for_question(
-            video_id=video_id, project_id=project_id, question_id=question_id, session=session
-        )
-        
-        if gt_row:
+    # 🚀 OPTIMIZATION: Use preloaded GT status if available, otherwise fall back to DB call
+    if preloaded_gt_status and question_id in preloaded_gt_status:
+        gt_status = preloaded_gt_status[question_id]
+        status_parts.append(gt_status)
+    else:
+        # Fallback to DB call only if not preloaded (maintains backward compatibility)
+        with get_db_session() as session:
             try:
-                reviewer_info = AuthService.get_user_info_by_id(
-                    user_id=int(gt_row["Reviewer ID"]), session=session
+                gt_row = GroundTruthService.get_ground_truth_for_question(
+                    video_id=video_id, project_id=project_id, question_id=question_id, session=session
                 )
-                reviewer_name = reviewer_info["user_id_str"]
                 
-                modified_by_admin = gt_row["Modified By Admin"] is not None
-                
-                if modified_by_admin:
-                    admin_info = AuthService.get_user_info_by_id(
-                        user_id=int(gt_row["Modified By Admin"]), session=session
-                    )
-                    admin_name = admin_info["user_id_str"]
-                    status_parts.append(f"🏆 GT by: {reviewer_name} (Overridden by {admin_name})")
+                if gt_row:
+                    try:
+                        reviewer_info = AuthService.get_user_info_by_id(
+                            user_id=int(gt_row["Reviewer ID"]), session=session
+                        )
+                        reviewer_name = reviewer_info["user_id_str"]
+                        
+                        modified_by_admin = gt_row["Modified By Admin"] is not None
+                        
+                        if modified_by_admin:
+                            admin_info = AuthService.get_user_info_by_id(
+                                user_id=int(gt_row["Modified By Admin"]), session=session
+                            )
+                            admin_name = admin_info["user_id_str"]
+                            status_parts.append(f"🏆 GT by: {reviewer_name} (Overridden by {admin_name})")
+                        else:
+                            status_parts.append(f"🏆 GT by: {reviewer_name}")
+                    except Exception:
+                        status_parts.append("🏆 GT exists")
                 else:
-                    status_parts.append(f"🏆 GT by: {reviewer_name}")
-            except Exception:
-                status_parts.append("🏆 GT exists")
-        else:
-            status_parts.append("📭 No GT")
-            
-    except Exception as e:
-        print(f"Error getting ground truth status: {e}")
-        status_parts.append("📭 GT error")
+                    status_parts.append("📭 No GT")
+                    
+            except Exception as e:
+                print(f"Error getting ground truth status: {e}")
+                status_parts.append("📭 GT error")
     
     # Display combined status
     if status_parts:
         st.caption(" | ".join(status_parts))
+        
+###############################################################################
+# DISPLAY HELPER FUNCTIONS
+###############################################################################
+
 
 
 def _get_options_for_reviewer(
     video_id: int, project_id: int, question_id: int, 
     original_options: List[str], display_values: List[str], 
-    session: Session, selected_annotators: List[str] = None,
+    selected_annotators: List[str] = None,
     cache_data: Dict = None  # 🚀 NEW: Accept bulk cache data
 ) -> List[str]:
     """OPTIMIZED: Get enhanced options using bulk cached data"""
@@ -944,16 +1070,17 @@ def _get_options_for_reviewer(
         annotator_user_ids = []
         if selected_annotators:
             annotator_user_ids = get_optimized_annotator_user_ids(
-                display_names=selected_annotators, project_id=project_id, session=session
+                display_names=selected_annotators, project_id=project_id
             )
         
         if not annotator_user_ids:
             # Still check for ground truth even without annotators
             enhanced_options = display_values.copy()
             try:
-                gt_row = GroundTruthService.get_ground_truth_for_question(
-                    video_id=video_id, project_id=project_id, question_id=question_id, session=session
-                )
+                with get_db_session() as session:
+                    gt_row = GroundTruthService.get_ground_truth_for_question(
+                        video_id=video_id, project_id=project_id, question_id=question_id, session=session
+                    )
                 if gt_row:
                     gt_selection = gt_row["Answer Value"]
                     for i, original_option in enumerate(original_options):
@@ -1007,9 +1134,10 @@ def _get_options_for_reviewer(
         # Check ground truth
         gt_selection = None
         try:
-            gt_row = GroundTruthService.get_ground_truth_for_question(
-                video_id=video_id, project_id=project_id, question_id=question_id, session=session
-            )
+            with get_db_session() as session:
+                gt_row = GroundTruthService.get_ground_truth_for_question(
+                    video_id=video_id, project_id=project_id, question_id=question_id, session=session
+                )
             if gt_row:
                 gt_selection = gt_row["Answer Value"]
         except:
@@ -1057,7 +1185,7 @@ def _display_enhanced_helper_text_answers(
     video_id: int, project_id: int, question_id: int, 
     question_text: str, text_key: str, gt_value: str, 
     role: str, answer_reviews: Optional[Dict], 
-    session: Session, selected_annotators: List[str] = None,
+    selected_annotators: List[str] = None,
     cache_data: Dict = None  # 🚀 NEW: Accept bulk cache data
 ):
     """OPTIMIZED: Display helper text using bulk cached data"""
@@ -1076,9 +1204,10 @@ def _display_enhanced_helper_text_answers(
             })
         elif not selected_annotators or len(selected_annotators) == 0:
             try:
-                gt_row = GroundTruthService.get_ground_truth_for_question(
-                    video_id=video_id, project_id=project_id, question_id=question_id, session=session
-                )
+                with get_db_session() as session:
+                    gt_row = GroundTruthService.get_ground_truth_for_question(
+                        video_id=video_id, project_id=project_id, question_id=question_id, session=session
+                    )
                 if gt_row:
                     gt_answer = gt_row["Answer Value"]
                     if gt_answer and str(gt_answer).strip():
@@ -1140,13 +1269,13 @@ def _display_enhanced_helper_text_answers(
                 with tab:
                     _display_single_answer_elegant(
                         answer, text_key, question_text, answer_reviews, 
-                        video_id, project_id, question_id, session
+                        video_id, project_id, question_id
                     )
                             
     except Exception as e:
         st.caption(f"⚠️ Could not load answer information: {str(e)}")
 
-def _display_single_answer_elegant(answer, text_key, question_text, answer_reviews, video_id, project_id, question_id, session):
+def _display_single_answer_elegant(answer, text_key, question_text, answer_reviews, video_id, project_id, question_id):
     """Display a single answer with elegant left-right layout"""
     desc_col, controls_col = st.columns([2.6, 1.4])
     
@@ -1212,45 +1341,46 @@ def _display_single_answer_elegant(answer, text_key, question_text, answer_revie
                     st.caption("📝 Click submit to save your review.")
 
 
-def submit_answer_reviews(answer_reviews: Dict, video_id: int, project_id: int, user_id: int, session: Session):
+def submit_answer_reviews(answer_reviews: Dict, video_id: int, project_id: int, user_id: int):
     """Submit answer reviews for annotators using proper service API"""
-    for question_text, reviews in answer_reviews.items():
-        for annotator_display, review_data in reviews.items():
-            review_status = review_data.get("status", "pending") if isinstance(review_data, dict) else review_data
-            
-            if review_status in ["approved", "rejected", "pending"]:
-                try:
-                    # OPTIMIZED: Use cached annotator lookup
-                    annotators = get_optimized_all_project_annotators(project_id=project_id, session=session)
-                    annotator_user_id = None
-                    
-                    for display_name, annotator_info in annotators.items():
-                        if display_name == annotator_display:
-                            annotator_user_id = annotator_info.get('id')
-                            break
-                    
-                    if annotator_user_id:
-                        question = QuestionService.get_question_by_text(text=question_text, session=session)
-                        answers_df = AnnotatorService.get_answers(video_id=video_id, project_id=project_id, session=session)
+    with get_db_session() as session:
+        for question_text, reviews in answer_reviews.items():
+            for annotator_display, review_data in reviews.items():
+                review_status = review_data.get("status", "pending") if isinstance(review_data, dict) else review_data
+                
+                if review_status in ["approved", "rejected", "pending"]:
+                    try:
+                        # OPTIMIZED: Use cached annotator lookup
+                        annotators = get_optimized_all_project_annotators(project_id=project_id)
+                        annotator_user_id = None
                         
-                        if not answers_df.empty:
-                            answer_row = answers_df[
-                                (answers_df["Question ID"] == int(question["id"])) & 
-                                (answers_df["User ID"] == int(annotator_user_id))
-                            ]
+                        for display_name, annotator_info in annotators.items():
+                            if display_name == annotator_display:
+                                annotator_user_id = annotator_info.get('id')
+                                break
+                        
+                        if annotator_user_id:
+                            question = QuestionService.get_question_by_text(text=question_text, session=session)
+                            answers_df = AnnotatorService.get_answers(video_id=video_id, project_id=project_id, session=session)
                             
-                            if not answer_row.empty:
-                                answer_id = int(answer_row.iloc[0]["Answer ID"])
-                                GroundTruthService.submit_answer_review(
-                                    answer_id=answer_id, reviewer_id=user_id, 
-                                    status=review_status, session=session
-                                )
-                except Exception as e:
-                    print(f"Error submitting review for {annotator_display}: {e}")
-                    continue
+                            if not answers_df.empty:
+                                answer_row = answers_df[
+                                    (answers_df["Question ID"] == int(question["id"])) & 
+                                    (answers_df["User ID"] == int(annotator_user_id))
+                                ]
+                                
+                                if not answer_row.empty:
+                                    answer_id = int(answer_row.iloc[0]["Answer ID"])
+                                    GroundTruthService.submit_answer_review(
+                                        answer_id=answer_id, reviewer_id=user_id, 
+                                        status=review_status, session=session
+                                    )
+                    except Exception as e:
+                        print(f"Error submitting review for {annotator_display}: {e}")
+                        continue
 
 
-def load_existing_answer_reviews(video_id: int, project_id: int, question_id: int, session: Session, cache_data: Dict = None) -> Dict[str, Dict]:
+def load_existing_answer_reviews(video_id: int, project_id: int, question_id: int, cache_data: Dict = None) -> Dict[str, Dict]:
     """Load existing answer reviews for a description question"""
     reviews = {}
     
@@ -1267,43 +1397,44 @@ def load_existing_answer_reviews(video_id: int, project_id: int, question_id: in
         else:
             # Use the existing optimized function (already handles display names correctly)
             annotator_user_ids = get_optimized_annotator_user_ids(
-                display_names=selected_annotators, project_id=project_id, session=session
+                display_names=selected_annotators, project_id=project_id
             )
         
         # Rest of function unchanged - load reviews for each user_id
-        for user_id in annotator_user_ids:
-            answers_df = AnnotatorService.get_answers(video_id=video_id, project_id=project_id, session=session)
-            
-            if not answers_df.empty:
-                answer_row = answers_df[
-                    (answers_df["Question ID"] == int(question_id)) & 
-                    (answers_df["User ID"] == int(user_id))
-                ]
+        with get_db_session() as session:
+            for user_id in annotator_user_ids:
+                answers_df = AnnotatorService.get_answers(video_id=video_id, project_id=project_id, session=session)
                 
-                if not answer_row.empty:
-                    answer_id = int(answer_row.iloc[0]["Answer ID"])
-                    existing_review = GroundTruthService.get_answer_review(answer_id=answer_id, session=session)
+                if not answers_df.empty:
+                    answer_row = answers_df[
+                        (answers_df["Question ID"] == int(question_id)) & 
+                        (answers_df["User ID"] == int(user_id))
+                    ]
                     
-                    user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
-                    display_name, _ = AuthService.get_user_display_name_with_initials(user_info["user_id_str"])
-                    
-                    if existing_review:
-                        reviews[display_name] = {
-                            "status": existing_review["status"],
-                            "reviewer_id": existing_review.get("reviewer_id"),
-                            "reviewer_name": None
-                        }
+                    if not answer_row.empty:
+                        answer_id = int(answer_row.iloc[0]["Answer ID"])
+                        existing_review = GroundTruthService.get_answer_review(answer_id=answer_id, session=session)
                         
-                        if existing_review.get("reviewer_id"):
-                            try:
-                                reviewer_info = AuthService.get_user_info_by_id(
-                                    user_id=int(existing_review["reviewer_id"]), session=session
-                                )
-                                reviews[display_name]["reviewer_name"] = reviewer_info["user_id_str"]
-                            except ValueError:
-                                reviews[display_name]["reviewer_name"] = f"User {existing_review['reviewer_id']} (Error loading user info)"
-                    else:
-                        reviews[display_name] = {"status": "pending", "reviewer_id": None, "reviewer_name": None}
+                        user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
+                        display_name, _ = AuthService.get_user_display_name_with_initials(user_info["user_id_str"])
+                        
+                        if existing_review:
+                            reviews[display_name] = {
+                                "status": existing_review["status"],
+                                "reviewer_id": existing_review.get("reviewer_id"),
+                                "reviewer_name": None
+                            }
+                            
+                            if existing_review.get("reviewer_id"):
+                                try:
+                                    reviewer_info = AuthService.get_user_info_by_id(
+                                        user_id=int(existing_review["reviewer_id"]), session=session
+                                    )
+                                    reviews[display_name]["reviewer_name"] = reviewer_info["user_id_str"]
+                                except ValueError:
+                                    reviews[display_name]["reviewer_name"] = f"User {existing_review['reviewer_id']} (Error loading user info)"
+                        else:
+                            reviews[display_name] = {"status": "pending", "reviewer_id": None, "reviewer_name": None}
     except Exception as e:
         print(f"Error loading answer reviews: {e}")
     
@@ -1358,7 +1489,7 @@ def show_reviewer_completion(project_id: int):
 ###############################################################################
 
 @st.fragment
-def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
+def display_enhanced_sort_tab(project_id: int, role: str):
     """Enhanced sort tab with improved UI/UX and proper validation"""
     st.markdown("#### 🔄 Video Sorting Options")
     
@@ -1402,10 +1533,11 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
         if sort_by == "Model Confidence":
             # Model users selection
             try:
-                users_df = AuthService.get_all_users(session=session)
-                assignments_df = AuthService.get_project_assignments(session=session)
+                with get_db_session() as session:
+                    users_df = AuthService.get_all_users(session=session)
+                    assignments_df = AuthService.get_project_assignments(session=session)
                 project_assignments = assignments_df[assignments_df["Project ID"] == project_id]
-                
+                    
                 model_users = []
                 for _, assignment in project_assignments.iterrows():
                     if assignment["Role"] == "model":
@@ -1439,9 +1571,10 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
                 config_valid = False
             
             # Questions selection for model confidence
-            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            with get_db_session() as session:
+                questions = ProjectService.get_project_questions(project_id=project_id, session=session)
             single_choice_questions = [q for q in questions if q["type"] == "single"]
-            
+                
             if not single_choice_questions:
                 config_messages.append(("error", "No single-choice questions available."))
                 config_valid = False
@@ -1472,9 +1605,10 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
                 config_valid = False
             
             # Questions selection
-            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            with get_db_session() as session:
+                questions = ProjectService.get_project_questions(project_id=project_id, session=session)
             single_choice_questions = [q for q in questions if q["type"] == "single"]
-            
+                
             if not single_choice_questions:
                 config_messages.append(("error", "No single-choice questions available."))
                 config_valid = False
@@ -1496,9 +1630,10 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
                     config_valid = False
         
         elif sort_by == "Completion Rate":
-            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            with get_db_session() as session:
+                questions = ProjectService.get_project_questions(project_id=project_id, session=session)
             single_choice_questions = [q for q in questions if q["type"] == "single"]
-            
+                
             if not single_choice_questions:
                 config_messages.append(("error", "No single-choice questions available."))
                 config_valid = False
@@ -1527,7 +1662,8 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
                 config_valid = False
             
             # Questions selection
-            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            with get_db_session() as session:
+                questions = ProjectService.get_project_questions(project_id=project_id, session=session)
             single_choice_questions = [q for q in questions if q["type"] == "single"]
             
             if not single_choice_questions:
@@ -1572,7 +1708,7 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
         st.session_state[f"sort_config_{project_id}"] = sort_config
         st.session_state[f"sort_applied_{project_id}"] = True
         
-        apply_and_cache_sort_and_filter(project_id, role, session)
+        apply_and_cache_sort_and_filter(project_id, role)
         
         st.success("✅ Applied!")
         st.rerun()
@@ -1589,11 +1725,12 @@ def display_enhanced_sort_tab(project_id: int, role: str, session: Session):
             
     #         # Re-apply current filters with default sorting
     #         current_filters = st.session_state.get(f"video_filters_{project_id}", {})
-    #         base_videos = get_project_videos(project_id=project_id, session=session)
+    #         base_videos = get_project_videos(project_id=project_id)
             
     #         if current_filters:
     #             # Apply filters with default sorting (no advanced sorting)
-    #             filtered_videos = apply_video_filtering_only(base_videos, current_filters, project_id, session)
+    #             with get_db_session() as session:
+    #                 filtered_videos = apply_video_filtering_only(base_videos, current_filters, project_id, session)
                 
     #             # Update cache with filtered + default sorted videos
     #             set_cached_sorted_and_filtered_videos(filtered_videos, project_id, role)
@@ -1635,12 +1772,12 @@ def set_cached_sorted_and_filtered_videos(videos: List[Dict], project_id: int, r
     st.session_state[cache_key] = videos
 
 @st.fragment
-def display_enhanced_sort_tab_annotator(project_id: int, user_id: int, session: Session):
+def display_enhanced_sort_tab_annotator(project_id: int, user_id: int):
     """Enhanced sort tab for annotators - only relevant options"""
     st.markdown("#### 🔄 Video Sorting Options")
     
     # Check if this is training mode
-    is_training_mode = check_project_has_full_ground_truth(project_id=project_id, session=session)
+    is_training_mode = check_project_has_full_ground_truth(project_id=project_id)
     
     if not is_training_mode:
         st.markdown(f"""
@@ -1691,7 +1828,7 @@ def display_enhanced_sort_tab_annotator(project_id: int, user_id: int, session: 
         st.markdown("**Configuration:**")
         
         if sort_by in ["Completion Rate", "Accuracy Rate"]:
-            questions = get_project_questions_cached(project_id=project_id, session=session)
+            questions = get_project_questions_cached(project_id=project_id)
             single_choice_questions = [q for q in questions if q.get("type") == "single"]
             
             if not single_choice_questions:
@@ -1731,7 +1868,7 @@ def display_enhanced_sort_tab_annotator(project_id: int, user_id: int, session: 
                 type="primary"):
         st.session_state[f"annotator_sort_applied_{project_id}"] = True
         
-        apply_and_cache_sort_and_filter(project_id, "annotator", session)
+        apply_and_cache_sort_and_filter(project_id, "annotator")
         
         st.success("✅ Applied!")
         st.rerun()
@@ -1772,21 +1909,20 @@ def display_enhanced_sort_tab_annotator(project_id: int, user_id: int, session: 
     custom_info("💡 Configure your sorting options above, then click <strong>Apply</strong> to sort the videos accordingly.")
 
 
-def apply_and_cache_sort_and_filter(project_id: int, role: str, session: Session, 
+def apply_and_cache_sort_and_filter(project_id: int, role: str, 
                                    override_filters: Dict = None) -> List[Dict]:
     """Apply current sorting and filtering settings, cache results, and reset pagination
     
     Args:
         project_id: Project ID
         role: User role
-        session: Database session  
         override_filters: If provided, use these filters instead of current ones
     
     Returns:
         List of sorted and filtered videos (also cached in session state)
     """
     # Get base videos
-    base_videos = get_project_videos(project_id=project_id, session=session)
+    base_videos = get_project_videos(project_id=project_id)
     
     if role == "annotator":
         # Annotator logic
@@ -1802,7 +1938,7 @@ def apply_and_cache_sort_and_filter(project_id: int, role: str, session: Session
             user_id = st.session_state.get('user', {}).get('id')
             result_videos = apply_annotator_video_sorting(
                 videos=base_videos, sort_by=sort_by, sort_order=sort_order,
-                project_id=project_id, user_id=user_id, session=session
+                project_id=project_id, user_id=user_id
             )
     
     else:  # reviewer, meta_reviewer
@@ -1821,7 +1957,7 @@ def apply_and_cache_sort_and_filter(project_id: int, role: str, session: Session
         result_videos = apply_video_sorting_and_filtering_enhanced(
             videos=base_videos, sort_by=sort_by, sort_order=sort_order,
             filter_by_gt=filter_by_gt, project_id=project_id,
-            selected_annotators=selected_annotators, session=session,
+            selected_annotators=selected_annotators,
             sort_config=sort_config
         )
     
@@ -1836,7 +1972,7 @@ def apply_and_cache_sort_and_filter(project_id: int, role: str, session: Session
     return result_videos
 
 @st.fragment
-def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
+def display_enhanced_filter_tab(project_id: int, role: str):
     """Enhanced filter tab with proper ground truth detection and full question text"""
     st.markdown("#### 🔍 Video Filtering Options")
     
@@ -1848,11 +1984,9 @@ def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
     </div>
     """, unsafe_allow_html=True)
     
-    # # Get available ground truth options using enhanced function
-    # gt_options = get_ground_truth_option_filters_enhanced(project_id=project_id, session=session)
 
     # Get questions efficiently using cached data
-    questions = get_project_questions_cached(project_id=project_id, session=session)
+    questions = get_project_questions_cached(project_id=project_id)
     single_choice_questions = [q for q in questions if q.get("type") == "single"]
     
     if not single_choice_questions:
@@ -1951,11 +2085,11 @@ def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
                 disabled=not filters_changed):
         st.session_state[f"video_filters_{project_id}"] = new_filters
         
-        apply_and_cache_sort_and_filter(project_id, role, session, override_filters=new_filters)
+        apply_and_cache_sort_and_filter(project_id, role, override_filters=new_filters)
         # # Apply filtering to current videos
         # current_videos = get_cached_sorted_and_filtered_videos(project_id, role)
         # if current_videos is None:
-        #     current_videos = get_project_videos(project_id=project_id, session=session)
+        #     current_videos = get_project_videos(project_id=project_id)
         
         # filtered_videos = apply_video_filtering_only(current_videos, new_filters, project_id, session)
         # set_cached_sorted_and_filtered_videos(filtered_videos, project_id, role)
@@ -1976,7 +2110,7 @@ def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
             
     #         # Remove filtering but keep sorting
     #         # Reset to sorted but unfiltered videos
-    #         videos = get_project_videos(project_id=project_id, session=session)
+    #         videos = get_project_videos(project_id=project_id)
     #         # Re-apply only sorting if it was applied
     #         sort_applied = st.session_state.get(f"sort_applied_{project_id}", False)
     #         if sort_applied:
@@ -1989,7 +2123,7 @@ def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
     #             videos = apply_video_sorting_and_filtering_enhanced(
     #                 videos=videos, sort_by=sort_by, sort_order=sort_order,
     #                 filter_by_gt={}, project_id=project_id,
-    #                 selected_annotators=selected_annotators, session=session,
+    #                 selected_annotators=selected_annotators,
     #                 sort_config=sort_config
     #             )
             
@@ -2048,7 +2182,7 @@ def display_enhanced_filter_tab(project_id: int, role: str, session: Session):
     
 #     return filtered_videos
 
-def display_order_tab(project_id: int, role: str, project: Dict, session: Session):
+def display_order_tab(project_id: int, role: str, project: Dict):
     """Display question group order tab - shared between reviewer and meta-reviewer"""
     st.markdown("#### 📋 Question Group Display Order")
     
@@ -2061,7 +2195,7 @@ def display_order_tab(project_id: int, role: str, project: Dict, session: Sessio
     """, unsafe_allow_html=True)
     
     # Get question groups for this project
-    question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
+    question_groups = get_schema_question_groups(schema_id=project["schema_id"])
     
     if question_groups:
         order_key = f"question_order_{project_id}_{role}"
@@ -2294,7 +2428,7 @@ def display_layout_tab_content(videos: List[Dict], role: str):
 
 
 @st.fragment
-def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: List[Dict], session: Session):
+def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: List[Dict]):
     """Display auto-submit interface - videos parameter now contains pre-sorted/filtered videos"""
     
     st.markdown("#### ⚡ Auto-Submit Controls")
@@ -2302,7 +2436,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
     # Check if we're in training mode (for annotators only)
     is_training_mode = False
     if role == "annotator":
-        is_training_mode = check_project_has_full_ground_truth(project_id=project_id, session=session)
+        is_training_mode = check_project_has_full_ground_truth(project_id=project_id)
     
     if role == "annotator":
         # Original annotator logic with auto-submit groups
@@ -2325,8 +2459,8 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         
         # Get project details
         try:
-            project = get_project_metadata_cached(project_id=project_id, session=session)
-            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
+            project = get_project_metadata_cached(project_id=project_id)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"])
         except Exception as e:
             st.error(f"Error loading project details: {str(e)}")
             return
@@ -2336,7 +2470,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
             return
         
         # Get ALL project videos for "Entire project" scope
-        all_project_videos = get_project_videos(project_id=project_id, session=session)
+        all_project_videos = get_project_videos(project_id=project_id)
         
         # 🔥 FIXED: Calculate current page videos from the SORTED videos parameter
         # The videos parameter now contains the same sorted/filtered videos the user sees
@@ -2352,17 +2486,18 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         auto_submit_groups = []
         manual_groups = []
         
-        for group in question_groups:
-            try:
-                group_details = QuestionGroupService.get_group_details_with_verification(
-                    group_id=group["ID"], session=session
-                )
-                if group_details.get("is_auto_submit", False):
-                    auto_submit_groups.append(group)
-                else:
+        with get_db_session() as session:
+            for group in question_groups:
+                try:
+                    group_details = QuestionGroupService.get_group_details_with_verification(
+                        group_id=group["ID"], session=session
+                    )
+                    if group_details.get("is_auto_submit", False):
+                        auto_submit_groups.append(group)
+                    else:
+                        manual_groups.append(group)
+                except:
                     manual_groups.append(group)
-            except:
-                manual_groups.append(group)
         
         # Scope selection
         st.markdown("### 🎯 Scope Selection")
@@ -2429,7 +2564,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
             selected_groups = [group for group in manual_groups if group["Display Title"] in selected_group_names]
             
             if selected_groups:
-                display_manual_auto_submit_controls(selected_groups, target_videos, project_id, user_id, role, session, is_training_mode)
+                display_manual_auto_submit_controls(selected_groups, target_videos, project_id, user_id, role, is_training_mode=is_training_mode)
             else:
                 custom_info("💡 All question groups were deselected. Select groups above to configure auto-submit settings.")
     
@@ -2444,8 +2579,8 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         
         # Get project details
         try:
-            project = get_project_metadata_cached(project_id=project_id, session=session)
-            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
+            project = get_project_metadata_cached(project_id=project_id)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"])
         except Exception as e:
             st.error(f"Error loading project details: {str(e)}")
             return
@@ -2455,7 +2590,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
             return
         
         # Get ALL project videos
-        all_project_videos = get_project_videos(project_id=project_id, session=session)
+        all_project_videos = get_project_videos(project_id=project_id)
         
         # 🔥 FIXED: Calculate current page videos from the SORTED videos parameter
         videos_per_page = st.session_state.get(f"{role}_per_page", min(6, len(videos)))
@@ -2512,7 +2647,7 @@ def display_auto_submit_tab(project_id: int, user_id: int, role: str, videos: Li
         selected_groups = [group for group in question_groups if group["Display Title"] in selected_group_names]
         
         if selected_groups:
-            display_manual_auto_submit_controls(selected_groups, target_videos, project_id, user_id, role, session, False)
+            display_manual_auto_submit_controls(selected_groups, target_videos, project_id, user_id, role, is_training_mode=False)
 
 ###############################################################################
 # SMART ANNOTATOR SELECTION
@@ -2527,8 +2662,7 @@ def display_smart_annotator_selection(annotators: Dict[str, Dict], project_id: i
         
         # Check completion status for each annotator
         try:
-            with get_db_session() as session:
-                completion_progress = get_cached_user_completion_progress(project_id=project_id, session=session)
+            completion_progress = get_cached_user_completion_progress(project_id=project_id)
         
             completed_annotators = {}
             incomplete_annotators = {}
@@ -2686,309 +2820,233 @@ def _get_submit_button_config(role: str, form_disabled: bool, all_questions_modi
 
 
 
-def _get_question_display_data(video_id: int, project_id: int, user_id: int, group_id: int, role: str, mode: str, session: Session, has_any_admin_modified_questions: bool) -> Dict:
-    """Get all the data needed to display a question group - REVERTED TO ORIGINAL LOGIC"""
-    
-    questions = get_questions_with_custom_display_if_enabled(
-        group_id=group_id, project_id=project_id, video_id=video_id, session=session
-    )
-    
-    if not questions:
-        return {"questions": [], "error": "No questions in this group."}
-    
-    all_questions_modified_by_admin = GroundTruthService.check_all_questions_modified_by_admin(
-        video_id=video_id, project_id=project_id, question_group_id=group_id, session=session
-    )
-    
-    # 🚀 REVERTED: Always get fresh data for the user's own answers/ground truth
-    if role == "annotator":
-        existing_answers = AnnotatorService.get_user_answers_for_question_group(
-            video_id=video_id, project_id=project_id, user_id=user_id, question_group_id=group_id, session=session
-        )
-    else:  # reviewer or meta_reviewer
-        existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
-            video_id=video_id, project_id=project_id, question_group_id=group_id, session=session
-        )
-    
-    form_disabled = False
-    if role == "annotator":
-        form_disabled = (mode == "Training" and 
-                       AnnotatorService.check_user_has_submitted_answers(
-                           video_id=video_id, project_id=project_id, user_id=user_id, question_group_id=group_id, session=session
-                       ))
-    elif role == "reviewer":
-        form_disabled = has_any_admin_modified_questions
-    
-    return {
-        "questions": questions,
-        "all_questions_modified_by_admin": all_questions_modified_by_admin,
-        "existing_answers": existing_answers,
-        "form_disabled": form_disabled,
-        "error": None
-    }
-
-def check_question_group_completion(video_id: int, project_id: int, user_id: int, question_group_id: int, role: str, session: Session) -> bool:
+def check_question_group_completion(video_id: int, project_id: int, user_id: int, question_group_id: int, role: str) -> bool:
     """Check if a question group is complete for the user/role"""
     try:
         if role == "annotator":
-            return AnnotatorService.check_user_has_submitted_answers(
-                video_id=video_id, project_id=project_id, user_id=user_id, 
-                question_group_id=question_group_id, session=session
-            )
+            with get_db_session() as session:
+                return AnnotatorService.check_user_has_submitted_answers(
+                    video_id=video_id, project_id=project_id, user_id=user_id, 
+                    question_group_id=question_group_id, session=session
+                )
         elif role == "meta_reviewer":
             return check_all_questions_have_ground_truth(
-                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+                video_id=video_id, project_id=project_id, question_group_id=question_group_id
             )
         else:  # reviewer
             return check_all_questions_have_ground_truth(
-                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+                video_id=video_id, project_id=project_id, question_group_id=question_group_id
             )
     except:
         return False
-
-
-
-def get_ground_truth_option_filters_enhanced(project_id: int, session: Session) -> Dict[int, List[str]]:
-    """Get available ground truth options for filtering"""
-    try:
-        questions = ProjectService.get_project_questions(project_id=project_id, session=session)
-        single_choice_questions = [q for q in questions if q["type"] == "single"]
-        
-        if not single_choice_questions:
-            return {}
-        
-        gt_options = {}
-        videos = get_project_videos(project_id=project_id, session=session)
-        
-        for question in single_choice_questions:
-            question_id = question["id"]
-            unique_answers = set()
-            
-            # Check each video for ground truth answers
-            for video in videos:
-                try:
-                    gt_df = GroundTruthService.get_ground_truth(
-                        video_id=video["id"], project_id=project_id, session=session
-                    )
-                    if not gt_df.empty:
-                        question_gt = gt_df[gt_df["Question ID"] == question_id]
-                        if not question_gt.empty:
-                            unique_answers.add(question_gt.iloc[0]["Answer Value"])
-                except:
-                    continue
-            
-            if unique_answers:
-                gt_options[question_id] = list(unique_answers)
-        
-        return gt_options
-    except Exception as e:
-        st.error(f"Error getting ground truth options: {str(e)}")
-        return {}
-
 
 
 ###############################################################################
 # PROJECT VIEW FUNCTIONS
 ###############################################################################
 
-def get_model_confidence_scores_enhanced(project_id: int, model_user_ids: List[int], question_ids: List[int], session: Session) -> Dict[int, float]:
+def get_model_confidence_scores_enhanced(project_id: int, model_user_ids: List[int], question_ids: List[int]) -> Dict[int, float]:
     """Get confidence scores for specific model users on specific questions"""
     try:
         if not model_user_ids or not question_ids:
             return {}
         
         confidence_scores = {}
-        videos = get_project_videos(project_id=project_id, session=session)
+        videos = get_project_videos(project_id=project_id)
         
-        for video in videos:
-            video_id = video["id"]
-            total_confidence = 0.0
-            answer_count = 0
-            
-            for model_user_id in model_user_ids:
-                for question_id in question_ids:
-                    try:
-                        # Use AnnotatorService to get answers
-                        answers_df = AnnotatorService.get_question_answers(
-                            question_id=question_id, project_id=project_id, session=session
-                        )
-                        
-                        if not answers_df.empty:
-                            # Filter for this model user and video
-                            user_video_answers = answers_df[
-                                (answers_df["User ID"] == model_user_id) & 
-                                (answers_df["Video ID"] == video_id)
-                            ]
+        with get_db_session() as session:
+            for video in videos:
+                video_id = video["id"]
+                total_confidence = 0.0
+                answer_count = 0
+                
+                for model_user_id in model_user_ids:
+                    for question_id in question_ids:
+                        try:
+                            # Use AnnotatorService to get answers
+                            answers_df = AnnotatorService.get_question_answers(
+                                question_id=question_id, project_id=project_id, session=session
+                            )
                             
-                            if not user_video_answers.empty:
-                                confidence = user_video_answers.iloc[0]["Confidence Score"]
-                                if confidence is not None:
-                                    total_confidence += confidence
-                                    answer_count += 1
-                    except Exception:
-                        continue
-            
-            if answer_count > 0:
-                confidence_scores[video_id] = total_confidence / answer_count
-            else:
-                confidence_scores[video_id] = 0.0
+                            if not answers_df.empty:
+                                # Filter for this model user and video
+                                user_video_answers = answers_df[
+                                    (answers_df["User ID"] == model_user_id) & 
+                                    (answers_df["Video ID"] == video_id)
+                                ]
+                                
+                                if not user_video_answers.empty:
+                                    confidence = user_video_answers.iloc[0]["Confidence Score"]
+                                    if confidence is not None:
+                                        total_confidence += confidence
+                                        answer_count += 1
+                        except Exception:
+                            continue
+                
+                if answer_count > 0:
+                    confidence_scores[video_id] = total_confidence / answer_count
+                else:
+                    confidence_scores[video_id] = 0.0
         
         return confidence_scores
     except Exception as e:
         st.error(f"Error getting model confidence scores: {str(e)}")
         return {}
 
-def get_annotator_consensus_rates_enhanced(project_id: int, selected_annotators: List[str], question_ids: List[int], session: Session) -> Dict[int, float]:
+def get_annotator_consensus_rates_enhanced(project_id: int, selected_annotators: List[str], question_ids: List[int]) -> Dict[int, float]:
     """Calculate consensus rates with proper handling of incomplete annotations"""
     try:
         if not selected_annotators or not question_ids or len(selected_annotators) < 2:
             return {}
         
-        annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
-            display_names=selected_annotators, project_id=project_id, session=session
-        )
-        
-        if len(annotator_user_ids) < 2:
-            return {}
-        
-        consensus_rates = {}
-        videos = get_project_videos(project_id=project_id, session=session)
-        
-        for video in videos:
-            video_id = video["id"]
-            total_questions_with_multiple_answers = 0
-            consensus_count = 0
+        with get_db_session() as session:
+            annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
+                display_names=selected_annotators, project_id=project_id, session=session
+            )
             
-            for question_id in question_ids:
-                try:
-                    answers_df = AnnotatorService.get_question_answers(
-                        question_id=question_id, project_id=project_id, session=session
-                    )
-                    
-                    if not answers_df.empty:
-                        video_answers = answers_df[
-                            (answers_df["Video ID"] == video_id) & 
-                            (answers_df["User ID"].isin(annotator_user_ids))
-                        ]
+            if len(annotator_user_ids) < 2:
+                return {}
+            
+            consensus_rates = {}
+            videos = get_project_videos(project_id=project_id)
+            
+            for video in videos:
+                video_id = video["id"]
+                total_questions_with_multiple_answers = 0
+                consensus_count = 0
+                
+                for question_id in question_ids:
+                    try:
+                        answers_df = AnnotatorService.get_question_answers(
+                            question_id=question_id, project_id=project_id, session=session
+                        )
                         
-                        # Only consider questions where at least 2 annotators answered
-                        if len(video_answers) >= 2:
-                            total_questions_with_multiple_answers += 1
-                            answer_values = video_answers["Answer Value"].tolist()
+                        if not answers_df.empty:
+                            video_answers = answers_df[
+                                (answers_df["Video ID"] == video_id) & 
+                                (answers_df["User ID"].isin(annotator_user_ids))
+                            ]
                             
-                            from collections import Counter
-                            answer_counts = Counter(answer_values)
-                            most_common_count = answer_counts.most_common(1)[0][1]
-                            consensus_rate = most_common_count / len(answer_values)
-                            
-                            if consensus_rate >= 0.5:  # Majority agreement
-                                consensus_count += 1
-                except Exception:
-                    continue
-            
-            if total_questions_with_multiple_answers > 0:
-                consensus_rates[video_id] = consensus_count / total_questions_with_multiple_answers
-            else:
-                consensus_rates[video_id] = 0.0
+                            # Only consider questions where at least 2 annotators answered
+                            if len(video_answers) >= 2:
+                                total_questions_with_multiple_answers += 1
+                                answer_values = video_answers["Answer Value"].tolist()
+                                
+                                from collections import Counter
+                                answer_counts = Counter(answer_values)
+                                most_common_count = answer_counts.most_common(1)[0][1]
+                                consensus_rate = most_common_count / len(answer_values)
+                                
+                                if consensus_rate >= 0.5:  # Majority agreement
+                                    consensus_count += 1
+                    except Exception:
+                        continue
+                
+                if total_questions_with_multiple_answers > 0:
+                    consensus_rates[video_id] = consensus_count / total_questions_with_multiple_answers
+                else:
+                    consensus_rates[video_id] = 0.0
         
         return consensus_rates
     except Exception as e:
         st.error(f"Error calculating consensus rates: {str(e)}")
         return {}
 
-def get_video_accuracy_rates(project_id: int, selected_annotators: List[str], question_ids: List[int], session: Session) -> Dict[int, float]:
+def get_video_accuracy_rates(project_id: int, selected_annotators: List[str], question_ids: List[int]) -> Dict[int, float]:
     """Calculate accuracy rates with proper handling of incomplete annotations"""
     try:
         if not selected_annotators or not question_ids:
             return {}
         
-        annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
-            display_names=selected_annotators, project_id=project_id, session=session
-        )
-        
-        if not annotator_user_ids:
-            return {}
-        
-        accuracy_rates = {}
-        videos = get_project_videos(project_id=project_id, session=session)
-        
-        for video in videos:
-            video_id = video["id"]
-            total_comparisons = 0
-            correct_comparisons = 0
+        with get_db_session() as session:
+            annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
+                display_names=selected_annotators, project_id=project_id, session=session
+            )
             
-            try:
-                gt_df = GroundTruthService.get_ground_truth(
-                    video_id=video_id, project_id=project_id, session=session
-                )
+            if not annotator_user_ids:
+                return {}
+            
+            accuracy_rates = {}
+            videos = get_project_videos(project_id=project_id)
+            
+            for video in videos:
+                video_id = video["id"]
+                total_comparisons = 0
+                correct_comparisons = 0
                 
-                if gt_df.empty:
-                    accuracy_rates[video_id] = 0.0
-                    continue
-                
-                for question_id in question_ids:
-                    question_gt = gt_df[gt_df["Question ID"] == question_id]
-                    if question_gt.empty:
-                        continue
-                    
-                    gt_answer = question_gt.iloc[0]["Answer Value"]
-                    
-                    answers_df = AnnotatorService.get_question_answers(
-                        question_id=question_id, project_id=project_id, session=session
+                try:
+                    gt_df = GroundTruthService.get_ground_truth(
+                        video_id=video_id, project_id=project_id, session=session
                     )
                     
-                    if not answers_df.empty:
-                        video_answers = answers_df[
-                            (answers_df["Video ID"] == video_id) & 
-                            (answers_df["User ID"].isin(annotator_user_ids))
-                        ]
-                        
-                        # Count all annotator answers for this question/video
-                        for _, answer_row in video_answers.iterrows():
-                            total_comparisons += 1
-                            if answer_row["Answer Value"] == gt_answer:
-                                correct_comparisons += 1
-                
-                if total_comparisons > 0:
-                    accuracy_rates[video_id] = correct_comparisons / total_comparisons
-                else:
-                    accuracy_rates[video_id] = 0.0
+                    if gt_df.empty:
+                        accuracy_rates[video_id] = 0.0
+                        continue
                     
-            except Exception:
-                accuracy_rates[video_id] = 0.0
+                    for question_id in question_ids:
+                        question_gt = gt_df[gt_df["Question ID"] == question_id]
+                        if question_gt.empty:
+                            continue
+                        
+                        gt_answer = question_gt.iloc[0]["Answer Value"]
+                        
+                        answers_df = AnnotatorService.get_question_answers(
+                            question_id=question_id, project_id=project_id, session=session
+                        )
+                        
+                        if not answers_df.empty:
+                            video_answers = answers_df[
+                                (answers_df["Video ID"] == video_id) & 
+                                (answers_df["User ID"].isin(annotator_user_ids))
+                            ]
+                            
+                            # Count all annotator answers for this question/video
+                            for _, answer_row in video_answers.iterrows():
+                                total_comparisons += 1
+                                if answer_row["Answer Value"] == gt_answer:
+                                    correct_comparisons += 1
+                    
+                    if total_comparisons > 0:
+                        accuracy_rates[video_id] = correct_comparisons / total_comparisons
+                    else:
+                        accuracy_rates[video_id] = 0.0
+                        
+                except Exception:
+                    accuracy_rates[video_id] = 0.0
         
         return accuracy_rates
     except Exception as e:
         st.error(f"Error calculating accuracy rates: {str(e)}")
         return {}
     
-def get_video_completion_rates_enhanced(project_id: int, question_ids: List[int], session: Session) -> Dict[int, float]:
+def get_video_completion_rates_enhanced(project_id: int, question_ids: List[int]) -> Dict[int, float]:
     """Get completion rates for each video based on specific questions"""
     try:
         if not question_ids:
             return {}
             
-        videos = get_project_videos(project_id=project_id, session=session)
+        videos = get_project_videos(project_id=project_id)
         completion_rates = {}
         
-        for video in videos:
-            video_id = video["id"]
-            completed_questions = 0
-            
-            for question_id in question_ids:
-                try:
-                    # Check if this question has ground truth for this video
-                    gt_df = GroundTruthService.get_ground_truth(
-                        video_id=video_id, project_id=project_id, session=session
-                    )
-                    if not gt_df.empty:
-                        question_answers = gt_df[gt_df["Question ID"] == question_id]
-                        if not question_answers.empty:
-                            completed_questions += 1
-                except:
-                    continue
-            
-            completion_rates[video_id] = (completed_questions / len(question_ids)) * 100 if question_ids else 0.0
+        with get_db_session() as session:
+            for video in videos:
+                video_id = video["id"]
+                completed_questions = 0
+                
+                for question_id in question_ids:
+                    try:
+                        # Check if this question has ground truth for this video
+                        gt_df = GroundTruthService.get_ground_truth(
+                            video_id=video_id, project_id=project_id, session=session
+                        )
+                        if not gt_df.empty:
+                            question_answers = gt_df[gt_df["Question ID"] == question_id]
+                            if not question_answers.empty:
+                                completed_questions += 1
+                    except:
+                        continue
+                
+                completion_rates[video_id] = (completed_questions / len(question_ids)) * 100 if question_ids else 0.0
         
         return completion_rates
     except Exception as e:
@@ -2997,7 +3055,7 @@ def get_video_completion_rates_enhanced(project_id: int, question_ids: List[int]
 
 def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str, sort_order: str, 
                                              filter_by_gt: Dict[int, str], project_id: int, 
-                                             selected_annotators: List[str], session: Session,
+                                             selected_annotators: List[str],
                                              sort_config: Dict[str, Any] = None) -> List[Dict]:
     """Apply sorting and filtering with proper ascending/descending logic"""
     try:
@@ -3024,7 +3082,7 @@ def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str,
                     if model_user_ids and question_ids:
                         confidence_scores = get_model_confidence_scores_enhanced(
                             project_id=project_id, model_user_ids=model_user_ids, 
-                            question_ids=question_ids, session=session
+                            question_ids=question_ids
                         )
                     else:
                         confidence_scores = {}
@@ -3033,7 +3091,7 @@ def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str,
                     if question_ids and len(selected_annotators) >= 2:
                         consensus_rates = get_annotator_consensus_rates_enhanced(
                             project_id=project_id, selected_annotators=selected_annotators, 
-                            question_ids=question_ids, session=session
+                            question_ids=question_ids
                         )
                     else:
                         consensus_rates = {}
@@ -3041,7 +3099,7 @@ def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str,
                     question_ids = sort_config.get("question_ids", [])
                     if question_ids:
                         completion_rates = get_video_completion_rates_enhanced(
-                            project_id=project_id, question_ids=question_ids, session=session
+                            project_id=project_id, question_ids=question_ids
                         )
                     else:
                         completion_rates = {}
@@ -3050,45 +3108,46 @@ def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str,
                     if question_ids and selected_annotators:
                         accuracy_rates = get_video_accuracy_rates(
                             project_id=project_id, selected_annotators=selected_annotators, 
-                            question_ids=question_ids, session=session
+                            question_ids=question_ids
                         )
                     else:
                         accuracy_rates = {}
         
         # Apply ground truth filtering
         filtered_videos = []
-        for video in videos:
-            video_id = video["id"]
-            include_video = True
-            
-            if filter_by_gt:
-                try:
-                    gt_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
-                    if gt_df.empty:
-                        include_video = False
-                    else:
-                        for question_id, required_answer in filter_by_gt.items():
-                            question_gt = gt_df[gt_df["Question ID"] == question_id]
-                            if question_gt.empty or question_gt.iloc[0]["Answer Value"] != required_answer:
-                                include_video = False
-                                break
-                except:
-                    include_video = False
-            
-            if include_video:
-                # Add sorting score to video (only for non-default sorts)
-                if sort_by != "Default" and st.session_state.get(f"sort_applied_{project_id}", False):
-                    if sort_by == "Model Confidence":
-                        video["sort_score"] = confidence_scores.get(video_id, 0)
-                    elif sort_by == "Annotator Consensus":
-                        video["sort_score"] = consensus_rates.get(video_id, 0)
-                    elif sort_by == "Completion Rate":
-                        video["sort_score"] = completion_rates.get(video_id, 0)
-                    elif sort_by == "Accuracy Rate":
-                        video["sort_score"] = accuracy_rates.get(video_id, 0)
+        with get_db_session() as session:
+            for video in videos:
+                video_id = video["id"]
+                include_video = True
                 
-                filtered_videos.append(video)
-        
+                if filter_by_gt:
+                    try:
+                        gt_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
+                        if gt_df.empty:
+                            include_video = False
+                        else:
+                            for question_id, required_answer in filter_by_gt.items():
+                                question_gt = gt_df[gt_df["Question ID"] == question_id]
+                                if question_gt.empty or question_gt.iloc[0]["Answer Value"] != required_answer:
+                                    include_video = False
+                                    break
+                    except:
+                        include_video = False
+                
+                if include_video:
+                    # Add sorting score to video (only for non-default sorts)
+                    if sort_by != "Default" and st.session_state.get(f"sort_applied_{project_id}", False):
+                        if sort_by == "Model Confidence":
+                            video["sort_score"] = confidence_scores.get(video_id, 0)
+                        elif sort_by == "Annotator Consensus":
+                            video["sort_score"] = consensus_rates.get(video_id, 0)
+                        elif sort_by == "Completion Rate":
+                            video["sort_score"] = completion_rates.get(video_id, 0)
+                        elif sort_by == "Accuracy Rate":
+                            video["sort_score"] = accuracy_rates.get(video_id, 0)
+                    
+                    filtered_videos.append(video)
+            
         # Sort videos by score if not default
         if sort_by != "Default" and st.session_state.get(f"sort_applied_{project_id}", False):
             reverse = (sort_order == "Descending")
@@ -3101,7 +3160,7 @@ def apply_video_sorting_and_filtering_enhanced(videos: List[Dict], sort_by: str,
 
 
 def apply_annotator_video_sorting(videos: List[Dict], sort_by: str, sort_order: str, 
-                                project_id: int, user_id: int, session: Session) -> List[Dict]:
+                                project_id: int, user_id: int) -> List[Dict]:
     """Apply sorting for annotators - only completion rate and accuracy rate vs ground truth"""
     try:
         if sort_by == "Default":
@@ -3133,69 +3192,69 @@ def apply_annotator_video_sorting(videos: List[Dict], sort_by: str, sort_order: 
         
         # Calculate scores for each video
         video_scores = {}
-        
-        for video in videos:
-            video_id = video["id"]
-            
-            if sort_by == "Completion Rate":
-                # Calculate completion rate for this user
-                completed_questions = 0
-                for question_id in question_ids:
-                    try:
-                        answers_df = AnnotatorService.get_question_answers(
-                            question_id=question_id, project_id=project_id, session=session
-                        )
-                        if not answers_df.empty:
-                            user_answers = answers_df[
-                                (answers_df["User ID"] == user_id) & 
-                                (answers_df["Video ID"] == video_id)
-                            ]
-                            if not user_answers.empty:
-                                completed_questions += 1
-                    except:
-                        continue
+        with get_db_session() as session:
+            for video in videos:
+                video_id = video["id"]
                 
-                video_scores[video_id] = (completed_questions / len(question_ids)) * 100 if question_ids else 0
-                
-            else:  # Accuracy Rate
-                # Calculate accuracy rate vs ground truth for this user
-                correct_count = 0
-                total_count = 0
-                
-                try:
-                    gt_df = GroundTruthService.get_ground_truth(
-                        video_id=video_id, project_id=project_id, session=session
-                    )
-                    
-                    if not gt_df.empty:
-                        for question_id in question_ids:
-                            # Get ground truth for this question
-                            question_gt = gt_df[gt_df["Question ID"] == question_id]
-                            if question_gt.empty:
-                                continue
-                            
-                            gt_answer = question_gt.iloc[0]["Answer Value"]
-                            
-                            # Get user's answer
+                if sort_by == "Completion Rate":
+                    # Calculate completion rate for this user
+                    completed_questions = 0
+                    for question_id in question_ids:
+                        try:
                             answers_df = AnnotatorService.get_question_answers(
                                 question_id=question_id, project_id=project_id, session=session
                             )
-                            
                             if not answers_df.empty:
                                 user_answers = answers_df[
                                     (answers_df["User ID"] == user_id) & 
                                     (answers_df["Video ID"] == video_id)
                                 ]
-                                
                                 if not user_answers.empty:
-                                    user_answer = user_answers.iloc[0]["Answer Value"]
-                                    total_count += 1
-                                    if user_answer == gt_answer:
-                                        correct_count += 1
+                                    completed_questions += 1
+                        except:
+                            continue
                     
-                    video_scores[video_id] = (correct_count / total_count) * 100 if total_count > 0 else 0
-                except:
-                    video_scores[video_id] = 0
+                    video_scores[video_id] = (completed_questions / len(question_ids)) * 100 if question_ids else 0
+                    
+                else:  # Accuracy Rate
+                    # Calculate accuracy rate vs ground truth for this user
+                    correct_count = 0
+                    total_count = 0
+                    
+                    try:
+                        gt_df = GroundTruthService.get_ground_truth(
+                            video_id=video_id, project_id=project_id, session=session
+                        )
+                        
+                        if not gt_df.empty:
+                            for question_id in question_ids:
+                                # Get ground truth for this question
+                                question_gt = gt_df[gt_df["Question ID"] == question_id]
+                                if question_gt.empty:
+                                    continue
+                                
+                                gt_answer = question_gt.iloc[0]["Answer Value"]
+                                
+                                # Get user's answer
+                                answers_df = AnnotatorService.get_question_answers(
+                                    question_id=question_id, project_id=project_id, session=session
+                                )
+                                
+                                if not answers_df.empty:
+                                    user_answers = answers_df[
+                                        (answers_df["User ID"] == user_id) & 
+                                        (answers_df["Video ID"] == video_id)
+                                    ]
+                                    
+                                    if not user_answers.empty:
+                                        user_answer = user_answers.iloc[0]["Answer Value"]
+                                        total_count += 1
+                                        if user_answer == gt_answer:
+                                            correct_count += 1
+                        
+                        video_scores[video_id] = (correct_count / total_count) * 100 if total_count > 0 else 0
+                    except:
+                        video_scores[video_id] = 0
         
         # Add scores to videos and sort
         for video in videos:
@@ -3210,32 +3269,34 @@ def apply_annotator_video_sorting(videos: List[Dict], sort_by: str, sort_order: 
         st.error(f"Error applying annotator sorting: {str(e)}")
         return videos
 
-def display_project_progress(user_id: int, project_id: int, role: str, session: Session):
+def display_project_progress(user_id: int, project_id: int, role: str):
     """Display project progress in a refreshable fragment"""
     if role == "annotator":
-        overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
+        overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id)
         st.progress(overall_progress / 100)
         st.markdown(f"**Your Overall Progress:** {overall_progress:.1f}%")
-        display_user_accuracy_simple(user_id=user_id, project_id=project_id, role=role, session=session)
+        display_user_accuracy_simple(user_id=user_id, project_id=project_id, role=role)
         
     elif role == "meta_reviewer":
         try:
-            project_progress = ProjectService.progress(project_id=project_id, session=session)
+            with get_db_session() as session:
+                project_progress = ProjectService.progress(project_id=project_id, session=session)
             st.progress(project_progress['completion_percentage'] / 100)
             st.markdown(f"**Ground Truth Progress:** {project_progress['completion_percentage']:.1f}%")
-            display_user_accuracy_simple(user_id=user_id, project_id=project_id, role=role, session=session)
+            display_user_accuracy_simple(user_id=user_id, project_id=project_id, role=role)
         except ValueError as e:
             st.error(f"Error loading project progress: {str(e)}")
     else:
         try:
-            project_progress = ProjectService.progress(project_id=project_id, session=session)
+            with get_db_session() as session:
+                project_progress = ProjectService.progress(project_id=project_id, session=session)
             st.progress(project_progress['completion_percentage'] / 100)
             st.markdown(f"**Ground Truth Progress:** {project_progress['completion_percentage']:.1f}%")
-            display_user_accuracy_simple(user_id=user_id, project_id=project_id, role=role, session=session)
+            display_user_accuracy_simple(user_id=user_id, project_id=project_id, role=role)
         except ValueError as e:
             st.error(f"Error loading project progress: {str(e)}")
 
-def display_project_view(user_id: int, role: str, session: Session):
+def display_project_view(user_id: int, role: str):
     """Display the selected project with modern, compact layout and enhanced sorting/filtering - OPTIMIZED VERSION"""
 
     project_id = st.session_state.selected_project_id
@@ -3250,9 +3311,10 @@ def display_project_view(user_id: int, role: str, session: Session):
         st.rerun()
     
     try:
-        project = get_project_metadata_cached(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id)
         try:
-            schema_details = SchemaService.get_schema_details(schema_id=project["schema_id"], session=session)
+            with get_db_session() as session:
+                schema_details = SchemaService.get_schema_details(schema_id=project["schema_id"], session=session)
             instructions_url = schema_details.get("instructions_url")
         except Exception as e:
             print(f"Error getting schema details: {e}")
@@ -3266,7 +3328,7 @@ def display_project_view(user_id: int, role: str, session: Session):
         clear_project_cache(project_id)
         st.session_state.last_project_id = project_id
     
-    mode = "Training" if check_project_has_full_ground_truth(project_id=project_id, session=session) else "Annotation"
+    mode = "Training" if check_project_has_full_ground_truth(project_id=project_id) else "Annotation"
     
     st.markdown(f"## 📁 {project['name']}")
     
@@ -3285,12 +3347,12 @@ def display_project_view(user_id: int, role: str, session: Session):
     if role == "annotator" and mode == "Annotation":
         auto_submit_key = f"auto_submit_done_{project_id}_{user_id}"
         if auto_submit_key not in st.session_state:
-            run_project_wide_auto_submit_on_entry(project_id=project_id, user_id=user_id, session=session)
+            run_project_wide_auto_submit_on_entry(project_id=project_id, user_id=user_id)
             st.session_state[auto_submit_key] = True
     
-    display_project_progress(user_id=user_id, project_id=project_id, role=role, session=session)
+    display_project_progress(user_id=user_id, project_id=project_id, role=role)
     
-    videos = get_project_videos(project_id=project_id, session=session)
+    videos = get_project_videos(project_id=project_id)
     
     if not videos:
         st.error("No videos found in this project.")
@@ -3327,7 +3389,7 @@ def display_project_view(user_id: int, role: str, session: Session):
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
+                display_accuracy_button_for_project(project_id=project_id, role=role)
                 custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
         else:
             annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, auto_submit_tab, instruction_tab = st.tabs([
@@ -3345,7 +3407,7 @@ def display_project_view(user_id: int, role: str, session: Session):
             """, unsafe_allow_html=True)
             
             try:
-                annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+                annotators = get_session_cached_project_annotators(project_id=project_id)
                 display_smart_annotator_selection(annotators=annotators, project_id=project_id)
             except Exception as e:
                 st.error(f"Error loading annotators: {str(e)}")
@@ -3354,19 +3416,19 @@ def display_project_view(user_id: int, role: str, session: Session):
             custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
         
         with sort_tab:
-            display_enhanced_sort_tab(project_id=project_id, role=role, session=session)
+            display_enhanced_sort_tab(project_id=project_id, role=role)
 
         with filter_tab:
-            display_enhanced_filter_tab(project_id=project_id, role=role, session=session)
+            display_enhanced_filter_tab(project_id=project_id, role=role)
         
         with order_tab:
-            display_order_tab(project_id=project_id, role=role, project=project, session=session)
+            display_order_tab(project_id=project_id, role=role, project=project)
         
         with layout_tab:
             display_layout_tab_content(videos=videos, role=role)
         
         with auto_submit_tab:
-            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
+            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos)
         
         with instruction_tab:
             display_instruction_tab_content(instructions_url=instructions_url)
@@ -3386,7 +3448,7 @@ def display_project_view(user_id: int, role: str, session: Session):
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                display_accuracy_button_for_project(project_id=project_id, role=role, session=session)
+                display_accuracy_button_for_project(project_id=project_id, role=role)
                 custom_info("💡 Use analytics to identify patterns in annotator performance and areas for improvement.")
         else:
             annotator_tab, sort_tab, filter_tab, order_tab, layout_tab, instruction_tab = st.tabs([
@@ -3404,7 +3466,7 @@ def display_project_view(user_id: int, role: str, session: Session):
             """, unsafe_allow_html=True)
             
             try:
-                annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+                annotators = get_session_cached_project_annotators(project_id=project_id)
                 display_smart_annotator_selection(annotators=annotators, project_id=project_id)
             except Exception as e:
                 st.error(f"Error loading annotators: {str(e)}")
@@ -3413,13 +3475,13 @@ def display_project_view(user_id: int, role: str, session: Session):
             custom_info("💡 Select annotators whose responses you want to see alongside your review interface.")
         
         with sort_tab:
-            display_enhanced_sort_tab(project_id=project_id, role=role, session=session)
+            display_enhanced_sort_tab(project_id=project_id, role=role)
 
         with filter_tab:
-            display_enhanced_filter_tab(project_id=project_id, role=role, session=session)
+            display_enhanced_filter_tab(project_id=project_id, role=role)
         
         with order_tab:
-            display_order_tab(project_id=project_id, role=role, project=project, session=session)
+            display_order_tab(project_id=project_id, role=role, project=project)
         
         with layout_tab:
             display_layout_tab_content(videos=videos, role=role)
@@ -3437,10 +3499,10 @@ def display_project_view(user_id: int, role: str, session: Session):
             display_layout_tab_content(videos=videos, role=role)
         
         with sort_tab:
-            display_enhanced_sort_tab_annotator(project_id=project_id, user_id=user_id, session=session)
+            display_enhanced_sort_tab_annotator(project_id=project_id, user_id=user_id)
     
         with auto_submit_tab:
-            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos, session=session)
+            display_auto_submit_tab(project_id=project_id, user_id=user_id, role=role, videos=videos)
     
     # Get layout settings
     video_pairs_per_row = st.session_state.get(f"{role}_pairs_per_row", 1)
@@ -3465,7 +3527,7 @@ def display_project_view(user_id: int, role: str, session: Session):
             summary_parts.append(f"📋 Default order ({sort_order})")
         
         if filter_by_gt:
-            original_videos = get_project_videos(project_id=project_id, session=session)
+            original_videos = get_project_videos(project_id=project_id)
             filtered_count = len(videos)
             original_count = len(original_videos)
             
@@ -3511,12 +3573,12 @@ def display_project_view(user_id: int, role: str, session: Session):
         row_videos = page_videos[i:i + video_pairs_per_row]
         
         if video_pairs_per_row == 1:
-            display_video_answer_pair(row_videos[0], project_id, user_id, role, mode, session)
+            display_video_answer_pair(row_videos[0], project_id, user_id, role, mode)
         else:
             pair_cols = st.columns(video_pairs_per_row)
             for j, video in enumerate(row_videos):
                 with pair_cols[j]:
-                    display_video_answer_pair(video, project_id, user_id, role, mode, session)
+                    display_video_answer_pair(video, project_id, user_id, role, mode)
         
         st.markdown("---")
     
@@ -3558,14 +3620,15 @@ def display_instruction_tab_content(instructions_url: Optional[str]):
 ###############################################################################
 # PROJECT DASHBOARD FUNCTIONS
 ###############################################################################
-def display_project_dashboard(user_id: int, role: str, session: Session) -> Optional[int]:
-    """Display project group dashboard with enhanced clarity and pagination - OPTIMIZED VERSION"""
+def display_project_dashboard(user_id: int, role: str) -> Optional[int]:
+    """Display project group dashboard with enhanced clarity and pagination - OPTIMIZED VERSION WITH COMPRESSED VERTICAL SPACING"""
     st.markdown("## 📂 Project Dashboard")
     
     backend_role = "admin" if role == "meta_reviewer" else role
     
     # Get user's project assignments
-    assignments_df = AuthService.get_project_assignments(session=session)
+    with get_db_session() as session:
+        assignments_df = AuthService.get_project_assignments(session=session)
     user_assignments = assignments_df[assignments_df["User ID"] == user_id]
     
     if role != "admin":
@@ -3578,16 +3641,17 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
         return None
     
     # OPTIMIZED: Use bulk loading for all project completion data
-    bulk_project_data = ProjectService.get_bulk_project_completion_data(project_ids, session)
+    with get_db_session() as session:
+        bulk_project_data = ProjectService.get_bulk_project_completion_data(project_ids, session)
     
     # Get grouped projects structure
-    grouped_projects = get_project_groups_with_projects(user_id=user_id, role=backend_role, session=session)
+    grouped_projects = get_project_groups_with_projects(user_id=user_id, role=backend_role)
     
     if not grouped_projects:
         st.warning(f"No projects assigned to you as {role}.")
         return None
     
-    assignment_dates = get_user_assignment_dates(user_id=user_id, session=session)
+    assignment_dates = get_user_assignment_dates(user_id=user_id)
     
     st.markdown("### 🔍 Search & Filter")
     col1, col2, col3 = st.columns(3)
@@ -3621,7 +3685,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                     # For annotators, calculate individual progress
                     try:
                         project["completion_rate"] = calculate_user_overall_progress(
-                            user_id=user_id, project_id=project_id, session=session
+                            user_id=user_id, project_id=project_id
                         )
                     except:
                         project["completion_rate"] = 0.0
@@ -3684,19 +3748,19 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
             search_indicator = f"🔍 Filtered by '{search_term}' • "
         
         st.markdown(f"""
-        <div style="background: #F2ECFC; border: 2px solid #F2ECFC; border-radius: 12px; padding: 18px; margin: 16px 0; position: relative;">
+        <div style="background: #F2ECFC; border: 2px solid #F2ECFC; border-radius: 12px; padding: 12px 18px; margin: 12px 0; position: relative;">
             <div style="position: absolute; top: -8px; left: 20px; background: {group_color}; color: white; padding: 4px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; ">
                 PROJECT GROUP
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
                 <div>
                     <h2 style="margin: 0; color: {group_color}; font-size: 1.8rem;" title="{display_group_name}">📁 {truncated_group_name}</h2>
-                    <p style="margin: 8px 0 0 0; color: #34495e; font-size: 1.1rem; font-weight: 500;">
+                    <p style="margin: 4px 0 0 0; color: #34495e; font-size: 1.1rem; font-weight: 500;">
                         {search_indicator}{total_projects} projects in this group {f"• Page {current_page + 1} of {total_pages}" if total_pages > 1 else ""}
                     </p>
                 </div>
                 <div style="text-align: right;">
-                    <span style="background: {group_color}; color: white; padding: 10px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; ">{total_projects} Projects</span>
+                    <span style="background: {group_color}; color: white; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; ">{total_projects} Projects</span>
                 </div>
             </div>
         </div>
@@ -3766,19 +3830,20 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                         )
                     
                     with st.container():
+                        # 🔥 COMPRESSED VERTICAL SPACING: Reduced vertical padding/margins only, keeping horizontal spacing
                         st.markdown(f"""
-                        <div style="border: 2px solid {group_color}; border-radius: 12px; padding: 18px; margin: 8px 0; background: linear-gradient(135deg, white, {group_color}05); box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-height: 200px; position: relative;" title="Group: {display_group_name}">
+                        <div style="border: 2px solid {group_color}; border-radius: 12px; padding: 12px 18px; margin: 4px 0; background: linear-gradient(135deg, white, {group_color}05); min-height: 160px; position: relative;" title="Group: {display_group_name}">
                             <div style="position: absolute; top: -6px; right: 10px; background: {group_color}; color: white; padding: 2px 6px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;" title="{display_group_name}">
                                 {truncated_tag_group_name}
                             </div>
-                            <h4 style="margin: 10px 0 8px 0; color: black; font-size: 1.1rem; line-height: 1.3; word-wrap: break-word;" title="{project_name}">{highlighted_name}</h4>
-                            <p style="margin: 8px 0; color: #666; font-size: 0.9rem; min-height: 50px;">
+                            <h4 style="margin: 6px 0 4px 0; color: black; font-size: 1.1rem; line-height: 1.2; word-wrap: break-word;" title="{project_name}">{highlighted_name}</h4>
+                            <p style="margin: 4px 0; color: #666; font-size: 0.9rem; min-height: 35px; line-height: 1.3;">
                                 {project["description"] or 'No description'}
                             </p>
-                            <div style="margin: 12px 0;">
-                                <p style="margin: 4px 0;"><strong>Mode:</strong> {mode}</p>
-                                <p style="margin: 4px 0;"><strong>Progress:</strong> {progress_text}</p>
-                                <p style="margin: 4px 0; color: #666; font-size: 0.85rem;">
+                            <div style="margin: 6px 0;">
+                                <p style="margin: 2px 0;"><strong>Mode:</strong> {mode}</p>
+                                <p style="margin: 2px 0;"><strong>Progress:</strong> {progress_text}</p>
+                                <p style="margin: 2px 0; color: #666; font-size: 0.85rem;">
                                     <strong>Assigned:</strong> {assignment_date}
                                 </p>
                             </div>
@@ -3800,7 +3865,7 @@ def display_project_dashboard(user_id: int, role: str, session: Session) -> Opti
                 custom_info(f"No projects found in {group_name}")
         
         if group_index < len(grouped_projects) - 1:
-            st.markdown("""<div style="height: 2px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 30px 0;"></div>""", unsafe_allow_html=True)
+            st.markdown("""<div style="height: 2px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 20px 0;"></div>""", unsafe_allow_html=True)
         
         if selected_project_id:
             break

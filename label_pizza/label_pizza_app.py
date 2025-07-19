@@ -88,7 +88,7 @@ def authenticate_user(email: str, password: str):
                     user['email'] = email
                     
                 st.session_state.user = user
-                st.session_state.user_projects = get_user_projects(user_id=user["id"], session=session)
+                st.session_state.user_projects = get_user_projects(user_id=user["id"])
                 st.session_state.available_portals = get_available_portals(user=user, user_projects=st.session_state.user_projects)
                 st.session_state.current_view = "dashboard"
                 st.session_state.selected_project_id = None
@@ -99,29 +99,30 @@ def authenticate_user(email: str, password: str):
     except Exception as e:
         st.error(f"Login failed: {str(e)}")
 
-def get_user_projects(user_id: int, session: Session) -> Dict:
+def get_user_projects(user_id: int) -> Dict:
     """Get projects assigned to user by role - using ONLY service layer"""
-    try:
-        user_projects = AuthService.get_user_projects_by_role(user_id=user_id, session=session)
-        
-        if user_projects.get("admin"): # meaning it is a non-empty list
-            all_projects_df = ProjectService.get_all_projects(session=session)
-            all_projects_list = [
-                {"id": project_row["ID"], "name": project_row["Name"], "description": "", "created_at": None}
-                for _, project_row in all_projects_df.iterrows()
-            ]
+    with get_db_session() as session:
+        try:
+            user_projects = AuthService.get_user_projects_by_role(user_id=user_id, session=session)
             
-            return {
-                "annotator": all_projects_list.copy(),
-                "reviewer": all_projects_list.copy(),
-                "admin": all_projects_list.copy()
-            }
-        
-        return user_projects
-        
-    except ValueError as e:
-        st.error(f"Error getting user projects: {str(e)}")
-        return {"annotator": [], "reviewer": [], "admin": []}
+            if user_projects.get("admin"): # meaning it is a non-empty list
+                all_projects_df = ProjectService.get_all_projects(session=session)
+                all_projects_list = [
+                    {"id": project_row["ID"], "name": project_row["Name"], "description": "", "created_at": None}
+                    for _, project_row in all_projects_df.iterrows()
+                ]
+                
+                return {
+                    "annotator": all_projects_list.copy(),
+                    "reviewer": all_projects_list.copy(),
+                    "admin": all_projects_list.copy()
+                }
+            
+            return user_projects
+            
+        except ValueError as e:
+            st.error(f"Error getting user projects: {str(e)}")
+            return {"annotator": [], "reviewer": [], "admin": []}
 
 def get_available_portals(user: Dict, user_projects: Dict) -> List[str]:
     """Determine which portals the user can access"""
@@ -149,11 +150,10 @@ def annotator_portal():
     
     current_view = st.session_state.get("current_view", "dashboard")
     
-    with get_db_session() as session:
-        if current_view == "dashboard":
-            display_project_dashboard(user_id=user["id"], role="annotator", session=session)
-        elif current_view == "project":
-            display_project_view(user_id=user["id"], role="annotator", session=session)
+    if current_view == "dashboard":
+        display_project_dashboard(user_id=user["id"], role="annotator")
+    elif current_view == "project":
+        display_project_view(user_id=user["id"], role="annotator")
 
 ###############################################################################
 # REVIEWER PORTAL
@@ -166,11 +166,10 @@ def reviewer_portal():
     
     current_view = st.session_state.get("current_view", "dashboard")
     
-    with get_db_session() as session:
-        if current_view == "dashboard":
-            display_project_dashboard(user_id=user["id"], role="reviewer", session=session)
-        elif current_view == "project":
-            display_project_view(user_id=user["id"], role="reviewer", session=session)
+    if current_view == "dashboard":
+        display_project_dashboard(user_id=user["id"], role="reviewer")
+    elif current_view == "project":
+        display_project_view(user_id=user["id"], role="reviewer")
 
 ###############################################################################
 # META-REVIEWER PORTAL
@@ -184,11 +183,10 @@ def meta_reviewer_portal():
     
     current_view = st.session_state.get("current_view", "dashboard")
     
-    with get_db_session() as session:
-        if current_view == "dashboard":
-            display_project_dashboard(user_id=user["id"], role="meta_reviewer", session=session)
-        elif current_view == "project":
-            display_project_view(user_id=user["id"], role="meta_reviewer", session=session)
+    if current_view == "dashboard":
+        display_project_dashboard(user_id=user["id"], role="meta_reviewer")
+    elif current_view == "project":
+        display_project_view(user_id=user["id"], role="meta_reviewer")
 
 
 ###############################################################################

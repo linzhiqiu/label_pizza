@@ -23,14 +23,14 @@ from label_pizza.database_utils import (
 # Auto-Submit Controls
 ###############################################################################
 
-def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str, session: Session, is_training_mode: bool):
+def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str, is_training_mode: bool=False):
     """Display manual auto-submit controls - MINIMAL FIX for reviewer virtual responses"""
     
     # Get annotators for filtering (reviewer only)
     available_annotators = {}
     if role == "reviewer":
         try:
-            available_annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+            available_annotators = get_session_cached_project_annotators(project_id=project_id)
         except:
             available_annotators = {}
     
@@ -67,7 +67,8 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
         
         # Get default user weights from service
         try:
-            default_weights = AuthService.get_user_weights_for_project(project_id=project_id, session=session)
+            with get_db_session() as session:
+                default_weights = AuthService.get_user_weights_for_project(project_id=project_id, session=session)
         except:
             default_weights = {}
         
@@ -105,7 +106,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
     # Get all questions for the selected groups
     all_questions_by_group = {}
     for group in selected_groups:
-        questions = get_questions_by_group_cached(group_id=group["ID"], session=session)
+        questions = get_questions_by_group_cached(group_id=group["ID"])
         all_questions_by_group[group["ID"]] = questions
     
     # Configuration interface - KEEP ORIGINAL STRUCTURE
@@ -143,7 +144,8 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                         
                         if question["type"] == "single":
                             # FIXED: Store option weights separately, don't create virtual responses
-                            question_data = QuestionService.get_question_by_id(question_id=question_id, session=session)
+                            with get_db_session() as session:
+                                question_data = QuestionService.get_question_by_id(question_id=question_id, session=session)
                             options = question_data.get("options", [])
                             default_option_weights = question_data.get("option_weights")
                             if not default_option_weights:
@@ -202,15 +204,16 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                             # KEEP ORIGINAL selectbox UI
                             try:
                                 if st.session_state[selected_annotators_key]:
-                                    annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
-                                        display_names=st.session_state[selected_annotators_key], 
-                                        project_id=project_id, session=session
-                                    )
+                                    with get_db_session() as session:
+                                        annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
+                                            display_names=st.session_state[selected_annotators_key], 
+                                            project_id=project_id, session=session
+                                        )
                                     
-                                    # Get answers from these annotators for this specific question
-                                    answers_df = AnnotatorService.get_question_answers(
-                                        question_id=question_id, project_id=project_id, session=session
-                                    )
+                                        # Get answers from these annotators for this specific question
+                                        answers_df = AnnotatorService.get_question_answers(
+                                            question_id=question_id, project_id=project_id, session=session
+                                        )
                                     
                                     annotator_options = ["Auto (use user weights)"]
                                     annotator_data = {}  # Store user_id -> user_name mapping
@@ -222,7 +225,8 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                                         
                                         for user_id_resp in unique_user_ids:
                                             try:
-                                                user_info = AuthService.get_user_info_by_id(user_id=int(user_id_resp), session=session)
+                                                with get_db_session() as session:
+                                                    user_info = AuthService.get_user_info_by_id(user_id=int(user_id_resp), session=session)
                                                 user_name = user_info["user_id_str"]
                                                 # Apply same naming convention as get_session_cached_project_annotators
                                                 display_name_with_initials, _ = AuthService.get_user_display_name_with_initials(user_name)
@@ -445,7 +449,7 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
                     use_container_width=True,
                     disabled=is_training_mode,
                     help="Preload options without auto-submitting"):
-            run_preload_options_only(selected_groups, videos, project_id, user_id, role, session)
+            run_preload_options_only(selected_groups, videos, project_id, user_id, role)
 
     with action_col2:
         if st.button("🔍 Preview Auto-Submit", 
@@ -468,16 +472,16 @@ def display_manual_auto_submit_controls(selected_groups: List[Dict], videos: Lis
 
     # Check if preview button was clicked and show preview outside of columns for full width
     if st.session_state.get(f"show_preview_{role}_{project_id}", False):
-        run_preload_preview(selected_groups, videos, project_id, user_id, role, session)
+        run_preload_preview(selected_groups, videos, project_id, user_id, role)
         st.session_state[f"show_preview_{role}_{project_id}"] = False
     
     # Check if auto-submit button was clicked and show auto-submit outside of columns for full width
     if st.session_state.get(f"auto_submit_in_progress_{role}_{project_id}", False):
-        run_manual_auto_submit(selected_groups, videos, project_id, user_id, role, session)
+        run_manual_auto_submit(selected_groups, videos, project_id, user_id, role)
         st.session_state[f"auto_submit_in_progress_{role}_{project_id}"] = False
 
 
-def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str, session: Session):
+def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str):
     """MINIMAL CHANGE: Use custom option weights and description selections for reviewers"""
     
     virtual_responses_key = f"virtual_responses_{role}_{project_id}"
@@ -500,10 +504,11 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
     
     if role == "reviewer":
         try:
-            available_annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
-            annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
-                display_names=selected_annotators, project_id=project_id, session=session
-            )
+            available_annotators = get_session_cached_project_annotators(project_id=project_id)
+            with get_db_session() as session:
+                annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
+                    display_names=selected_annotators, project_id=project_id, session=session
+                )
             include_user_ids = annotator_user_ids
             
             for annotator_name in selected_annotators:
@@ -556,24 +561,25 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
                 # MINIMAL CHANGE: Add dynamic virtual responses for this video
                 dynamic_virtual_responses = virtual_responses_by_question.copy()
                 video_specific_responses = build_virtual_responses_for_video(
-                    video_id=video_id, project_id=project_id, role=role, session=session
+                    video_id=video_id, project_id=project_id, role=role
                 )
                 dynamic_virtual_responses.update(video_specific_responses)
                 
-                if role == "annotator":
-                    result = AutoSubmitService.auto_submit_question_group(
-                        video_id=video_id, project_id=project_id, question_group_id=group_id,
-                        user_id=user_id, include_user_ids=include_user_ids,
-                        virtual_responses_by_question=dynamic_virtual_responses, thresholds=thresholds,
-                        session=session, user_weights=user_weight_map
-                    )
-                else:  # reviewer - MINIMAL CHANGE: Pass custom option weights
-                    result = ReviewerAutoSubmitService.auto_submit_ground_truth_group_with_custom_weights(
-                        video_id=video_id, project_id=project_id, question_group_id=group_id,
-                        reviewer_id=user_id, include_user_ids=include_user_ids,
-                        virtual_responses_by_question=dynamic_virtual_responses, thresholds=thresholds,
-                        session=session, user_weights=user_weight_map, custom_option_weights=option_weights
-                    )
+                with get_db_session() as session:
+                    if role == "annotator":
+                        result = AutoSubmitService.auto_submit_question_group(
+                            video_id=video_id, project_id=project_id, question_group_id=group_id,
+                            user_id=user_id, include_user_ids=include_user_ids,
+                            virtual_responses_by_question=dynamic_virtual_responses, thresholds=thresholds,
+                            session=session, user_weights=user_weight_map
+                        )
+                    else:  # reviewer - MINIMAL CHANGE: Pass custom option weights
+                        result = ReviewerAutoSubmitService.auto_submit_ground_truth_group_with_custom_weights(
+                            video_id=video_id, project_id=project_id, question_group_id=group_id,
+                            reviewer_id=user_id, include_user_ids=include_user_ids,
+                            virtual_responses_by_question=dynamic_virtual_responses, thresholds=thresholds,
+                            session=session, user_weights=user_weight_map, custom_option_weights=option_weights
+                        )
                 
                 # total_submitted += result["submitted_count"]
                 # total_skipped += result["skipped_count"]
@@ -688,7 +694,7 @@ def run_manual_auto_submit(selected_groups: List[Dict], videos: List[Dict], proj
             if len(verification_failure_details) > 10:
                 st.caption(f"... and {len(verification_failure_details) - 10} more errors")
 
-def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str, session: Session):
+def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str):
     """MINIMAL CHANGE: Use custom option weights and description selections for preview"""
     
     virtual_responses_key = f"virtual_responses_{role}_{project_id}"
@@ -709,10 +715,11 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
     
     if role == "reviewer":
         try:
-            available_annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
-            include_user_ids = AuthService.get_annotator_user_ids_from_display_names(
-                display_names=selected_annotators, project_id=project_id, session=session
-            )
+            available_annotators = get_session_cached_project_annotators(project_id=project_id)
+            with get_db_session() as session:
+                include_user_ids = AuthService.get_annotator_user_ids_from_display_names(
+                    display_names=selected_annotators, project_id=project_id, session=session
+                )
             for annotator_name in selected_annotators:
                 try:
                     if annotator_name in available_annotators:
@@ -761,29 +768,30 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                 group_display_title = group["Display Title"]
                 
                 try:
-                    questions_in_group = get_questions_by_group_cached(group_id=group_id, session=session)
+                    questions_in_group = get_questions_by_group_cached(group_id=group_id)
                     total_questions_in_group = len(questions_in_group)
 
                     # MINIMAL CHANGE: Add dynamic virtual responses for this video
                     dynamic_virtual_responses = virtual_responses_by_question.copy()
                     video_specific_responses = build_virtual_responses_for_video(
-                        video_id=video_id, project_id=project_id, role=role, session=session
+                        video_id=video_id, project_id=project_id, role=role
                     )
                     dynamic_virtual_responses.update(video_specific_responses)
                     
-                    if role == "reviewer":
-                        result = ReviewerAutoSubmitService.calculate_auto_submit_ground_truth_with_custom_weights(
-                            video_id=video_id, project_id=project_id, question_group_id=group_id,
-                            include_user_ids=include_user_ids, virtual_responses_by_question=dynamic_virtual_responses,
-                            thresholds=thresholds, session=session, user_weights=user_weight_map,
-                            custom_option_weights=option_weights
-                        )
-                    else:
-                        result = AutoSubmitService.calculate_auto_submit_answers(
-                            video_id=video_id, project_id=project_id, question_group_id=group_id,
-                            include_user_ids=include_user_ids, virtual_responses_by_question=dynamic_virtual_responses,
-                            thresholds=thresholds, session=session
-                        )
+                    with get_db_session() as session:
+                        if role == "reviewer":
+                            result = ReviewerAutoSubmitService.calculate_auto_submit_ground_truth_with_custom_weights(
+                                video_id=video_id, project_id=project_id, question_group_id=group_id,
+                                include_user_ids=include_user_ids, virtual_responses_by_question=dynamic_virtual_responses,
+                                thresholds=thresholds, session=session, user_weights=user_weight_map,
+                                custom_option_weights=option_weights
+                            )
+                        else:
+                            result = AutoSubmitService.calculate_auto_submit_answers(
+                                video_id=video_id, project_id=project_id, question_group_id=group_id,
+                                include_user_ids=include_user_ids, virtual_responses_by_question=dynamic_virtual_responses,
+                                thresholds=thresholds, session=session
+                            )
                     
                     # Rest of the logic unchanged
                     answers_count = len(result["answers"])
@@ -794,9 +802,10 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                     # Check verification function if it exists
                     if result["answers"]:
                         try:
-                            group_details = QuestionGroupService.get_group_details_with_verification(
-                                group_id=group_id, session=session
-                            )
+                            with get_db_session() as session:
+                                group_details = QuestionGroupService.get_group_details_with_verification(
+                                    group_id=group_id, session=session
+                                )
                             verification_function = group_details.get("verification_function")
                             
                             if verification_function:
@@ -837,7 +846,7 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                         else:
                             failure_reason = "unknown failure"
                             
-                            failure_reason = " + ".join(failure_parts) if failure_parts else "unknown failure"
+                            # failure_reason = " + ".join(failure_parts) if failure_parts else "unknown failure"
 
                         # if skipped_count > 0:
                         #     failure_reason = f"already completed"
@@ -864,7 +873,7 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
                 except Exception as e:
                     groups_would_skip += 1
                     try:
-                        questions_in_group = get_questions_by_group_cached(group_id=group_id, session=session)
+                        questions_in_group = get_questions_by_group_cached(group_id=group_id)
                         total_questions_in_group = len(questions_in_group)
                     except:
                         total_questions_in_group = 0
@@ -986,7 +995,8 @@ def run_preload_preview(selected_groups: List[Dict], videos: List[Dict], project
         else:
             st.warning("No preview results available")
 
-def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str, session: Session):
+
+def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], project_id: int, user_id: int, role: str):
     """Preload options without auto-submitting - REVERTED to original for annotators, fixed for reviewers"""
     
     virtual_responses_key = f"virtual_responses_{role}_{project_id}"
@@ -1005,10 +1015,11 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
     
     if role == "reviewer":
         try:
-            available_annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
-            annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
-                display_names=selected_annotators, project_id=project_id, session=session
-            )
+            available_annotators = get_session_cached_project_annotators(project_id=project_id)
+            with get_db_session() as session:
+                annotator_user_ids = AuthService.get_annotator_user_ids_from_display_names(
+                    display_names=selected_annotators, project_id=project_id, session=session
+                )
             include_user_ids = annotator_user_ids
             
             # Map user weights
@@ -1074,9 +1085,10 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
                                 
                                 if annotator_user_id:
                                     # Get this annotator's answer for this specific video and question
-                                    answers_df = AnnotatorService.get_question_answers(
-                                        question_id=question_id, project_id=project_id, session=session
-                                    )
+                                    with get_db_session() as session:
+                                        answers_df = AnnotatorService.get_question_answers(
+                                            question_id=question_id, project_id=project_id, session=session
+                                        )
                                     
                                     if not answers_df.empty:
                                         user_video_answers = answers_df[
@@ -1100,14 +1112,14 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
                     result_answers = calculate_preload_with_weights(
                         video_id=video_id, project_id=project_id, question_group_id=group_id,
                         include_user_ids=include_user_ids, virtual_responses_by_question=dynamic_virtual_responses,
-                        session=session, user_weights=user_weight_map, option_weights=option_weights
+                        user_weights=user_weight_map, option_weights=option_weights
                     )
                 else:
                     # REVERTED: Original logic for annotators (no dynamic virtual responses)
                     result_answers = calculate_preload_answers_no_threshold(
                         video_id=video_id, project_id=project_id, question_group_id=group_id,
                         include_user_ids=include_user_ids, virtual_responses_by_question=virtual_responses_by_question,
-                        session=session, user_weights=user_weight_map, role=role
+                        user_weights=user_weight_map, role=role
                     )
                 
                 # Store winning answers for passing to forms
@@ -1146,23 +1158,24 @@ def run_preload_options_only(selected_groups: List[Dict], videos: List[Dict], pr
 
 def calculate_preload_answers_no_threshold(video_id: int, project_id: int, question_group_id: int, 
                                          include_user_ids: List[int], virtual_responses_by_question: Dict,
-                                         session: Session, user_weights: Dict[int, float] = None, role: str = "annotator") -> Dict[int, str]:
+                                         user_weights: Dict[int, float] = None, role: str = "annotator") -> Dict[int, str]:
     """Calculate preload answers WITHOUT threshold requirements - REVERTED to original for annotators"""
     
     try:
-        questions = get_questions_by_group_cached(group_id=question_group_id, session=session)
+        questions = get_questions_by_group_cached(group_id=question_group_id)
         if not questions:
             return {}
 
-        if role == "annotator":
-            existing_answers = AnnotatorService.get_user_answers_for_question_group(
-                video_id=video_id, project_id=project_id, user_id=include_user_ids[0], 
-                question_group_id=question_group_id, session=session
-            )
-        else:
-            existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
-                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-            )
+        with get_db_session() as session:
+            if role == "annotator":
+                existing_answers = AnnotatorService.get_user_answers_for_question_group(
+                    video_id=video_id, project_id=project_id, user_id=include_user_ids[0], 
+                    question_group_id=question_group_id, session=session
+                )
+            else:
+                existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+                    video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+                )
         
         preload_answers = {}
 
@@ -1204,9 +1217,10 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                     # Add annotator votes
                     if include_user_ids:
                         try:
-                            answers_df = AnnotatorService.get_question_answers(
-                                question_id=question_id, project_id=project_id, session=session
-                            )
+                            with get_db_session() as session:
+                                answers_df = AnnotatorService.get_question_answers(
+                                    question_id=question_id, project_id=project_id, session=session
+                                )
                             
                             if not answers_df.empty:
                                 video_answers = answers_df[
@@ -1277,9 +1291,10 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
                         # Add annotator answers
                         if include_user_ids:
                             try:
-                                answers_df = AnnotatorService.get_question_answers(
-                                    question_id=question_id, project_id=project_id, session=session
-                                )
+                                with get_db_session() as session:
+                                    answers_df = AnnotatorService.get_question_answers(
+                                        question_id=question_id, project_id=project_id, session=session
+                                    )
                                 
                                 if not answers_df.empty:
                                     video_answers = answers_df[
@@ -1315,19 +1330,20 @@ def calculate_preload_answers_no_threshold(video_id: int, project_id: int, quest
 def calculate_preload_with_weights(
     video_id: int, project_id: int, question_group_id: int, 
     include_user_ids: List[int], virtual_responses_by_question: Dict,
-    session: Session, user_weights: Dict[int, float] = None, 
+    user_weights: Dict[int, float] = None, 
     option_weights: Dict[int, Dict[str, float]] = None
 ) -> Dict[int, str]:
     """Calculate preload answers for reviewers with custom option weights"""
     
     try:
-        questions = get_questions_by_group_cached(group_id=question_group_id, session=session)
+        questions = get_questions_by_group_cached(group_id=question_group_id)
         if not questions:
             return {}
         
-        existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
-            video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-        )
+        with get_db_session() as session:
+            existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+            )
         
         preload_answers = {}
 
@@ -1381,15 +1397,16 @@ def calculate_preload_with_weights(
                 else:
                     # Fallback to service call if no cache
                 
-                    # Get all votes for this question (annotator + virtual responses)
-                    vote_counts = ReviewerAutoSubmitService.get_weighted_votes_for_question_with_custom_weights(
-                        video_id=video_id, project_id=project_id, question_id=question_id,
-                        include_user_ids=include_user_ids, 
-                        virtual_responses=virtual_responses_by_question.get(question_id, []),
-                        session=session, user_weights=user_weights,
-                        custom_option_weights=question_custom_weights if question_custom_weights else None,
-                        cache_data=cache_data
-                    )
+                    with get_db_session() as session:
+                        # Get all votes for this question (annotator + virtual responses)
+                        vote_counts = ReviewerAutoSubmitService.get_weighted_votes_for_question_with_custom_weights(
+                            video_id=video_id, project_id=project_id, question_id=question_id,
+                            include_user_ids=include_user_ids, 
+                            virtual_responses=virtual_responses_by_question.get(question_id, []),
+                            session=session, user_weights=user_weights,
+                            custom_option_weights=question_custom_weights if question_custom_weights else None,
+                            cache_data=cache_data
+                        )
                     
                 # Pick highest weighted option (NO THRESHOLD CHECK!)
                 if vote_counts:
@@ -1429,9 +1446,10 @@ def calculate_preload_with_weights(
                         # Add annotator answers
                         if include_user_ids:
                             try:
-                                answers_df = AnnotatorService.get_question_answers(
-                                    question_id=question_id, project_id=project_id, session=session
-                                )
+                                with get_db_session() as session:
+                                    answers_df = AnnotatorService.get_question_answers(
+                                        question_id=question_id, project_id=project_id, session=session
+                                    )
                                 
                                 if not answers_df.empty:
                                     video_answers = answers_df[
@@ -1464,7 +1482,7 @@ def calculate_preload_with_weights(
 
 
 
-def build_virtual_responses_for_video(video_id: int, project_id: int, role: str, session: Session) -> Dict[int, List[Dict]]:
+def build_virtual_responses_for_video(video_id: int, project_id: int, role: str) -> Dict[int, List[Dict]]:
     """
     Build virtual responses for a specific video, using stored option weights and description selections.
     OPTIMIZED: Uses cached data for description questions
@@ -1486,7 +1504,7 @@ def build_virtual_responses_for_video(video_id: int, project_id: int, role: str,
     cache_data = None
     if selected_annotators and description_selections:
         annotator_user_ids = get_optimized_annotator_user_ids(
-            display_names=selected_annotators, project_id=project_id, session=session
+            display_names=selected_annotators, project_id=project_id
         )
         if annotator_user_ids:
             session_id = get_session_cache_key()
@@ -1513,14 +1531,15 @@ def build_virtual_responses_for_video(video_id: int, project_id: int, role: str,
                         break
             else:
                 # Fallback to original method if cache miss
-                available_annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+                available_annotators = get_session_cached_project_annotators(project_id=project_id)
                 annotator_info = available_annotators.get(selected_annotator, {})
                 annotator_user_id = annotator_info.get('id')
                 
                 if annotator_user_id:
-                    answers_df = AnnotatorService.get_question_answers(
-                        question_id=question_id, project_id=project_id, session=session
-                    )
+                    with get_db_session() as session:
+                        answers_df = AnnotatorService.get_question_answers(
+                            question_id=question_id, project_id=project_id, session=session
+                        )
                     
                     if not answers_df.empty:
                         user_video_answers = answers_df[
@@ -1540,22 +1559,23 @@ def build_virtual_responses_for_video(video_id: int, project_id: int, role: str,
     return virtual_responses
 
 
-def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session: Session):
+def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int):
     """Run auto-submit for all auto-submit groups across entire project when user first enters - OPTIMIZED"""
     
     try:
         # Get all data in fewer queries
-        project = get_project_metadata_cached(project_id=project_id, session=session)
-        question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
-        videos = get_project_videos(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id)
+        question_groups = get_schema_question_groups(schema_id=project["schema_id"])
+        videos = get_project_videos(project_id=project_id)
         
         # Find auto-submit groups first
         auto_submit_groups = []
         for group in question_groups:
             try:
-                group_details = QuestionGroupService.get_group_details_with_verification(
-                    group_id=group["ID"], session=session
-                )
+                with get_db_session() as session:
+                    group_details = QuestionGroupService.get_group_details_with_verification(
+                        group_id=group["ID"], session=session
+                    )
                 if group_details.get("is_auto_submit", False):
                     auto_submit_groups.append(group)
             except:
@@ -1581,10 +1601,11 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
             existing_answers_cache = {}
             for group in auto_submit_groups:
                 try:
-                    user_answers = AnnotatorService.get_user_answers_for_question_group(
-                        video_id=None, project_id=project_id, user_id=user_id, 
-                        question_group_id=group["ID"], session=session
-                    )
+                    with get_db_session() as session:
+                        user_answers = AnnotatorService.get_user_answers_for_question_group(
+                            video_id=None, project_id=project_id, user_id=user_id, 
+                            question_group_id=group["ID"], session=session
+                        )
                     existing_answers_cache[group["ID"]] = user_answers
                 except:
                     existing_answers_cache[group["ID"]] = {}
@@ -1612,10 +1633,11 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
                             # Check if this specific video has answers
                             has_answers = False
                             try:
-                                video_answers = AnnotatorService.get_user_answers_for_question_group(
-                                    video_id=video["id"], project_id=project_id, user_id=user_id, 
-                                    question_group_id=group["ID"], session=session
-                                )
+                                with get_db_session() as session:
+                                    video_answers = AnnotatorService.get_user_answers_for_question_group(
+                                        video_id=video["id"], project_id=project_id, user_id=user_id, 
+                                        question_group_id=group["ID"], session=session
+                                    )
                                 if video_answers and any(answer.strip() for answer in video_answers.values() if answer):
                                     has_answers = True
                             except Exception as e:
@@ -1626,7 +1648,7 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
                                 continue
                             
                             # Get questions once per group
-                            questions = get_questions_by_group_cached(group_id=group["ID"], session=session)
+                            questions = get_questions_by_group_cached(group_id=group["ID"])
                             if not questions:
                                 continue
                             
@@ -1658,12 +1680,13 @@ def run_project_wide_auto_submit_on_entry(project_id: int, user_id: int, session
                             
                             # Auto-submit with error handling
                             try:
-                                AutoSubmitService.auto_submit_question_group(
-                                    video_id=video["id"], project_id=project_id, question_group_id=group["ID"],
-                                    user_id=user_id, include_user_ids=[user_id],
-                                    virtual_responses_by_question=virtual_responses_by_question, thresholds=thresholds,
-                                    session=session
-                                )
+                                with get_db_session() as session:
+                                    AutoSubmitService.auto_submit_question_group(
+                                        video_id=video["id"], project_id=project_id, question_group_id=group["ID"],
+                                        user_id=user_id, include_user_ids=[user_id],
+                                        virtual_responses_by_question=virtual_responses_by_question, thresholds=thresholds,
+                                        session=session
+                                    )
                             except Exception as submit_error:
                                 # Log error but continue with other videos/groups
                                 print(f"Auto-submit failed for video {video['id']}, group {group['ID']}: {submit_error}")
@@ -1697,16 +1720,15 @@ def display_smart_annotator_selection_for_auto_submit(annotators: Dict[str, Dict
     # Check completion status for each annotator
     # Use cached completion progress instead of individual calls
     try:
-        with get_db_session() as session:
-            completion_progress = get_cached_user_completion_progress(project_id=project_id, session=session)
-            
-            completed_annotators = {}
-            for annotator_display, annotator_info in annotators.items():
-                user_id = annotator_info.get('id')
-                if user_id and user_id in completion_progress:
-                    progress = completion_progress[user_id]
-                    if progress >= 100:
-                        completed_annotators[annotator_display] = annotator_info
+        completion_progress = get_cached_user_completion_progress(project_id=project_id)
+        
+        completed_annotators = {}
+        for annotator_display, annotator_info in annotators.items():
+            user_id = annotator_info.get('id')
+            if user_id and user_id in completion_progress:
+                progress = completion_progress[user_id]
+                if progress >= 100:
+                    completed_annotators[annotator_display] = annotator_info
     except:
         completed_annotators = {}
     

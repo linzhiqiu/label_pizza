@@ -10,12 +10,10 @@ from label_pizza.ui_components import (
 )
 from label_pizza.database_utils import (
     get_db_session, handle_database_errors,
-    check_project_has_full_ground_truth, get_user_assignment_dates,
-    get_project_groups_with_projects, calculate_user_overall_progress,
     get_schema_question_groups
 )
 from label_pizza.display_fragments import (
-    display_single_choice_question, display_description_question, display_question_status,
+    display_single_choice_question, display_description_question,
     submit_answer_reviews, load_existing_answer_reviews, get_questions_with_custom_display_if_enabled,
     get_project_metadata_cached
 )
@@ -70,33 +68,34 @@ def video_answer_search_portal():
     st.markdown("## 🎬 Video Answer Search & Editor")
     st.markdown("*Find and edit all answers for any video across all project groups*")
     
-    with get_db_session() as session:
-        # Improved Step 1: Video Selection Section
-        video_info = display_improved_video_selection_section(session)
-        
-        if not video_info:
-            return
-        
-        st.markdown("---")
-        
-        # Improved Step 2: Project Group Filter Section  
-        project_group_filter = display_improved_project_group_filter_section(session)
-        
-        st.markdown("---")
-        
-        # Improved Step 3: Main Video + Answers Layout
-        display_improved_video_answers_editor(video_info, project_group_filter, session)
+    # Improved Step 1: Video Selection Section
+    video_info = display_improved_video_selection_section()
+    
+    if not video_info:
+        return
+    
+    st.markdown("---")
+    
+    # Improved Step 2: Project Group Filter Section  
+    project_group_filter = display_improved_project_group_filter_section()
+    
+    st.markdown("---")
+    
+    # Improved Step 3: Main Video + Answers Layout
+    display_improved_video_answers_editor(video_info, project_group_filter)
 
-def display_improved_video_selection_section(session: Session) -> Optional[Dict[str, Any]]:
+
+def display_improved_video_selection_section() -> Optional[Dict[str, Any]]:
     """Improved video selection interface with better styling"""
     
     st.markdown("### 📹 Step 1: Select Video")
     
     # Get videos with better organization
-    videos_df = VideoService.get_all_videos(session=session)
-    if videos_df.empty:
-        st.warning("🚫 No videos available in the system")
-        return None
+    with get_db_session() as session:
+        videos_df = VideoService.get_all_videos(session=session)
+        if videos_df.empty:
+            st.warning("🚫 No videos available in the system")
+            return None
     
     # Restore search term from session state or URL parameter
     stored_search = st.session_state.get("search_portal_search_term", "")
@@ -241,7 +240,8 @@ def display_improved_video_selection_section(session: Session) -> Optional[Dict[
         "display": selected_video_display
     }
     
-    video_info = VideoService.get_video_info_by_uid(video_uid=selected_video_uid, session=session)
+    with get_db_session() as session:
+        video_info = VideoService.get_video_info_by_uid(video_uid=selected_video_uid, session=session)
     
     if not video_info:
         st.error("❌ Error loading video information")
@@ -258,37 +258,38 @@ def display_improved_video_selection_section(session: Session) -> Optional[Dict[
     
     return video_info
 
-def display_improved_project_group_filter_section(session: Session) -> List[int]:
+def display_improved_project_group_filter_section() -> List[int]:
     """Improved project group filtering interface"""
     
     st.markdown("### 🗂️ Step 2: Configure Project Group Filters")
     
     try:
-        project_groups = ProjectGroupService.list_project_groups(session=session)
-        
-        # Check for unassigned projects
-        all_projects = ProjectService.get_all_projects_including_archived(session=session)
-        unassigned_project_count = 0
-        archived_project_count = 0
-
-        if not all_projects.empty:
-            archived_project_count = len(all_projects[all_projects.get("Archived", False) == True])
-
-            assigned_project_ids = set()
+        with get_db_session() as session:
+            project_groups = ProjectGroupService.list_project_groups(session=session)
             
-            for group in project_groups:
-                try:
-                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group["id"], session=session)
-                    assigned_project_ids.update(int(p["id"]) for p in group_info["projects"])
-                except:
-                    continue
+            # Check for unassigned projects
+            all_projects = ProjectService.get_all_projects_including_archived(session=session)
+            unassigned_project_count = 0
+            archived_project_count = 0
+
+            if not all_projects.empty:
+                archived_project_count = len(all_projects[all_projects.get("Archived", False) == True])
+
+                assigned_project_ids = set()
+                
+                for group in project_groups:
+                    try:
+                        group_info = ProjectGroupService.get_project_group_by_id(group_id=group["id"], session=session)
+                        assigned_project_ids.update(int(p["id"]) for p in group_info["projects"])
+                    except:
+                        continue
+                
+                unassigned_projects = all_projects[~all_projects["ID"].isin(assigned_project_ids)]
+                unassigned_project_count = len(unassigned_projects)
             
-            unassigned_projects = all_projects[~all_projects["ID"].isin(assigned_project_ids)]
-            unassigned_project_count = len(unassigned_projects)
-        
-        if not project_groups and unassigned_project_count == 0 and archived_project_count == 0:
-            st.warning("🚫 No project groups or projects found")
-            return []
+            if not project_groups and unassigned_project_count == 0 and archived_project_count == 0:
+                st.warning("🚫 No project groups or projects found")
+                return []
         
         # Initialize selections
         if "admin_selected_groups" not in st.session_state:
@@ -352,7 +353,8 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
             # Count projects in selected groups that contain this video
             for group_id in st.session_state.admin_selected_groups:
                 try:
-                    group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
+                    with get_db_session() as session:
+                        group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
                     for project in group_info["projects"]:
                         project_id = int(project["id"])
                         
@@ -372,12 +374,13 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                     project_id = project_row["ID"]
                     
                     # Check if this project contains the video
-                    project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
-                    if any(v["uid"] == video_uid for v in project_videos):
-                        if project_row.get("Archived", False):
-                            archived_unassigned_projects += 1
-                        else:
-                            active_unassigned_projects += 1
+                    with get_db_session() as session:
+                        project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
+                        if any(v["uid"] == video_uid for v in project_videos):
+                            if project_row.get("Archived", False):
+                                archived_unassigned_projects += 1
+                            else:
+                                active_unassigned_projects += 1
             
             # Calculate totals based on checkbox setting
             if st.session_state.admin_include_archived:
@@ -452,8 +455,9 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
                 with cols[i % num_cols]:
                     # Get project count
                     try:
-                        group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group["id"]), session=session)
-                        project_count = len(group_info["projects"])
+                        with get_db_session() as session:
+                            group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group["id"]), session=session)
+                            project_count = len(group_info["projects"])
                     except:
                         project_count = 0
                     
@@ -494,7 +498,7 @@ def display_improved_project_group_filter_section(session: Session) -> List[int]
         st.error(f"❌ Error loading project groups: {str(e)}")
         return []
 
-def display_improved_video_answers_editor(video_info: Dict[str, Any], selected_group_ids: List[int], session: Session):
+def display_improved_video_answers_editor(video_info: Dict[str, Any], selected_group_ids: List[int]):
     """Improved video + answers editor layout"""
     
     st.markdown("### 🎯 Step 3: Video Player & Ground Truth Editor")
@@ -504,7 +508,8 @@ def display_improved_video_answers_editor(video_info: Dict[str, Any], selected_g
         return
     
     # Get all ground truth for this video
-    gt_data = get_video_ground_truth_across_groups(video_info["id"], selected_group_ids, session)
+    with get_db_session() as session:
+        gt_data = get_video_ground_truth_across_groups(video_info["id"], selected_group_ids)
     
     # Improved video player section
     display_improved_video_player_section(video_info)
@@ -512,7 +517,7 @@ def display_improved_video_answers_editor(video_info: Dict[str, Any], selected_g
     st.markdown("---")
     
     # Improved project groups display
-    display_improved_project_groups_section(gt_data, video_info, session)
+    display_improved_project_groups_section(gt_data, video_info)
 
 def display_improved_video_player_section(video_info: Dict[str, Any]):
     """Improved video player section"""
@@ -539,7 +544,7 @@ def display_improved_video_player_section(video_info: Dict[str, Any]):
     # Video player
     custom_video_player(video_url=video_info["url"], video_uid=video_info["uid"], autoplay=False, loop=True, show_share_button=True)
 
-def display_improved_project_groups_section(gt_data: Dict, video_info: Dict[str, Any], session: Session):
+def display_improved_project_groups_section(gt_data: Dict, video_info: Dict[str, Any]):
     """Improved project groups display with better organization"""
     
     if not gt_data:
@@ -586,9 +591,9 @@ def display_improved_project_groups_section(gt_data: Dict, video_info: Dict[str,
         """, unsafe_allow_html=True)
         
         # Display projects with improved styling
-        display_improved_projects_as_expanders(group_data, video_info, session)
+        display_improved_projects_as_expanders(group_data, video_info)
 
-def display_improved_projects_as_expanders(group_data: Dict, video_info: Dict[str, Any], session: Session):
+def display_improved_projects_as_expanders(group_data: Dict, video_info: Dict[str, Any]):
     """Display projects with improved expander styling"""
     
     projects = group_data["projects"]
@@ -644,10 +649,10 @@ def display_improved_projects_as_expanders(group_data: Dict, video_info: Dict[st
                 st.caption(f"📊 Overall Progress: {completed_qg}/{qg_count} question groups completed ({progress_percent:.0f}%)")
             
             display_project_question_groups_with_tabs(
-                project_data, project_id, video_info, user_id, session
+                project_data, project_id, video_info, user_id
             )
 
-def display_project_question_groups_with_tabs(project_data: Dict, project_id: int, video_info: Dict[str, Any], user_id: int, session: Session):
+def display_project_question_groups_with_tabs(project_data: Dict, project_id: int, video_info: Dict[str, Any], user_id: int):
     """Display question groups using tabs exactly like other portals"""
     
     question_groups = project_data.get("question_groups", {})
@@ -674,7 +679,7 @@ def display_project_question_groups_with_tabs(project_data: Dict, project_id: in
             with qg_tab:
                 display_single_question_group_for_search(
                     video_info, project_id, user_id, group["ID"], 
-                    question_groups[group["ID"]], session
+                    question_groups[group["ID"]]
                 )
     else:
         # Single question group
@@ -685,19 +690,20 @@ def display_project_question_groups_with_tabs(project_data: Dict, project_id: in
         
         display_single_question_group_for_search(
             video_info, project_id, user_id, group["ID"], 
-            question_groups[group["ID"]], session
+            question_groups[group["ID"]]
         )
 
 
-def determine_ground_truth_status(video_id: int, project_id: int, question_group_id: int, user_id: int, session: Session) -> Dict[str, str]:
+def determine_ground_truth_status(video_id: int, project_id: int, question_group_id: int, user_id: int) -> Dict[str, str]:
     """Determine the correct role and button text - simplified with error logging only"""
     
     try:
-        # Check if ground truth exists for this question group
-        gt_df = GroundTruthService.get_ground_truth_dict_for_question_group(
-            video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
-        )
-        questions = QuestionService.get_questions_by_group_id(group_id=question_group_id, session=session)
+        with get_db_session() as session:
+            # Check if ground truth exists for this question group
+            gt_df = GroundTruthService.get_ground_truth_dict_for_question_group(
+                video_id=video_id, project_id=project_id, question_group_id=question_group_id, session=session
+            )
+            questions = QuestionService.get_questions_by_group_id(group_id=question_group_id, session=session)
         
         # Check if gt_df is empty or no questions (dict is empty if len == 0)
         if len(gt_df) == 0 or not questions:
@@ -720,12 +726,13 @@ def determine_ground_truth_status(video_id: int, project_id: int, question_group
         
         # Check if any questions were modified by admin
         question_ids = [q["id"] for q in questions]
-        has_admin_override = any(
-            GroundTruthService.check_question_modified_by_admin(
-                video_id=int(video_id), project_id=int(project_id), question_id=int(qid), session=session
+        with get_db_session() as session:
+            has_admin_override = any(
+                GroundTruthService.check_question_modified_by_admin(
+                    video_id=int(video_id), project_id=int(project_id), question_id=int(qid), session=session
+                )
+                for qid in question_ids
             )
-            for qid in question_ids
-        )
         
         if has_admin_override:
             return {
@@ -735,7 +742,8 @@ def determine_ground_truth_status(video_id: int, project_id: int, question_group
             }
         
         # Check if current user is the original reviewer by getting full GT data
-        gt_full_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
+        with get_db_session() as session:
+            gt_full_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
         if not gt_full_df.empty:
             group_gt = gt_full_df[gt_full_df["Question ID"].isin(question_ids)]
             if not group_gt.empty:
@@ -767,12 +775,12 @@ def determine_ground_truth_status(video_id: int, project_id: int, question_group
 
 
 @st.fragment
-def display_single_question_group_for_search(video_info: Dict, project_id: int, user_id: int, qg_id: int, qg_data: Dict, session: Session):
+def display_single_question_group_for_search(video_info: Dict, project_id: int, user_id: int, qg_id: int, qg_data: Dict):
     """Display single question group as fragment to prevent full page rerun"""
     
     # Determine the correct role and button text
     try:
-        gt_status = determine_ground_truth_status(video_info["id"], project_id, qg_id, user_id, session)
+        gt_status = determine_ground_truth_status(video_info["id"], project_id, qg_id, user_id)
     except Exception as e:
         print(f"❌ ERROR determining GT status: {e}")
         # Create fallback form
@@ -793,8 +801,7 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
         service_questions = get_questions_with_custom_display_if_enabled(
             group_id=qg_id, 
             project_id=project_id, 
-            video_id=video_info["id"], 
-            session=session
+            video_id=video_info["id"]
         )
 
         if not service_questions:
@@ -818,9 +825,10 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
     # Get existing answers to populate form (IMPROVEMENT 1: Better default loading)
     existing_answers = {}
     try:
-        existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
-            video_id=video_info["id"], project_id=project_id, question_group_id=qg_id, session=session
-        )
+        with get_db_session() as session:
+            existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+                video_id=video_info["id"], project_id=project_id, question_group_id=qg_id, session=session
+            )
     except Exception as e:
         print(f"❌ ERROR loading existing answers: {e}")
         existing_answers = {}
@@ -837,7 +845,7 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
                 try:
                     existing_review_data = load_existing_answer_reviews(
                         video_id=video_info["id"], project_id=project_id, 
-                        question_id=question["id"], session=session
+                        question_id=question["id"]
                     )
                     answer_reviews[question_text] = existing_review_data
                 except Exception as review_error:
@@ -871,13 +879,14 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
                         admin_info = None
                         if gt_status["role"] == "meta_reviewer":
                             try:
-                                is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
-                                    video_id=video_info["id"], project_id=project_id, question_id=question_id, session=session
-                                )
-                                if is_modified_by_admin:
-                                    admin_info = GroundTruthService.get_admin_modification_details(
+                                with get_db_session() as session:
+                                    is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
                                         video_id=video_info["id"], project_id=project_id, question_id=question_id, session=session
                                     )
+                                    if is_modified_by_admin:
+                                        admin_info = GroundTruthService.get_admin_modification_details(
+                                            video_id=video_info["id"], project_id=project_id, question_id=question_id, session=session
+                                        )
                             except Exception as admin_check_error:
                                 print(f"❌ ERROR checking admin modification for question {question_id}: {admin_check_error}")
                                 is_modified_by_admin = False
@@ -896,7 +905,6 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
                                     is_modified_by_admin=is_modified_by_admin,
                                     admin_info=admin_info,
                                     form_disabled=False,
-                                    session=session,
                                     gt_value="",
                                     mode="",
                                     selected_annotators=selected_annotators,
@@ -914,7 +922,6 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
                                     is_modified_by_admin=is_modified_by_admin,
                                     admin_info=admin_info,
                                     form_disabled=False,
-                                    session=session,
                                     gt_value="",
                                     mode="",
                                     answer_reviews=answer_reviews,
@@ -939,25 +946,26 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
             
             if submitted:
                 try:
-                    if gt_status["role"] == "meta_reviewer":
-                        GroundTruthService.override_ground_truth_to_question_group(
-                            video_id=video_info["id"], project_id=project_id, 
-                            question_group_id=qg_id, admin_id=user_id, 
-                            answers=answers, session=session
-                        )
-                        st.success("✅ Ground truth overridden successfully!")
-                    else:  # reviewer or reviewer_resubmit
-                        GroundTruthService.submit_ground_truth_to_question_group(
-                            video_id=video_info["id"], project_id=project_id, 
-                            reviewer_id=user_id, question_group_id=qg_id, 
-                            answers=answers, session=session
-                        )
-                        success_msg = "✅ Ground truth re-submitted successfully!" if gt_status["role"] == "reviewer_resubmit" else "✅ Ground truth submitted successfully!"
-                        st.success(success_msg)
+                    with get_db_session() as session:
+                        if gt_status["role"] == "meta_reviewer":
+                            GroundTruthService.override_ground_truth_to_question_group(
+                                video_id=video_info["id"], project_id=project_id, 
+                                question_group_id=qg_id, admin_id=user_id, 
+                                answers=answers, session=session
+                            )
+                            st.success("✅ Ground truth overridden successfully!")
+                        else:  # reviewer or reviewer_resubmit
+                            GroundTruthService.submit_ground_truth_to_question_group(
+                                video_id=video_info["id"], project_id=project_id, 
+                                reviewer_id=user_id, question_group_id=qg_id, 
+                                answers=answers, session=session
+                            )
+                            success_msg = "✅ Ground truth re-submitted successfully!" if gt_status["role"] == "reviewer_resubmit" else "✅ Ground truth submitted successfully!"
+                            st.success(success_msg)
                     
                     # Submit answer reviews if any
                     if answer_reviews:
-                        submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id, session)
+                        submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id)
                     
                     st.rerun(scope="fragment")
                     
@@ -977,7 +985,7 @@ def display_single_question_group_for_search(video_info: Dict, project_id: int, 
             st.form_submit_button("Form Creation Failed", disabled=True)
 
 
-def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List[int], session: Session) -> Dict:
+def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List[int]) -> Dict:
     """Get only ground truth for a video across selected project groups"""
     
     results = {}
@@ -987,7 +995,8 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
     include_archived = st.session_state.get("admin_include_archived", False)
     if include_unassigned:
         # Get all projects and find unassigned ones
-        all_projects = ProjectService.get_all_projects_including_archived(session=session)
+        with get_db_session() as session:
+            all_projects = ProjectService.get_all_projects_including_archived(session=session)
 
         if not include_archived and not all_projects.empty:
             all_projects = all_projects[all_projects.get("Archived", False) != True]
@@ -996,7 +1005,8 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
             assigned_project_ids = set()
             for group_id in selected_group_ids:
                 try:
-                    group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group_id), session=session)
+                    with get_db_session() as session:
+                        group_info = ProjectGroupService.get_project_group_by_id(group_id=int(group_id), session=session)
                     assigned_project_ids.update(int(p["id"]) for p in group_info["projects"])
                 except:
                     continue
@@ -1012,11 +1022,12 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
                     project_name = project_row["Name"]
                     
                     # Check if video is in this project
-                    project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
+                    with get_db_session() as session:
+                        project_videos = VideoService.get_project_videos(project_id=project_id, session=session)
                     video_in_project = any(v["id"] == video_id for v in project_videos)
                     
                     if video_in_project:
-                        project_results = get_project_ground_truth_for_video(video_id, project_id, session)
+                        project_results = get_project_ground_truth_for_video(video_id, project_id)
                         
                         if project_results["has_data"]:
                             unassigned_results["projects"][project_id] = {
@@ -1031,7 +1042,8 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
     for group_id in selected_group_ids:
         try:
             # Get group info
-            group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
+            with get_db_session() as session:
+                group_info = ProjectGroupService.get_project_group_by_id(group_id=group_id, session=session)
             group_name = group_info["group"]["name"]
             projects = group_info["projects"]
             
@@ -1042,14 +1054,15 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
                     continue  # Skip archived projects
                 
                 # Check if video is in this project
-                project_videos = VideoService.get_project_videos(project_id=int(project["id"]), session=session)
+                with get_db_session() as session:
+                    project_videos = VideoService.get_project_videos(project_id=int(project["id"]), session=session)
                 video_in_project = any(v["id"] == video_id for v in project_videos)
                 
                 if not video_in_project:
                     continue
                 
                 # Get project ground truth only
-                project_results = get_project_ground_truth_for_video(video_id, int(project["id"]), session)
+                project_results = get_project_ground_truth_for_video(video_id, int(project["id"]))
                 
                 if project_results["has_data"]:
                     group_results["projects"][int(project["id"])] = {
@@ -1067,17 +1080,18 @@ def get_video_ground_truth_across_groups(video_id: int, selected_group_ids: List
     
     return results
 
-def get_project_ground_truth_for_video(video_id: int, project_id: int, session: Session) -> Dict:
+def get_project_ground_truth_for_video(video_id: int, project_id: int) -> Dict:
     """Get only ground truth for a video in a specific project"""
     
     try:
         # Get project info
-        project = get_project_metadata_cached(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id)
         
         # Get schema question groups
-        question_groups = SchemaService.get_schema_question_groups_list(
-            schema_id=project["schema_id"], session=session
-        )
+        with get_db_session() as session:
+            question_groups = SchemaService.get_schema_question_groups_list(
+                schema_id=project["schema_id"], session=session
+            )
         
         project_results = {
             "has_data": False,
@@ -1093,8 +1107,7 @@ def get_project_ground_truth_for_video(video_id: int, project_id: int, session: 
             questions = get_questions_with_custom_display_if_enabled(
                 group_id=group_id, 
                 project_id=project_id, 
-                video_id=video_id, 
-                session=session
+                video_id=video_id
             )
             
             group_data = {
@@ -1119,16 +1132,18 @@ def get_project_ground_truth_for_video(video_id: int, project_id: int, session: 
                 
                 # Get ground truth only
                 try:
-                    gt_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
-                    
+                    with get_db_session() as session:
+                        gt_df = GroundTruthService.get_ground_truth(video_id=video_id, project_id=project_id, session=session)
+                        
                     if not gt_df.empty:
                         gt_row = gt_df[gt_df["Question ID"] == question_id]
                         
                         if not gt_row.empty:
                             gt_data = gt_row.iloc[0]
-                            reviewer_info = AuthService.get_user_info_by_id(
-                                user_id=int(gt_data["Reviewer ID"]), session=session
-                            )
+                            with get_db_session() as session:
+                                reviewer_info = AuthService.get_user_info_by_id(
+                                    user_id=int(gt_data["Reviewer ID"]), session=session
+                                )
                             
                             question_data["ground_truth"] = {
                                 "answer_value": gt_data["Answer Value"],
@@ -1166,25 +1181,25 @@ def video_criteria_search_portal():
     st.markdown("## 📊 Video Criteria Search")
     st.markdown("*Find videos based on ground truth criteria or completion status*")
     
-    with get_db_session() as session:
-        search_type_tabs = st.tabs(["🎯 Ground Truth Criteria", "📈 Completion Status"])
-        
-        with search_type_tabs[0]:
-            ground_truth_criteria_search(session)
-        
-        with search_type_tabs[1]:
-            completion_status_search(session)
+    search_type_tabs = st.tabs(["🎯 Ground Truth Criteria", "📈 Completion Status"])
+    
+    with search_type_tabs[0]:
+        ground_truth_criteria_search()
+    
+    with search_type_tabs[1]:
+        completion_status_search()
 
-def ground_truth_criteria_search(session: Session):
+def ground_truth_criteria_search():
     """Search videos by ground truth criteria"""
     
     st.markdown("### 🎯 Search by Ground Truth Answers")
     
     # Project selection
-    all_projects_df = ProjectService.get_all_projects_including_archived(session=session)
-    if all_projects_df.empty:
-        st.warning("🚫 No projects available")
-        return
+    with get_db_session() as session:
+        all_projects_df = ProjectService.get_all_projects_including_archived(session=session)
+        if all_projects_df.empty:
+            st.warning("🚫 No projects available")
+            return
     
     # ADD ARCHIVE FILTERING
     archived_count = len(all_projects_df[all_projects_df.get("Archived", False) == True]) if not all_projects_df.empty else 0
@@ -1243,9 +1258,10 @@ def ground_truth_criteria_search(session: Session):
         
         with add_col2:
             if project_for_criteria:
-                questions = ProjectService.get_project_questions(project_id=project_for_criteria, session=session)
+                with get_db_session() as session:
+                    questions = ProjectService.get_project_questions(project_id=project_for_criteria, session=session)
                 single_questions = [q for q in questions if q["type"] == "single"]
-                
+                    
                 if single_questions:
                     selected_question = st.selectbox(
                         "Question",
@@ -1261,7 +1277,8 @@ def ground_truth_criteria_search(session: Session):
         
         with add_col3:
             if selected_question:
-                question_data = QuestionService.get_question_by_id(question_id=selected_question["id"], session=session)
+                with get_db_session() as session:
+                    question_data = QuestionService.get_question_by_id(question_id=selected_question["id"], session=session)
                 if question_data["options"]:
                     selected_answer = st.selectbox(
                         "Required Answer",
@@ -1330,7 +1347,7 @@ def ground_truth_criteria_search(session: Session):
         with exec_col2:
             if st.button("🔍 Search Videos", key="execute_criteria_search", type="primary", use_container_width=True):
                 match_all = (match_logic == "Match ALL criteria")
-                results = execute_ground_truth_search(st.session_state.search_criteria_admin, match_all, session)
+                results = execute_ground_truth_search(st.session_state.search_criteria_admin, match_all)
                 st.session_state.criteria_search_results = results
                 st.rerun(scope="fragment")
         
@@ -1343,9 +1360,9 @@ def ground_truth_criteria_search(session: Session):
         
         # Display results with new interface
         if "criteria_search_results" in st.session_state:
-            display_criteria_search_results_interface(st.session_state.criteria_search_results, session)
+            display_criteria_search_results_interface(st.session_state.criteria_search_results)
 
-def display_criteria_search_results_interface(results: List[Dict], session: Session):
+def display_criteria_search_results_interface(results: List[Dict]):
     """Display criteria search results with video editing interface similar to video search"""
     
     if not results:
@@ -1411,10 +1428,10 @@ def display_criteria_search_results_interface(results: List[Dict], session: Sess
     user_id = user["id"]
     
     for result in page_results:
-        display_criteria_search_video_result(result, user_id, autoplay, session)
+        display_criteria_search_video_result(result, user_id, autoplay)
         st.markdown("---")
 
-def display_criteria_search_video_result(result: Dict, user_id: int, autoplay: bool, session: Session):
+def display_criteria_search_video_result(result: Dict, user_id: int, autoplay: bool):
     """Display a single video result with editing interface"""
     
     video_info = result["video_info"]
@@ -1498,7 +1515,7 @@ def display_criteria_search_video_result(result: Dict, user_id: int, autoplay: b
                     with tab:
                         display_criteria_project_questions(
                             video_info, project_id, user_id, project_data["questions"], 
-                            video_height, session
+                            video_height
                         )
             else:
                 # Single project
@@ -1506,14 +1523,14 @@ def display_criteria_search_video_result(result: Dict, user_id: int, autoplay: b
                 st.markdown(f"**📂 Project:** {project_data['project_name']}")
                 display_criteria_project_questions(
                     video_info, project_id, user_id, project_data["questions"], 
-                    video_height, session
+                    video_height
                 )
 
-def display_criteria_project_questions(video_info: Dict, project_id: int, user_id: int, criteria_questions: List[Dict], video_height: int, session: Session):
+def display_criteria_project_questions(video_info: Dict, project_id: int, user_id: int, criteria_questions: List[Dict], video_height: int):
     """Display and edit questions for a specific project in criteria search"""
     
     try:
-        project = get_project_metadata_cached(project_id=project_id, session=session)
+        project = get_project_metadata_cached(project_id=project_id)
         
         # Get the question groups that contain our criteria questions
         question_ids = [q["question_id"] for q in criteria_questions]
@@ -1526,9 +1543,10 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
             
             # Find which question group this question belongs to
             try:
-                question_groups = SchemaService.get_schema_question_groups_list(
-                    schema_id=project["schema_id"], session=session
-                )
+                with get_db_session() as session:
+                    question_groups = SchemaService.get_schema_question_groups_list(
+                        schema_id=project["schema_id"], session=session
+                    )
                 
                 for group in question_groups:
                     # group_questions = QuestionService.get_questions_by_group_id(
@@ -1537,8 +1555,7 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
                     group_questions = get_questions_with_custom_display_if_enabled(
                         group_id=group["ID"], 
                         project_id=project_id, 
-                        video_id=video_info["id"], 
-                        session=session
+                        video_id=video_info["id"]
                     )
                     
                     if any(q["id"] == question_id for q in group_questions):
@@ -1571,7 +1588,7 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
                 with tab:
                     display_criteria_question_group_editor(
                         video_info, project_id, user_id, group_id, group_data, 
-                        video_height, session
+                        video_height
                     )
         else:
             # Single question group
@@ -1579,13 +1596,13 @@ def display_criteria_project_questions(video_info: Dict, project_id: int, user_i
             st.markdown(f"### ❓ {group_data['title']}")
             display_criteria_question_group_editor(
                 video_info, project_id, user_id, group_id, group_data, 
-                video_height, session
+                video_height
             )
             
     except Exception as e:
         st.error(f"Error loading project questions: {str(e)}")
 
-def display_criteria_question_group_editor(video_info: Dict, project_id: int, user_id: int, group_id: int, group_data: Dict, video_height: int, session: Session):
+def display_criteria_question_group_editor(video_info: Dict, project_id: int, user_id: int, group_id: int, group_data: Dict, video_height: int):
     """Display question group editor specifically for criteria search results"""
     
     try:
@@ -1601,7 +1618,7 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
         
         # Determine ground truth status for this question group
         gt_status = determine_ground_truth_status(
-            video_info["id"], project_id, group_id, user_id, session
+            video_info["id"], project_id, group_id, user_id
         )
         
         # Show mode message
@@ -1613,10 +1630,11 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
         # Get existing answers
         existing_answers = {}
         try:
-            existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
-                video_id=video_info["id"], project_id=project_id, 
-                question_group_id=group_id, session=session
-            )
+            with get_db_session() as session:
+                existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+                    video_id=video_info["id"], project_id=project_id, 
+                    question_group_id=group_id, session=session
+                )
         except Exception as e:
             print(f"Error getting ground truth: {e}")
             pass
@@ -1629,7 +1647,7 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
                     question_text = question["text"]
                     existing_review_data = load_existing_answer_reviews(
                         video_id=video_info["id"], project_id=project_id, 
-                        question_id=question["id"], session=session
+                        question_id=question["id"]
                     )
                     answer_reviews[question_text] = existing_review_data
         
@@ -1659,15 +1677,16 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
                     admin_info = None
                     if gt_status["role"] == "meta_reviewer":
                         try:
-                            is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
-                                video_id=video_info["id"], project_id=project_id, 
-                                question_id=question_id, session=session
-                            )
-                            if is_modified_by_admin:
-                                admin_info = GroundTruthService.get_admin_modification_details(
+                            with get_db_session() as session:
+                                is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
                                     video_id=video_info["id"], project_id=project_id, 
                                     question_id=question_id, session=session
                                 )
+                                if is_modified_by_admin:
+                                    admin_info = GroundTruthService.get_admin_modification_details(
+                                        video_id=video_info["id"], project_id=project_id, 
+                                        question_id=question_id, session=session
+                                    )
                         except Exception as e:
                             print(f"Error checking question modified by admin: {e}")
                             pass
@@ -1692,7 +1711,6 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
                             is_modified_by_admin=is_modified_by_admin,
                             admin_info=admin_info,
                             form_disabled=False,
-                            session=session,
                             gt_value="",
                             mode="",
                             selected_annotators=selected_annotators,
@@ -1710,7 +1728,6 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
                             is_modified_by_admin=is_modified_by_admin,
                             admin_info=admin_info,
                             form_disabled=False,
-                            session=session,
                             gt_value="",
                             mode="",
                             answer_reviews=answer_reviews,
@@ -1727,27 +1744,29 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
             if submitted:
                 try:
                     if gt_status["role"] == "meta_reviewer":
-                        GroundTruthService.override_ground_truth_to_question_group(
-                            video_id=video_info["id"], project_id=project_id, 
-                            question_group_id=group_id, admin_id=user_id, 
-                            answers=answers, session=session
-                        )
+                        with get_db_session() as session:
+                            GroundTruthService.override_ground_truth_to_question_group(
+                                video_id=video_info["id"], project_id=project_id, 
+                                question_group_id=group_id, admin_id=user_id, 
+                                answers=answers, session=session
+                            )
                         
                         # Submit answer reviews if any
                         if answer_reviews:
-                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id, session)
+                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id)
                         
                         st.success("✅ Ground truth overridden successfully!")
                     else:  # reviewer or reviewer_resubmit
-                        GroundTruthService.submit_ground_truth_to_question_group(
-                            video_id=video_info["id"], project_id=project_id, 
-                            reviewer_id=user_id, question_group_id=group_id, 
-                            answers=answers, session=session
-                        )
+                        with get_db_session() as session:
+                            GroundTruthService.submit_ground_truth_to_question_group(
+                                video_id=video_info["id"], project_id=project_id, 
+                                reviewer_id=user_id, question_group_id=group_id, 
+                                answers=answers, session=session
+                            )
                         
                         # Submit answer reviews if any
                         if answer_reviews:
-                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id, session)
+                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id)
                         
                         success_msg = "✅ Ground truth re-submitted successfully!" if gt_status["role"] == "reviewer_resubmit" else "✅ Ground truth submitted successfully!"
                         st.success(success_msg)
@@ -1761,13 +1780,14 @@ def display_criteria_question_group_editor(video_info: Dict, project_id: int, us
         st.error(f"❌ Error loading question group: {str(e)}")
 
 
-def completion_status_search(session: Session):
+def completion_status_search():
     """Search videos by completion status with improved UI layout matching criteria search"""
     
     st.markdown("### 📈 Search by Completion Status")
     
     # Step 1: Project Selection Section (matching ground truth criteria layout)
-    all_projects_df = ProjectService.get_all_projects_including_archived(session=session)
+    with get_db_session() as session:
+        all_projects_df = ProjectService.get_all_projects_including_archived(session=session)
     if all_projects_df.empty:
         st.warning("🚫 No projects available")
         return
@@ -1841,7 +1861,7 @@ def completion_status_search(session: Session):
     
     with search_col2:  # Center the button
         if st.button("🔍 Search Videos", key="execute_status_search", type="primary", use_container_width=True):
-            results = execute_project_based_search(selected_projects_status, completion_filter, session)
+            results = execute_project_based_search(selected_projects_status, completion_filter)
             st.session_state.status_search_results = results
             st.rerun(scope="fragment")
     
@@ -1858,9 +1878,9 @@ def completion_status_search(session: Session):
     
     # Display results with editing interface
     if "status_search_results" in st.session_state:
-        display_completion_status_results_interface(st.session_state.status_search_results, session)
+        display_completion_status_results_interface(st.session_state.status_search_results)
 
-def display_completion_status_results_interface(results: List[Dict], session: Session):
+def display_completion_status_results_interface(results: List[Dict]):
     """Display completion status results with video editing interface"""
     
     if not results:
@@ -1952,10 +1972,10 @@ def display_completion_status_results_interface(results: List[Dict], session: Se
     user_id = user["id"]
     
     for result in page_results:
-        display_completion_status_video_result(result, user_id, autoplay, session)
+        display_completion_status_video_result(result, user_id, autoplay)
         st.markdown("---")
 
-def display_completion_status_video_result(result: Dict, user_id: int, autoplay: bool, session: Session):
+def display_completion_status_video_result(result: Dict, user_id: int, autoplay: bool):
     """Display a single video result for completion status search with editing interface"""
     
     video_id = result["video_id"]
@@ -2008,8 +2028,8 @@ def display_completion_status_video_result(result: Dict, user_id: int, autoplay:
     with question_col:
         # Show ALL question groups for this project (like reviewer/meta-reviewer portal)
         try:
-            project = get_project_metadata_cached(project_id=project_id, session=session)
-            question_groups = get_schema_question_groups(schema_id=project["schema_id"], session=session)
+            project = get_project_metadata_cached(project_id=project_id)
+            question_groups = get_schema_question_groups(schema_id=project["schema_id"])
             
             if not question_groups:
                 st.info("No question groups found for this project.")
@@ -2024,7 +2044,7 @@ def display_completion_status_video_result(result: Dict, user_id: int, autoplay:
                     with qg_tab:
                         display_completion_question_group_editor(
                             video_info, project_id, user_id, group["ID"], group, 
-                            video_height, session
+                            video_height
                         )
             else:
                 # Single question group
@@ -2035,14 +2055,14 @@ def display_completion_status_video_result(result: Dict, user_id: int, autoplay:
                 
                 display_completion_question_group_editor(
                     video_info, project_id, user_id, group["ID"], group, 
-                    video_height, session
+                    video_height
                 )
                 
         except Exception as e:
             st.error(f"Error loading project questions: {str(e)}")
 
 
-def display_completion_question_group_editor(video_info: Dict, project_id: int, user_id: int, group_id: int, group_data: Dict, video_height: int, session: Session):
+def display_completion_question_group_editor(video_info: Dict, project_id: int, user_id: int, group_id: int, group_data: Dict, video_height: int):
     """Display question group editor for completion status search (same as criteria search)"""
     
     try:
@@ -2050,8 +2070,7 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
         questions = get_questions_with_custom_display_if_enabled(
             group_id=group_id, 
             project_id=project_id, 
-            video_id=video_info["id"], 
-            session=session
+            video_id=video_info["id"]
         )
         
         if not questions:
@@ -2063,7 +2082,7 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
         
         # Determine ground truth status
         gt_status = determine_ground_truth_status(
-            video_info["id"], project_id, group_id, user_id, session
+            video_info["id"], project_id, group_id, user_id
         )
         
         # Show mode message
@@ -2075,10 +2094,11 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
         # Get existing answers
         existing_answers = {}
         try:
-            existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
-                video_id=video_info["id"], project_id=project_id, 
-                question_group_id=group_id, session=session
-            )
+            with get_db_session() as session:
+                existing_answers = GroundTruthService.get_ground_truth_dict_for_question_group(
+                    video_id=video_info["id"], project_id=project_id, 
+                    question_group_id=group_id, session=session
+                )
         except Exception as e:
             print(f"Error getting ground truth: {e}")
             pass
@@ -2091,7 +2111,7 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
                     question_text = question["text"]
                     existing_review_data = load_existing_answer_reviews(
                         video_id=video_info["id"], project_id=project_id, 
-                        question_id=question["id"], session=session
+                        question_id=question["id"]
                     )
                     answer_reviews[question_text] = existing_review_data
         
@@ -2117,15 +2137,16 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
                     admin_info = None
                     if gt_status["role"] == "meta_reviewer":
                         try:
-                            is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
-                                video_id=video_info["id"], project_id=project_id, 
-                                question_id=question_id, session=session
-                            )
-                            if is_modified_by_admin:
-                                admin_info = GroundTruthService.get_admin_modification_details(
+                            with get_db_session() as session:
+                                is_modified_by_admin = GroundTruthService.check_question_modified_by_admin(
                                     video_id=video_info["id"], project_id=project_id, 
                                     question_id=question_id, session=session
                                 )
+                                if is_modified_by_admin:
+                                    admin_info = GroundTruthService.get_admin_modification_details(
+                                        video_id=video_info["id"], project_id=project_id, 
+                                        question_id=question_id, session=session
+                                    )
                         except Exception as e:
                             print(f"Error checking question modified by admin: {e}")
                             pass
@@ -2142,7 +2163,6 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
                             is_modified_by_admin=is_modified_by_admin,
                             admin_info=admin_info,
                             form_disabled=False,
-                            session=session,
                             gt_value="",
                             mode="",
                             selected_annotators=selected_annotators,
@@ -2160,7 +2180,6 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
                             is_modified_by_admin=is_modified_by_admin,
                             admin_info=admin_info,
                             form_disabled=False,
-                            session=session,
                             gt_value="",
                             mode="",
                             answer_reviews=answer_reviews,
@@ -2177,25 +2196,27 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
             if submitted:
                 try:
                     if gt_status["role"] == "meta_reviewer":
-                        GroundTruthService.override_ground_truth_to_question_group(
-                            video_id=video_info["id"], project_id=project_id, 
-                            question_group_id=group_id, admin_id=user_id, 
-                            answers=answers, session=session
-                        )
+                        with get_db_session() as session:
+                            GroundTruthService.override_ground_truth_to_question_group(
+                                video_id=video_info["id"], project_id=project_id, 
+                                question_group_id=group_id, admin_id=user_id, 
+                                answers=answers, session=session
+                            )
                         
                         if answer_reviews:
-                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id, session)
+                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id)
                         
                         st.success("✅ Ground truth overridden successfully!")
                     else:
-                        GroundTruthService.submit_ground_truth_to_question_group(
-                            video_id=video_info["id"], project_id=project_id, 
-                            reviewer_id=user_id, question_group_id=group_id, 
-                            answers=answers, session=session
-                        )
+                        with get_db_session() as session:
+                            GroundTruthService.submit_ground_truth_to_question_group(
+                                video_id=video_info["id"], project_id=project_id, 
+                                reviewer_id=user_id, question_group_id=group_id, 
+                                answers=answers, session=session
+                            )
                         
                         if answer_reviews:
-                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id, session)
+                            submit_answer_reviews(answer_reviews, video_info["id"], project_id, user_id)
                         
                         success_msg = "✅ Ground truth re-submitted successfully!" if gt_status["role"] == "reviewer_resubmit" else "✅ Ground truth submitted successfully!"
                         st.success(success_msg)
@@ -2212,7 +2233,7 @@ def display_completion_question_group_editor(video_info: Dict, project_id: int, 
 # HELPER FUNCTIONS (REUSED AND OPTIMIZED)
 ###############################################################################
 
-def execute_ground_truth_search(criteria: List[Dict], match_all: bool, session: Session) -> List[Dict]:
+def execute_ground_truth_search(criteria: List[Dict], match_all: bool) -> List[Dict]:
     """Execute ground truth search with given criteria and progress tracking"""
     
     if not criteria:
@@ -2226,16 +2247,17 @@ def execute_ground_truth_search(criteria: List[Dict], match_all: bool, session: 
     status_container = st.empty()
     
     try:
-        # Use optimized search function
-        matching_videos = GroundTruthService.search_videos_by_criteria_optimized(
-            criteria=criteria, 
-            match_all=match_all, 
-            session=session,
-            progress_callback=lambda current, total, message: (
-                progress_bar.progress(min(current / total, 1.0)),
-                status_container.text(f"Step {current}/{total}: {message}")
+        with get_db_session() as session:
+            # Use optimized search function
+            matching_videos = GroundTruthService.search_videos_by_criteria_optimized(
+                criteria=criteria, 
+                match_all=match_all, 
+                session=session,
+                progress_callback=lambda current, total, message: (
+                    progress_bar.progress(min(current / total, 1.0)),
+                    status_container.text(f"Step {current}/{total}: {message}")
+                )
             )
-        )
         
         # Clear progress interface
         progress_bar.empty()
@@ -2249,7 +2271,7 @@ def execute_ground_truth_search(criteria: List[Dict], match_all: bool, session: 
         st.error(f"Search failed: {str(e)}")
         return []
 
-def execute_project_based_search(project_ids: List[int], completion_filter: str, session: Session) -> List[Dict]:
+def execute_project_based_search(project_ids: List[int], completion_filter: str) -> List[Dict]:
     """Execute project-based search with progress tracking"""
     
     # Show progress tracking interface
@@ -2261,15 +2283,16 @@ def execute_project_based_search(project_ids: List[int], completion_filter: str,
     
     try:
         # Use optimized search function
-        results = GroundTruthService.search_projects_by_completion_optimized(
-            project_ids=project_ids,
-            completion_filter=completion_filter,
-            session=session,
-            progress_callback=lambda current, total, message: (
-                progress_bar.progress(min(current / total, 1.0)),
-                status_container.text(f"Step {current}/{total}: {message}")
+        with get_db_session() as session:
+            results = GroundTruthService.search_projects_by_completion_optimized(
+                project_ids=project_ids,
+                completion_filter=completion_filter,
+                session=session,
+                progress_callback=lambda current, total, message: (
+                    progress_bar.progress(min(current / total, 1.0)),
+                    status_container.text(f"Step {current}/{total}: {message}")
+                )
             )
-        )
         
         # Clear progress interface
         progress_bar.empty()

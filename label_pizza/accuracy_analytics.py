@@ -15,7 +15,8 @@ from label_pizza.database_utils import (
     check_project_has_full_ground_truth,
     get_annotator_accuracy_cached,
     get_reviewer_accuracy_cached,
-    clear_accuracy_cache_for_project
+    clear_accuracy_cache_for_project,
+    get_db_session
 )
 
 ###############################################################################
@@ -41,10 +42,10 @@ def format_accuracy_badge(accuracy: Optional[float], total_questions: int = 0) -
 
 
 @st.dialog("📊 Your Personal Accuracy Report", width="large")
-def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Session):
+def show_personal_annotator_accuracy(user_id: int, project_id: int):
     """Show detailed personal accuracy report for a single annotator"""
     try:
-        accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
+        accuracy_data = get_annotator_accuracy_cached(project_id=project_id)
         if user_id not in accuracy_data:
             st.warning("No accuracy data available for your account.")
             return
@@ -52,8 +53,9 @@ def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Ses
         overall_accuracy = calculate_overall_accuracy(accuracy_data)
         per_question_accuracy = calculate_per_question_accuracy(accuracy_data)
         
-        user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
-        questions = ProjectService.get_project_questions(project_id=int(project_id), session=session)
+        with get_db_session() as session:
+            user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
+            questions = ProjectService.get_project_questions(project_id=int(project_id), session=session)
         question_lookup = {q["id"]: q["text"] for q in questions}
         
         user_name = user_info["user_id_str"]
@@ -125,10 +127,10 @@ def show_personal_annotator_accuracy(user_id: int, project_id: int, session: Ses
         st.error(f"Error loading your accuracy data: {str(e)}")
 
 @st.dialog("📊 Your Reviewer Accuracy Report", width="large")  
-def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Session):
+def show_personal_reviewer_accuracy(user_id: int, project_id: int):
     """Show detailed personal accuracy report for a single reviewer"""
     try:
-        accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
+        accuracy_data = get_reviewer_accuracy_cached(project_id=project_id)
         if user_id not in accuracy_data:
             st.warning("No reviewer accuracy data available for your account.")
             return
@@ -136,8 +138,9 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
         overall_accuracy = calculate_overall_accuracy(accuracy_data)
         per_question_accuracy = calculate_per_question_accuracy(accuracy_data)
         
-        user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
-        questions = ProjectService.get_project_questions(project_id=int(project_id), session=session)
+        with get_db_session() as session:
+            user_info = AuthService.get_user_info_by_id(user_id=int(user_id), session=session)
+            questions = ProjectService.get_project_questions(project_id=int(project_id), session=session)
         question_lookup = {q["id"]: q["text"] for q in questions}
         
         user_name = user_info["user_id_str"]
@@ -209,9 +212,9 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
     except Exception as e:
         st.error(f"Error loading your reviewer accuracy data: {str(e)}")
 
-# def display_user_accuracy_simple(user_id: int, project_id: int, role: str, session: Session) -> bool:
+# def display_user_accuracy_simple(user_id: int, project_id: int, role: str) -> bool:
 #     """Display simple accuracy for a single user if project is in training mode"""
-#     if not check_project_has_full_ground_truth(project_id=project_id, session=session):
+#     if not check_project_has_full_ground_truth(project_id=project_id):
 #         return False
     
 #     try:
@@ -220,7 +223,7 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
 #             if overall_progress < 100:
 #                 return False
             
-#             accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
+#             accuracy_data = get_annotator_accuracy_cached(project_id=project_id)
 #             if user_id not in accuracy_data:
 #                 return False
             
@@ -237,11 +240,11 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
 #                 with acc_col2:
 #                     if st.button("📋 View Details", key=f"personal_acc_{user_id}_{project_id}", 
 #                                 help="View detailed accuracy breakdown"):
-#                         show_personal_annotator_accuracy(user_id=user_id, project_id=project_id, session=session)
+#                         show_personal_annotator_accuracy(user_id=user_id, project_id=project_id)
 #                 return True
         
 #         elif role == "reviewer":
-#             accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
+#             accuracy_data = get_reviewer_accuracy_cached(project_id=project_id)
 #             if user_id not in accuracy_data:
 #                 return False
             
@@ -258,7 +261,7 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
 #                 with acc_col2:
 #                     if st.button("📋 View Details", key=f"personal_rev_acc_{user_id}_{project_id}", 
 #                                 help="View detailed reviewer accuracy breakdown"):
-#                         show_personal_reviewer_accuracy(user_id=user_id, project_id=project_id, session=session)
+#                         show_personal_reviewer_accuracy(user_id=user_id, project_id=project_id)
 #                 return True
         
 #         elif role == "meta_reviewer":
@@ -270,14 +273,14 @@ def show_personal_reviewer_accuracy(user_id: int, project_id: int, session: Sess
     
 #     return False
 
-def display_user_accuracy_simple(user_id: int, project_id: int, role: str, session: Session) -> bool:
+def display_user_accuracy_simple(user_id: int, project_id: int, role: str) -> bool:
     """Display simple accuracy for a single user if project is in training mode"""
-    if not check_project_has_full_ground_truth(project_id=project_id, session=session):
+    if not check_project_has_full_ground_truth(project_id=project_id):
         return False
     
     try:
         if role == "annotator":
-            overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
+            overall_progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id)
             if overall_progress < 100:
                 return False
             
@@ -304,7 +307,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
                         help="Calculate and view your training accuracy",
                         use_container_width=True):
                 with st.spinner("Calculating your accuracy..."):
-                    accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
+                    accuracy_data = get_annotator_accuracy_cached(project_id=project_id)
                     if user_id in accuracy_data:
                         overall_accuracy_dict = calculate_overall_accuracy(accuracy_data)
                         accuracy = overall_accuracy_dict.get(user_id)
@@ -320,7 +323,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            show_personal_annotator_accuracy(user_id=user_id, project_id=project_id, session=session)
+                            show_personal_annotator_accuracy(user_id=user_id, project_id=project_id)
                         else:
                             custom_info("No accuracy data available")
                     else:
@@ -351,7 +354,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
                         help="Calculate and view your reviewer accuracy",
                         use_container_width=True):
                 with st.spinner("Calculating your reviewer performance..."):
-                    accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
+                    accuracy_data = get_reviewer_accuracy_cached(project_id=project_id)
                     if user_id in accuracy_data:
                         overall_accuracy_dict = calculate_overall_accuracy(accuracy_data)
                         accuracy = overall_accuracy_dict.get(user_id)
@@ -367,7 +370,7 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            show_personal_reviewer_accuracy(user_id=user_id, project_id=project_id, session=session)
+                            show_personal_reviewer_accuracy(user_id=user_id, project_id=project_id)
                         else:
                             custom_info("No accuracy data available")
                     else:
@@ -388,10 +391,10 @@ def display_user_accuracy_simple(user_id: int, project_id: int, role: str, sessi
 ###############################################################################
 
 @st.dialog("📊 Detailed Accuracy Analytics", width="large")
-def show_annotator_accuracy_detailed(project_id: int, session: Session):
+def show_annotator_accuracy_detailed(project_id: int):
     """Show detailed annotator accuracy analytics in a modal dialog"""
     try:
-        accuracy_data = get_annotator_accuracy_cached(project_id=project_id, session=session)
+        accuracy_data = get_annotator_accuracy_cached(project_id=project_id)
         if not accuracy_data:
             st.warning("No annotator accuracy data available for this project.")
             st.info("💡 Make sure annotators have completed their work and there is ground truth data available.")
@@ -400,8 +403,9 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
         overall_accuracy = calculate_overall_accuracy(accuracy_data)
         per_question_accuracy = calculate_per_question_accuracy(accuracy_data)
         
-        users_df = AuthService.get_all_users(session=session)
-        questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+        with get_db_session() as session:
+            users_df = AuthService.get_all_users(session=session)
+            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
         
         user_lookup = {row["ID"]: row["User ID"] for _, row in users_df.iterrows()}
         question_lookup = {q["id"]: q["text"] for q in questions}
@@ -545,10 +549,10 @@ def show_annotator_accuracy_detailed(project_id: int, session: Session):
         st.error(f"Error loading accuracy data: {str(e)}")
 
 @st.dialog("📊 Reviewer Accuracy Analytics", width="large")
-def show_reviewer_accuracy_detailed(project_id: int, session: Session):
+def show_reviewer_accuracy_detailed(project_id: int):
     """Show detailed reviewer accuracy analytics in a modal dialog"""
     try:
-        accuracy_data = get_reviewer_accuracy_cached(project_id=project_id, session=session)
+        accuracy_data = get_reviewer_accuracy_cached(project_id=project_id)
         if not accuracy_data:
             st.warning("No reviewer accuracy data available for this project.")
             st.info("💡 Make sure reviewers have submitted ground truth and there are admin overrides to measure against.")
@@ -557,8 +561,9 @@ def show_reviewer_accuracy_detailed(project_id: int, session: Session):
         overall_accuracy = calculate_overall_accuracy(accuracy_data)
         per_question_accuracy = calculate_per_question_accuracy(accuracy_data)
         
-        users_df = AuthService.get_all_users(session=session)
-        questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+        with get_db_session() as session:
+            users_df = AuthService.get_all_users(session=session)
+            questions = ProjectService.get_project_questions(project_id=project_id, session=session)
         
         user_lookup = {row["ID"]: row["User ID"] for _, row in users_df.iterrows()}
         question_lookup = {q["id"]: q["text"] for q in questions}
@@ -659,9 +664,9 @@ def show_reviewer_accuracy_detailed(project_id: int, session: Session):
     except Exception as e:
         st.error(f"Error loading reviewer accuracy data: {str(e)}")
 
-def display_accuracy_button_for_project(project_id: int, role: str, session: Session):
+def display_accuracy_button_for_project(project_id: int, role: str):
     """Display an elegant accuracy analytics button for training mode projects"""
-    if not check_project_has_full_ground_truth(project_id=project_id, session=session):
+    if not check_project_has_full_ground_truth(project_id=project_id):
         custom_info("📝 Analytics are only available for training mode projects with ground truth.")
         return
     
@@ -675,7 +680,7 @@ def display_accuracy_button_for_project(project_id: int, role: str, session: Ses
                         help="View detailed accuracy analytics for annotators",
                         use_container_width=True):
                 with st.spinner("Calculating annotator accuracy data..."):
-                    show_annotator_accuracy_detailed(project_id=project_id, session=session)
+                    show_annotator_accuracy_detailed(project_id=project_id)
         
         with col2:
             if st.button("📊 Reviewer Analytics", 
@@ -683,7 +688,7 @@ def display_accuracy_button_for_project(project_id: int, role: str, session: Ses
                         help="View detailed accuracy analytics for reviewers", 
                         use_container_width=True):
                 with st.spinner("Calculating reviewer accuracy data..."):
-                    show_reviewer_accuracy_detailed(project_id=project_id, session=session)
+                    show_reviewer_accuracy_detailed(project_id=project_id)
     
     else:  # annotator role
         if st.button("📊 View Analytics", 
@@ -691,7 +696,7 @@ def display_accuracy_button_for_project(project_id: int, role: str, session: Ses
                     help="View detailed accuracy analytics",
                     use_container_width=True):
             with st.spinner("Calculating accuracy data..."):
-                show_annotator_accuracy_detailed(project_id=project_id, session=session)
+                show_annotator_accuracy_detailed(project_id=project_id)
 
 ###############################################################################
 # Accuracy Calculation Functions

@@ -5709,6 +5709,132 @@ class BaseAnswerService:
 class AnnotatorService(BaseAnswerService):
 
     @staticmethod
+    def get_all_annotator_data_for_video(video_id: int, project_id: int, user_id: int, session: Session) -> Dict[str, Any]:
+        """Get ALL annotator related data for a video in a single batch operation"""
+        try:
+            # Get all annotator answers for this user and video
+            answers = session.scalars(
+                select(AnnotatorAnswer)
+                .where(
+                    AnnotatorAnswer.video_id == video_id,
+                    AnnotatorAnswer.project_id == project_id,
+                    AnnotatorAnswer.user_id == user_id
+                )
+            ).all()
+            
+            # Organize by question_id
+            answers_by_question = {answer.question_id: answer for answer in answers}
+            
+            # Get all questions for this project
+            questions = session.scalars(
+                select(Question)
+                .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+                .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
+                .join(Project, SchemaQuestionGroup.schema_id == Project.schema_id)
+                .where(
+                    Project.id == project_id,
+                    Question.is_archived == False
+                )
+            ).all()
+            
+            # Build answer dict by question text and check submission status by group
+            answer_dict = {}
+            submission_status_by_group = {}
+            
+            for question in questions:
+                if question.id in answers_by_question:
+                    answer_dict[question.text] = answers_by_question[question.id].answer_value
+            
+            # Get question group assignments to check submission status
+            group_assignments = session.scalars(
+                select(QuestionGroupQuestion)
+                .where(QuestionGroupQuestion.question_id.in_([q.id for q in questions]))
+            ).all()
+            
+            # Organize questions by group
+            questions_by_group = {}
+            for assignment in group_assignments:
+                group_id = assignment.question_group_id
+                if group_id not in questions_by_group:
+                    questions_by_group[group_id] = []
+                questions_by_group[group_id].append(assignment.question_id)
+            
+            # Check submission status for each group
+            for group_id, question_ids in questions_by_group.items():
+                submitted_count = sum(1 for qid in question_ids if qid in answers_by_question)
+                submission_status_by_group[group_id] = submitted_count > 0
+            
+            return {
+                "answer_dict": answer_dict,
+                "answers_by_question": answers_by_question,
+                "submission_status_by_group": submission_status_by_group
+            }
+            
+        except Exception as e:
+            print(f"Error in get_all_annotator_data_for_video: {e}")
+            return {
+                "answer_dict": {},
+                "answers_by_question": {},
+                "submission_status_by_group": {}
+            }
+
+    @staticmethod
+    def batch_get_user_answers_for_question_groups(video_id: int, project_id: int, user_id: int, question_group_ids: List[int], session: Session) -> Dict[int, Dict[str, str]]:
+        """Get user answers for multiple question groups at once"""
+        try:
+            if not question_group_ids:
+                return {}
+            
+            # Get all questions for these groups
+            questions = session.scalars(
+                select(Question)
+                .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+                .where(
+                    QuestionGroupQuestion.question_group_id.in_(question_group_ids),
+                    Question.is_archived == False
+                )
+            ).all()
+            
+            # Get all answers for these questions
+            question_ids = [q.id for q in questions]
+            answers = session.scalars(
+                select(AnnotatorAnswer)
+                .where(
+                    AnnotatorAnswer.video_id == video_id,
+                    AnnotatorAnswer.project_id == project_id,
+                    AnnotatorAnswer.user_id == user_id,
+                    AnnotatorAnswer.question_id.in_(question_ids)
+                )
+            ).all()
+            
+            # Build answer dict by question_id
+            answers_by_question_id = {answer.question_id: answer.answer_value for answer in answers}
+            
+            # Organize by group
+            result = {}
+            for group_id in question_group_ids:
+                result[group_id] = {}
+                
+                group_questions = session.scalars(
+                    select(Question)
+                    .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+                    .where(
+                        QuestionGroupQuestion.question_group_id == group_id,
+                        Question.is_archived == False
+                    )
+                ).all()
+                
+                for question in group_questions:
+                    if question.id in answers_by_question_id:
+                        result[group_id][question.text] = answers_by_question_id[question.id]
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error in batch_get_user_answers_for_question_groups: {e}")
+            return {}
+
+    @staticmethod
     def get_all_project_answers(project_id: int, session: Session) -> List[Dict[str, Any]]:
         """Get all annotator answers for a project in bulk.
         
@@ -6162,6 +6288,369 @@ class AnnotatorService(BaseAnswerService):
 class GroundTruthService(BaseAnswerService):
 
     @staticmethod
+    def get_complete_video_data_for_display(video_id: int, project_id: int, user_id: int, role: str, session: Session) -> Dict[str, Any]:
+        """Get ALL data needed to display a video with all its question groups in one massive batch operation"""
+        try:
+            # Get project and schema info
+            project = ProjectService.get_project_by_id(project_id=project_id, session=session)
+            
+            # Get all question groups for this schema
+            question_groups = SchemaService.get_schema_question_groups_list(
+                schema_id=project.schema_id, session=session
+            )
+            
+            # Get ALL questions for this project at once
+            all_questions = ProjectService.get_project_questions(project_id=project_id, session=session)
+            
+            # Organize questions by group
+            questions_by_group = {}
+            question_id_to_group = {}
+            all_question_ids = set()
+            
+            for question in all_questions:
+                all_question_ids.add(question["id"])
+                
+                # Find which groups this question belongs to
+                group_assignments = session.scalars(
+                    select(QuestionGroupQuestion)
+                    .where(QuestionGroupQuestion.question_id == question["id"])
+                ).all()
+                
+                for assignment in group_assignments:
+                    group_id = assignment.question_group_id
+                    if group_id not in questions_by_group:
+                        questions_by_group[group_id] = []
+                    questions_by_group[group_id].append(question)
+                    question_id_to_group[question["id"]] = group_id
+            
+            # BATCH 1: Get ALL ground truth data for this video
+            gt_data = {}
+            admin_modifications = {}
+            gt_status_by_question = {}
+            
+            if role in ["reviewer", "meta_reviewer"]:
+                gt_batch = GroundTruthService.get_all_ground_truth_data_for_video(
+                    video_id=video_id, project_id=project_id, session=session
+                )
+                gt_data = gt_batch["ground_truth_dict"]
+                admin_modifications = gt_batch["admin_modifications"]
+                gt_status_by_question = gt_batch["gt_status_by_question"]
+            
+            # BATCH 2: Get ALL annotator data for this video
+            annotator_data = {}
+            if role == "annotator":
+                annotator_batch = AnnotatorService.get_all_annotator_data_for_video(
+                    video_id=video_id, project_id=project_id, user_id=user_id, session=session
+                )
+                annotator_data = annotator_batch
+            
+            # BATCH 3: Get ALL completion statuses for all groups at once
+            completion_status_by_group = {}
+            
+            if role == "annotator":
+                # Check which groups have any answers
+                for group_id in questions_by_group.keys():
+                    group_questions = questions_by_group[group_id]
+                    group_question_ids = [q["id"] for q in group_questions]
+                    
+                    has_answers = any(
+                        qid in annotator_data.get("answers_by_question", {}) 
+                        for qid in group_question_ids
+                    )
+                    completion_status_by_group[group_id] = has_answers
+            else:
+                # Check which groups have ground truth
+                for group_id in questions_by_group.keys():
+                    group_questions = questions_by_group[group_id]
+                    group_question_ids = [q["id"] for q in group_questions]
+                    
+                    has_gt = any(qid in gt_data for qid in group_question_ids)
+                    completion_status_by_group[group_id] = has_gt
+            
+            # BATCH 4: Get training mode ground truth if needed
+            training_gt_by_group = {}
+            if role == "annotator":
+                # Check if this is training mode
+                is_training = ProjectService.check_project_has_full_ground_truth(
+                    project_id=project_id, session=session
+                )
+                
+                if is_training:
+                    # Get ALL ground truth for training mode
+                    all_gt = session.scalars(
+                        select(ReviewerGroundTruth)
+                        .where(
+                            ReviewerGroundTruth.video_id == video_id,
+                            ReviewerGroundTruth.project_id == project_id
+                        )
+                    ).all()
+                    
+                    gt_by_question_id = {gt.question_id: gt.answer_value for gt in all_gt}
+                    
+                    # Organize by group
+                    for group_id, group_questions in questions_by_group.items():
+                        training_gt_by_group[group_id] = {}
+                        for question in group_questions:
+                            if question["id"] in gt_by_question_id:
+                                training_gt_by_group[group_id][question["text"]] = gt_by_question_id[question["id"]]
+            
+            # BATCH 5: Get ALL answer reviews for description questions (FIXED)
+            answer_reviews_by_group = {}
+            if role in ["reviewer", "meta_reviewer"]:
+                description_questions = [q for q in all_questions if q["type"] == "description"]
+                
+                if description_questions:
+                    # 🚀 FIXED: Use AnnotatorService.get_answers() to get the correct "Answer ID" column
+                    try:
+                        answers_df = AnnotatorService.get_answers(video_id=video_id, project_id=project_id, session=session)
+                        
+                        if not answers_df.empty:
+                            # Filter for description questions only
+                            description_question_ids = [q["id"] for q in description_questions]
+                            desc_answers = answers_df[answers_df["Question ID"].isin(description_question_ids)]
+                            
+                            if not desc_answers.empty:
+                                # Get all answer IDs for this video's description questions
+                                answer_ids = desc_answers["Answer ID"].tolist()
+                                
+                                # Get all reviews for these answers in one query
+                                reviews = session.scalars(
+                                    select(AnswerReview)
+                                    .where(AnswerReview.answer_id.in_(answer_ids))
+                                ).all()
+                                
+                                reviews_by_answer_id = {review.answer_id: review for review in reviews}
+                                
+                                # Get all user info for reviewers in one query
+                                reviewer_ids = {review.reviewer_id for review in reviews if review.reviewer_id}
+                                user_info_map = {}
+                                if reviewer_ids:
+                                    users = session.scalars(
+                                        select(User).where(User.id.in_(reviewer_ids))
+                                    ).all()
+                                    user_info_map = {user.id: user.user_id_str for user in users}
+                                
+                                # Get all annotator user info for answer owners
+                                annotator_ids = desc_answers["User ID"].unique().tolist()
+                                annotator_info_map = {}
+                                if annotator_ids:
+                                    annotators = session.scalars(
+                                        select(User).where(User.id.in_(annotator_ids))
+                                    ).all()
+                                    annotator_info_map = {user.id: user.user_id_str for user in annotators}
+                                
+                                # Organize by group and question
+                                for question in description_questions:
+                                    group_id = question_id_to_group.get(question["id"])
+                                    if group_id:
+                                        if group_id not in answer_reviews_by_group:
+                                            answer_reviews_by_group[group_id] = {}
+                                        
+                                        question_answers = desc_answers[desc_answers["Question ID"] == question["id"]]
+                                        
+                                        if not question_answers.empty:
+                                            answer_reviews_by_group[group_id][question["text"]] = {}
+                                            
+                                            for _, answer_row in question_answers.iterrows():
+                                                answer_id = answer_row["Answer ID"]
+                                                user_id_for_answer = answer_row["User ID"]
+                                                
+                                                # Get user display name
+                                                user_name = annotator_info_map.get(user_id_for_answer, f"User {user_id_for_answer}")
+                                                display_name, _ = AuthService.get_user_display_name_with_initials(user_name)
+                                                
+                                                if answer_id in reviews_by_answer_id:
+                                                    review = reviews_by_answer_id[answer_id]
+                                                    reviewer_name = user_info_map.get(review.reviewer_id)
+                                                    answer_reviews_by_group[group_id][question["text"]][display_name] = {
+                                                        "status": review.status,
+                                                        "reviewer_id": review.reviewer_id,
+                                                        "reviewer_name": reviewer_name
+                                                    }
+                                                else:
+                                                    answer_reviews_by_group[group_id][question["text"]][display_name] = {
+                                                        "status": "pending",
+                                                        "reviewer_id": None,
+                                                        "reviewer_name": None
+                                                    }
+                    except Exception as e:
+                        print(f"Error getting answer reviews: {e}")
+                        # Don't fail the whole function, just leave answer_reviews_by_group empty
+                        answer_reviews_by_group = {}
+            
+            return {
+                "project": project,
+                "question_groups": question_groups,
+                "questions_by_group": questions_by_group,
+                "gt_data": gt_data,
+                "admin_modifications": admin_modifications,
+                "gt_status_by_question": gt_status_by_question,
+                "annotator_data": annotator_data,
+                "completion_status_by_group": completion_status_by_group,
+                "training_gt_by_group": training_gt_by_group,
+                "answer_reviews_by_group": answer_reviews_by_group,
+                "is_training_mode": role == "annotator" and bool(training_gt_by_group)
+            }
+            
+        except Exception as e:
+            print(f"Error in get_complete_video_data_for_display: {e}")
+            return {}
+
+    @staticmethod
+    def get_all_ground_truth_data_for_video(video_id: int, project_id: int, session: Session) -> Dict[str, Any]:
+        """Get ALL ground truth related data for a video in a single batch operation"""
+        try:
+            # Get all ground truth records for this video
+            ground_truths = session.scalars(
+                select(ReviewerGroundTruth)
+                .where(
+                    ReviewerGroundTruth.video_id == video_id,
+                    ReviewerGroundTruth.project_id == project_id
+                )
+            ).all()
+            
+            # Organize by question_id
+            gt_by_question = {}
+            gt_dict = {}
+            all_question_ids = set()
+            
+            for gt in ground_truths:
+                question_id = gt.question_id
+                all_question_ids.add(question_id)
+                
+                gt_by_question[question_id] = gt
+                gt_dict[question_id] = gt.answer_value
+            
+            # Get all questions for this project to check completion
+            questions = session.scalars(
+                select(Question)
+                .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+                .join(SchemaQuestionGroup, QuestionGroupQuestion.question_group_id == SchemaQuestionGroup.question_group_id)
+                .join(Project, SchemaQuestionGroup.schema_id == Project.schema_id)
+                .where(
+                    Project.id == project_id,
+                    Question.is_archived == False
+                )
+            ).all()
+            
+            project_question_ids = {q.id for q in questions}
+            
+            # Check admin modifications for all questions at once
+            admin_modifications = {}
+            if all_question_ids:
+                admin_modifications = GroundTruthService.batch_check_admin_modifications(
+                    video_id=video_id, project_id=project_id, 
+                    question_ids=list(all_question_ids), session=session
+                )
+            
+            # Get user info for all reviewers at once
+            reviewer_ids = {gt.reviewer_id for gt in ground_truths}
+            admin_ids = {gt.modified_by_admin_id for gt in ground_truths if gt.modified_by_admin_id}
+            all_user_ids = reviewer_ids | admin_ids
+            
+            user_info = {}
+            if all_user_ids:
+                users = session.scalars(
+                    select(User).where(User.id.in_(all_user_ids))
+                ).all()
+                user_info = {user.id: user.user_id_str for user in users}
+            
+            # Build GT status strings
+            gt_status_by_question = {}
+            for question_id in project_question_ids:
+                if question_id in gt_by_question:
+                    gt = gt_by_question[question_id]
+                    reviewer_name = user_info.get(gt.reviewer_id, f"User {gt.reviewer_id}")
+                    
+                    if gt.modified_by_admin_id:
+                        admin_name = user_info.get(gt.modified_by_admin_id, f"Admin {gt.modified_by_admin_id}")
+                        gt_status_by_question[question_id] = f"🏆 GT by: {reviewer_name} (Overridden by {admin_name})"
+                    else:
+                        gt_status_by_question[question_id] = f"🏆 GT by: {reviewer_name}"
+                else:
+                    gt_status_by_question[question_id] = "📭 No GT"
+            
+            return {
+                "ground_truth_dict": gt_dict,
+                "admin_modifications": admin_modifications,
+                "gt_status_by_question": gt_status_by_question,
+                "gt_records": gt_by_question,
+                "has_any_admin_modifications": any(mod["is_modified"] for mod in admin_modifications.values())
+            }
+            
+        except Exception as e:
+            print(f"Error in get_all_ground_truth_data_for_video: {e}")
+            return {
+                "ground_truth_dict": {},
+                "admin_modifications": {},
+                "gt_status_by_question": {},
+                "gt_records": {},
+                "has_any_admin_modifications": False
+            }
+
+    @staticmethod
+    def batch_get_ground_truth_for_question_groups(video_id: int, project_id: int, question_group_ids: List[int], session: Session) -> Dict[int, Dict[str, str]]:
+        """Get ground truth for multiple question groups at once"""
+        try:
+            if not question_group_ids:
+                return {}
+            
+            # Get all questions for these groups
+            questions = session.scalars(
+                select(Question)
+                .join(QuestionGroupQuestion, Question.id == QuestionGroupQuestion.question_id)
+                .where(
+                    QuestionGroupQuestion.question_group_id.in_(question_group_ids),
+                    Question.is_archived == False
+                )
+            ).all()
+            
+            # Organize questions by group
+            questions_by_group = {}
+            for question in questions:
+                group_assignments = session.scalars(
+                    select(QuestionGroupQuestion)
+                    .where(
+                        QuestionGroupQuestion.question_id == question.id,
+                        QuestionGroupQuestion.question_group_id.in_(question_group_ids)
+                    )
+                ).all()
+                
+                for assignment in group_assignments:
+                    group_id = assignment.question_group_id
+                    if group_id not in questions_by_group:
+                        questions_by_group[group_id] = []
+                    questions_by_group[group_id].append(question)
+            
+            # Get ground truth for all questions at once
+            question_ids = [q.id for q in questions]
+            ground_truths = session.scalars(
+                select(ReviewerGroundTruth)
+                .where(
+                    ReviewerGroundTruth.video_id == video_id,
+                    ReviewerGroundTruth.project_id == project_id,
+                    ReviewerGroundTruth.question_id.in_(question_ids)
+                )
+            ).all()
+            
+            # Build GT dict by question
+            gt_dict = {gt.question_id: gt.answer_value for gt in ground_truths}
+            
+            # Organize by group
+            result = {}
+            for group_id, group_questions in questions_by_group.items():
+                result[group_id] = {}
+                for question in group_questions:
+                    if question.id in gt_dict:
+                        result[group_id][question.text] = gt_dict[question.id]
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error in batch_get_ground_truth_for_question_groups: {e}")
+            return {}
+
+    @staticmethod
     def verify_submit_ground_truth_to_question_group(
         video_id: int,
         project_id: int,
@@ -6254,6 +6743,16 @@ class GroundTruthService(BaseAnswerService):
         # Get questions for submission (already validated in verify method)
         group, questions = GroundTruthService._get_question_group_with_questions(question_group_id=question_group_id, session=session)
             
+        existing_gts = session.scalars(
+            select(ReviewerGroundTruth).where(
+                ReviewerGroundTruth.video_id == video_id,
+                ReviewerGroundTruth.project_id == project_id,
+                ReviewerGroundTruth.question_id.in_([q.id for q in questions])
+            )
+        ).all()
+
+        existing_map = {gt.question_id: gt for gt in existing_gts}
+
         # Submit each ground truth answer
         for question in questions:
             answer_value = answers[question.text]
@@ -6261,7 +6760,7 @@ class GroundTruthService(BaseAnswerService):
             note = notes.get(question.text) if notes else None
             
             # Check for existing ground truth
-            existing = session.get(ReviewerGroundTruth, (video_id, question.id, project_id))
+            existing = existing_map.get(question.id)
         
             if existing:
                 # Update existing ground truth
@@ -6982,6 +7481,73 @@ class GroundTruthService(BaseAnswerService):
                 gt.modified_by_admin_at = datetime.now(timezone.utc)
         
         session.commit()
+    
+
+    @staticmethod
+    def batch_check_admin_modifications(video_id: int, project_id: int, question_ids: List[int], session: Session) -> Dict[int, Dict]:
+        """Batch check admin modifications for multiple questions - MUCH FASTER"""
+        try:
+            from sqlalchemy import select
+            from label_pizza.models import ReviewerGroundTruth, User
+            
+            admin_modifications = {}
+            
+            if not question_ids:
+                return {}
+            
+            # Single query to get all ground truth records for these questions
+            query = select(
+                ReviewerGroundTruth.question_id,
+                ReviewerGroundTruth.modified_by_admin_id,
+                ReviewerGroundTruth.modified_by_admin_at,
+                ReviewerGroundTruth.original_answer_value,
+                ReviewerGroundTruth.answer_value
+            ).where(
+                ReviewerGroundTruth.video_id == video_id,
+                ReviewerGroundTruth.project_id == project_id,
+                ReviewerGroundTruth.question_id.in_(question_ids)
+            )
+            
+            results = session.execute(query).all()
+            
+            # Get all admin user names in one query if needed
+            admin_user_ids = [r.modified_by_admin_id for r in results if r.modified_by_admin_id]
+            admin_users = {}
+            
+            if admin_user_ids:
+                users_query = select(User.id, User.user_id_str).where(User.id.in_(admin_user_ids))
+                user_results = session.execute(users_query).all()
+                admin_users = {r.id: r.user_id_str for r in user_results}
+            
+            # Build result dictionary
+            for result in results:
+                question_id = result.question_id
+                is_modified = result.modified_by_admin_id is not None
+                
+                admin_modifications[question_id] = {
+                    "is_modified": is_modified,
+                    "admin_info": {
+                        "current_value": result.answer_value,
+                        "original_value": result.original_answer_value,
+                        "admin_id": result.modified_by_admin_id,
+                        "admin_name": admin_users.get(result.modified_by_admin_id, f"Admin {result.modified_by_admin_id}") if result.modified_by_admin_id else None,
+                        "modified_at": result.modified_by_admin_at
+                    } if is_modified else None
+                }
+            
+            # Fill in False for questions not found (no ground truth)
+            for question_id in question_ids:
+                if question_id not in admin_modifications:
+                    admin_modifications[question_id] = {
+                        "is_modified": False,
+                        "admin_info": None
+                    }
+            
+            return admin_modifications
+            
+        except Exception as e:
+            print(f"Error in batch_check_admin_modifications: {e}")
+            return {qid: {"is_modified": False, "admin_info": None} for qid in question_ids}
 
     @staticmethod
     def submit_answer_review(

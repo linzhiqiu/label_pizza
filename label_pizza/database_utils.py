@@ -14,6 +14,9 @@ from label_pizza.db import SessionLocal
 if SessionLocal is None:
     raise ValueError("SessionLocal is not initialized")
 from label_pizza.ui_components import custom_info
+import functools
+import inspect
+from typing import Callable, Any
 
 ###############################################################################
 # DATABASE UTILITIES
@@ -22,10 +25,12 @@ from label_pizza.ui_components import custom_info
 @contextmanager
 def get_db_session():
     """Get database session with proper error handling"""
+    if SessionLocal is None:
+        raise ValueError("SessionLocal is not initialized")
     session = SessionLocal()
     try:
         yield session
-        session.commit()
+        # session.commit()
     except Exception as e:
         session.rollback()
         raise e
@@ -79,7 +84,7 @@ def handle_database_errors(func):
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_cached_all_users(session_id: str) -> pd.DataFrame:
     """Cache all users data - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             return AuthService.get_all_users(session=session)
         except Exception as e:
@@ -89,14 +94,14 @@ def get_cached_all_users(session_id: str) -> pd.DataFrame:
 @st.cache_data(ttl=3600)  # Cache for 1 hour  
 def get_cached_project_questions(project_id: int, session_id: str) -> List[Dict]:
     """Cache project questions - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             return ProjectService.get_project_questions(project_id=project_id, session=session)
         except Exception as e:
             print(f"Error in get_cached_project_questions: {e}")
             return []
 
-def get_project_questions_cached(project_id: int, session: Session) -> List[Dict]:
+def get_project_questions_cached(project_id: int) -> List[Dict]:
     """Get project questions with caching"""
     session_id = get_session_cache_key()
     return get_cached_project_questions(project_id, session_id)
@@ -104,7 +109,7 @@ def get_project_questions_cached(project_id: int, session: Session) -> List[Dict
 @st.cache_data(ttl=1800)  # Cache for 30 minutes
 def get_cached_question_answers(project_id: int, session_id: str) -> pd.DataFrame:
     """Cache ALL annotator answers for a project - annotator answers rarely change"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             # Get all questions for the project first
             questions = ProjectService.get_project_questions(project_id=project_id, session=session)
@@ -134,7 +139,7 @@ def get_cached_question_answers(project_id: int, session_id: str) -> pd.DataFram
 @st.cache_data(ttl=1800)  # Cache for 30 minutes
 def get_cached_project_annotators(project_id: int, session_id: str) -> Dict[str, Dict]:
     """Cache project annotators info - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             # Get project assignments to determine project-specific roles
             assignments_df = AuthService.get_project_assignments(session=session)
@@ -185,7 +190,7 @@ def get_cached_project_annotators(project_id: int, session_id: str) -> Dict[str,
 @st.cache_data(ttl=1800)  # Cache for 30 minutes
 def get_cached_project_videos(project_id: int, session_id: str) -> List[Dict]:
     """Cache project videos - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             return VideoService.get_project_videos(project_id=project_id, session=session)
         except Exception as e:
@@ -195,7 +200,7 @@ def get_cached_project_videos(project_id: int, session_id: str) -> List[Dict]:
 @st.cache_data(ttl=1800)  # Cache for 30 minutes
 def get_cached_bulk_reviewer_data(project_id: int, session_id: str) -> Dict:
     """Cache ALL reviewer data for entire project to minimize repeated queries"""
-    with SessionLocal() as session:
+    with get_db_session() as session:
         try:
             # 🚀 OPTIMIZED: Get all annotator answers using service method
             all_answers = AnnotatorService.get_all_project_answers(project_id=project_id, session=session)
@@ -373,7 +378,7 @@ def get_video_reviewer_data_from_bulk(video_id: int, project_id: int, annotator_
 @st.cache_data(ttl=600)  # Cache for 10 minutes
 def get_cached_video_reviewer_data(video_id: int, project_id: int, annotator_user_ids: List[int], session_id: str) -> Dict:
     """Cache ALL reviewer data for a specific video to minimize repeated queries"""
-    with SessionLocal() as session:
+    with get_db_session() as session:
         try:
             cache_data = {
                 "annotator_answers": {},
@@ -468,14 +473,14 @@ def get_cached_video_reviewer_data(video_id: int, project_id: int, annotator_use
 @st.cache_data(ttl=3600)  # Cache for 1 hour - questions rarely change
 def get_cached_questions_by_group(group_id: int, session_id: str) -> List[Dict]:
     """Cache questions by group - questions rarely change once project is running"""
-    with SessionLocal() as session:
+    with get_db_session() as session:
         try:
             return QuestionService.get_questions_by_group_id(group_id=group_id, session=session)
         except Exception as e:
             print(f"Error in get_cached_questions_by_group: {e}")
             return []
 
-def get_questions_by_group_cached(group_id: int, session: Session) -> List[Dict]:
+def get_questions_by_group_cached(group_id: int) -> List[Dict]:
     """Get questions by group with caching"""
     session_id = get_session_cache_key()
     return get_cached_questions_by_group(group_id, session_id)
@@ -484,32 +489,32 @@ def get_questions_by_group_cached(group_id: int, session: Session) -> List[Dict]
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_cached_project_metadata(project_id: int, session_id: str) -> Dict:
     """Cache project metadata - changes infrequently"""
-    with SessionLocal() as session:
+    with get_db_session() as session:
         try:
             return ProjectService.get_project_dict_by_id(project_id=project_id, session=session)
         except Exception as e:
             print(f"Error in get_cached_project_metadata: {e}")
             return {}
 
-def get_project_metadata_cached(project_id: int, session: Session) -> Dict:
+def get_project_metadata_cached(project_id: int) -> Dict:
     """Get project metadata with caching"""
     session_id = get_session_cache_key()
     return get_cached_project_metadata(project_id, session_id)
 
-def get_cached_user_completion_progress(project_id: int, session: Session) -> Dict[int, float]:
+def get_cached_user_completion_progress(project_id: int) -> Dict[int, float]:
     """Cache completion progress for all users in a project"""
     cache_key = f"completion_progress_{project_id}"
     
     if cache_key not in st.session_state:
         try:
-            annotators = get_session_cached_project_annotators(project_id=project_id, session=session)
+            annotators = get_session_cached_project_annotators(project_id=project_id)
             progress_map = {}
             
             for annotator_display, annotator_info in annotators.items():
                 user_id = annotator_info.get('id')
                 if user_id:
                     try:
-                        progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
+                        progress = calculate_user_overall_progress(user_id=user_id, project_id=project_id)
                         progress_map[user_id] = progress
                     except:
                         print(f"Error calculating progress for user {user_id}: {e}")
@@ -525,7 +530,7 @@ def get_cached_user_completion_progress(project_id: int, session: Session) -> Di
 @st.cache_data(ttl=3600)  # Cache for 1 hour - custom display changes rarely
 def get_cached_custom_display_data(project_id: int, session_id: str) -> Dict[str, Any]:
     """Cache all custom display data for a project to minimize database calls"""
-    with SessionLocal() as session:
+    with get_db_session() as session:
         try:
             # Check if project's schema has custom display enabled
             project = ProjectService.get_project_by_id(project_id=project_id, session=session)
@@ -568,7 +573,7 @@ def get_cached_custom_display_data(project_id: int, session_id: str) -> Dict[str
             return {"has_custom_display": False, "custom_displays": {}}
 
 
-def get_project_custom_display_data(project_id: int, session: Session) -> Dict[str, Any]:
+def get_project_custom_display_data(project_id: int) -> Dict[str, Any]:
     """Get custom display data for project with session state caching"""
     cache_key = f"custom_display_data_{project_id}"
     
@@ -581,20 +586,19 @@ def get_project_custom_display_data(project_id: int, session: Session) -> Dict[s
 def get_questions_by_group_with_custom_display_cached(
     group_id: int, 
     project_id: int, 
-    video_id: int, 
-    session: Session
+    video_id: int
 ) -> List[Dict]:
     """Get questions by group with custom display applied, using cached data"""
     
     # Get custom display data for project
-    custom_display_data = get_project_custom_display_data(project_id, session)
+    custom_display_data = get_project_custom_display_data(project_id)
     
     if not custom_display_data["has_custom_display"]:
         # No custom display - use original method
-        return get_questions_by_group_cached(group_id, session)
+        return get_questions_by_group_cached(group_id)
     
     # Get base questions
-    base_questions = get_questions_by_group_cached(group_id, session)
+    base_questions = get_questions_by_group_cached(group_id)
     
     # Apply custom display from cached data
     custom_displays = custom_display_data["custom_displays"].get(video_id, {})
@@ -644,7 +648,7 @@ def clear_custom_display_cache(project_id: int):
 @st.cache_data(ttl=3600)  # Cache for 1 hour - ground truth state changes infrequently
 def get_cached_project_has_full_ground_truth(project_id: int, session_id: str) -> bool:
     """Cache project full ground truth check - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             return ProjectService.check_project_has_full_ground_truth(project_id=project_id, session=session)
         except Exception as e:
@@ -654,7 +658,7 @@ def get_cached_project_has_full_ground_truth(project_id: int, session_id: str) -
 @st.cache_data(ttl=1800)  # Cache for 30 minutes - accuracy data changes infrequently  
 def get_cached_annotator_accuracy(project_id: int, session_id: str) -> Dict[int, Dict[int, Dict[str, int]]]:
     """Cache annotator accuracy data - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             return GroundTruthService.get_annotator_accuracy(project_id=project_id, session=session)
         except Exception as e:
@@ -664,7 +668,7 @@ def get_cached_annotator_accuracy(project_id: int, session_id: str) -> Dict[int,
 @st.cache_data(ttl=1800)  # Cache for 30 minutes - reviewer accuracy data changes infrequently
 def get_cached_reviewer_accuracy(project_id: int, session_id: str) -> Dict[int, Dict[int, Dict[str, int]]]:
     """Cache reviewer accuracy data - changes infrequently"""
-    with SessionLocal() as session:  # Use SessionLocal directly
+    with get_db_session() as session:  # Use SessionLocal directly
         try:
             return GroundTruthService.get_reviewer_accuracy(project_id=project_id, session=session)
         except Exception as e:
@@ -676,12 +680,12 @@ def get_cached_reviewer_accuracy(project_id: int, session_id: str) -> Dict[int, 
 # Data Fetching Functions
 ###############################################################################
 
-def get_optimized_annotator_user_ids(display_names: List[str], project_id: int, session: Session) -> List[int]:
+def get_optimized_annotator_user_ids(display_names: List[str], project_id: int) -> List[int]:
     """Optimized version using cached annotator data"""
     if not display_names:
         return []
     
-    annotators = get_optimized_all_project_annotators(project_id, session)
+    annotators = get_optimized_all_project_annotators(project_id)
     user_ids = []
     
     for display_name in display_names:
@@ -692,135 +696,138 @@ def get_optimized_annotator_user_ids(display_names: List[str], project_id: int, 
     
     return user_ids
 
-def get_project_has_full_ground_truth_cached(project_id: int, session: Session) -> bool:
+def get_project_has_full_ground_truth_cached(project_id: int) -> bool:
     """Get project full ground truth status with caching"""
     session_id = get_session_cache_key()
     return get_cached_project_has_full_ground_truth(project_id, session_id)
 
-def get_annotator_accuracy_cached(project_id: int, session: Session) -> Dict[int, Dict[int, Dict[str, int]]]:
+def get_annotator_accuracy_cached(project_id: int) -> Dict[int, Dict[int, Dict[str, int]]]:
     """Get annotator accuracy data with caching"""
     session_id = get_session_cache_key()
     return get_cached_annotator_accuracy(project_id, session_id)
 
-def get_reviewer_accuracy_cached(project_id: int, session: Session) -> Dict[int, Dict[int, Dict[str, int]]]:
+def get_reviewer_accuracy_cached(project_id: int) -> Dict[int, Dict[int, Dict[str, int]]]:
     """Get reviewer accuracy data with caching"""
     session_id = get_session_cache_key()
     return get_cached_reviewer_accuracy(project_id, session_id)
 
 
-def calculate_user_overall_progress(user_id: int, project_id: int, session: Session) -> float:
-    """Calculate user's overall progress"""
-    try:
-        return AnnotatorService.calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
-    except ValueError as e:
-        st.error(f"Error calculating user progress: {str(e)}")
-        return 0.0
 
-def get_optimized_all_project_annotators(project_id: int, session: Session) -> Dict[str, Dict]:
+def calculate_user_overall_progress(user_id: int, project_id: int) -> float:
+    """Calculate user's overall progress"""
+    with get_db_session() as session:
+        try:
+            return AnnotatorService.calculate_user_overall_progress(user_id=user_id, project_id=project_id, session=session)
+        except ValueError as e:
+            st.error(f"Error calculating user progress: {str(e)}")
+            return 0.0
+
+def get_optimized_all_project_annotators(project_id: int) -> Dict[str, Dict]:
     """Optimized version of get_all_project_annotators using caching"""
     session_id = get_session_cache_key()
     return get_cached_project_annotators(project_id, session_id)
 
 
-def get_session_cached_project_annotators(project_id: int, session: Session) -> Dict[str, Dict]:
+def get_session_cached_project_annotators(project_id: int) -> Dict[str, Dict]:
     """Get project annotators with session state caching"""
     cache_key = f"cached_annotators_{project_id}"
     
     if cache_key not in st.session_state:
-        st.session_state[cache_key] = get_optimized_all_project_annotators(project_id=project_id, session=session)
+        st.session_state[cache_key] = get_optimized_all_project_annotators(project_id=project_id)
     
     return st.session_state[cache_key]
 
-def get_schema_question_groups(schema_id: int, session: Session) -> List[Dict]:
+def get_schema_question_groups(schema_id: int) -> List[Dict]:
     """Get question groups in a schema - with caching"""
     cache_key = f"schema_groups_{schema_id}"
     
     if cache_key not in st.session_state:
         try:
-            st.session_state[cache_key] = SchemaService.get_schema_question_groups_list(schema_id=schema_id, session=session)
+            with get_db_session() as session:
+                st.session_state[cache_key] = SchemaService.get_schema_question_groups_list(schema_id=schema_id, session=session)
         except ValueError as e:
             st.error(f"Error loading schema question groups: {str(e)}")
             return []
     
     return st.session_state[cache_key]
 
-def get_project_videos(project_id: int, session: Session) -> List[Dict]:
+def get_project_videos(project_id: int) -> List[Dict]:
     """Get videos in a project - with caching"""
     session_id = get_session_cache_key()
     return get_cached_project_videos(project_id, session_id)
 
-
-def get_project_groups_with_projects(user_id: int, role: str, session: Session) -> Dict:
+def get_project_groups_with_projects(user_id: int, role: str) -> Dict:
     """Get project groups with their projects for a user - OPTIMIZED VERSION"""
-    try:
-        # Get project assignments for user
-        assignments_df = AuthService.get_project_assignments(session=session)
-        user_assignments = assignments_df[assignments_df["User ID"] == user_id]
-        
-        if role != "admin":
-            user_assignments = user_assignments[user_assignments["Role"] == role]
-        
-        project_ids = user_assignments["Project ID"].tolist()
-        
-        if not project_ids:
-            return {}
-        
-        # Use bulk method to get all project completion data at once
-        bulk_project_data = ProjectService.get_bulk_project_completion_data(project_ids, session)
-        
-        # Get project groups
-        project_groups = ProjectGroupService.get_grouped_projects_for_user(user_id=user_id, role=role, session=session)
-        
-        # Enhance with bulk completion data
-        enhanced_groups = {}
-        for group_name, projects in project_groups.items():
-            enhanced_projects = []
-            for project in projects:
-                project_id = project["id"]
-                if project_id in bulk_project_data:
-                    bulk_data = bulk_project_data[project_id]
-                    # Merge project data with bulk completion data
-                    enhanced_project = {**project, **bulk_data}
-                    enhanced_projects.append(enhanced_project)
+    with get_db_session() as session:
+        try:
+            # Get project assignments for user
+            assignments_df = AuthService.get_project_assignments(session=session)
+            user_assignments = assignments_df[assignments_df["User ID"] == user_id]
+                
+            if role != "admin":
+                user_assignments = user_assignments[user_assignments["Role"] == role]
             
-            if enhanced_projects:
-                enhanced_groups[group_name] = enhanced_projects
-        
-        return enhanced_groups
-        
-    except Exception as e:
-        st.error(f"Error getting grouped projects: {str(e)}")
-        return {}
+            project_ids = user_assignments["Project ID"].tolist()
+            
+            if not project_ids:
+                return {}
+            
+            # Use bulk method to get all project completion data at once
+            bulk_project_data = ProjectService.get_bulk_project_completion_data(project_ids, session)
+            
+            # Get project groups
+            project_groups = ProjectGroupService.get_grouped_projects_for_user(user_id=user_id, role=role, session=session)
+            
+            # Enhance with bulk completion data
+            enhanced_groups = {}
+            for group_name, projects in project_groups.items():
+                enhanced_projects = []
+                for project in projects:
+                    project_id = project["id"]
+                    if project_id in bulk_project_data:
+                        bulk_data = bulk_project_data[project_id]
+                        # Merge project data with bulk completion data
+                        enhanced_project = {**project, **bulk_data}
+                        enhanced_projects.append(enhanced_project)
+                
+                if enhanced_projects:
+                    enhanced_groups[group_name] = enhanced_projects
+            
+            return enhanced_groups
+            
+        except Exception as e:
+            st.error(f"Error getting grouped projects: {str(e)}")
+            return {}
 
-
-def get_user_assignment_dates(user_id: int, session: Session) -> Dict[int, Dict[str, str]]:
+def get_user_assignment_dates(user_id: int) -> Dict[int, Dict[str, str]]:
     """Get assignment dates for all projects for a specific user"""
-    try:
-        assignments_df = AuthService.get_project_assignments(session=session)
-        user_assignments = {}
-        
-        for _, assignment in assignments_df.iterrows():
-            if assignment["User ID"] == user_id:
-                project_id = assignment["Project ID"]
-                role = assignment["Role"]
-                
-                if project_id not in user_assignments:
-                    user_assignments[project_id] = {}
-                
-                assigned_at = assignment.get("Assigned At")
-                if assigned_at:
-                    try:
-                        date_str = assigned_at.strftime("%Y-%m-%d") if hasattr(assigned_at, 'strftime') else str(assigned_at)[:10]
-                        user_assignments[project_id][role] = date_str
-                    except:
-                        user_assignments[project_id][role] = "Unknown"
-                else:
-                    user_assignments[project_id][role] = "Not set"
-        
-        return user_assignments
-    except Exception as e:
-        st.error(f"Error getting assignment dates: {str(e)}")
-        return {}
+    with get_db_session() as session:
+        try:
+            assignments_df = AuthService.get_project_assignments(session=session)
+            user_assignments = {}
+            
+            for _, assignment in assignments_df.iterrows():
+                if assignment["User ID"] == user_id:
+                    project_id = assignment["Project ID"]
+                    role = assignment["Role"]
+                    
+                    if project_id not in user_assignments:
+                        user_assignments[project_id] = {}
+                    
+                    assigned_at = assignment.get("Assigned At")
+                    if assigned_at:
+                        try:
+                            date_str = assigned_at.strftime("%Y-%m-%d") if hasattr(assigned_at, 'strftime') else str(assigned_at)[:10]
+                            user_assignments[project_id][role] = date_str
+                        except:
+                            user_assignments[project_id][role] = "Unknown"
+                    else:
+                        user_assignments[project_id][role] = "Not set"
+            
+            return user_assignments
+        except Exception as e:
+            st.error(f"Error getting assignment dates: {str(e)}")
+            return {}
 
 
 ###############################################################################
@@ -850,23 +857,6 @@ def clear_accuracy_cache_for_project(project_id: int):
         print(f"Error clearing reviewer accuracy cache: {e}")
         pass  # Function may not have been called yet
 
-# # Update the existing clear_project_cache function
-# def clear_project_cache(project_id: int):
-#     """Clear all cached data for a specific project"""
-#     cache_keys_to_clear = []
-#     for key in st.session_state.keys():
-#         if (f"cache_project_{project_id}" in key or 
-#             f"cached_annotators_{project_id}" in key or
-#             f"completion_progress_{project_id}" in key or
-#             f"question_groups_{project_id}" in key or
-#             f"custom_display_data_{project_id}" in key):
-#             cache_keys_to_clear.append(key)
-    
-#     for key in cache_keys_to_clear:
-#         del st.session_state[key]
-    
-#     # Clear accuracy cache for this project
-#     clear_accuracy_cache_for_project(project_id)
 
 def clear_project_cache(project_id: int):
     """Clear all cached data for a specific project"""
@@ -917,32 +907,37 @@ def get_session_cache_key():
 # ANSWER OR GROUND TRUTH CHECKS
 ###############################################################################
 
-def check_project_has_full_ground_truth(project_id: int, session: Session) -> bool:
+def check_project_has_full_ground_truth(project_id: int) -> bool:
     """Check if project has complete ground truth for ALL questions and videos"""
     try:
-        return get_project_has_full_ground_truth_cached(project_id, session)
+        return get_project_has_full_ground_truth_cached(project_id)
     except Exception as e:
         print(f"Error checking project has full ground truth: {e}")
         return False
 
-def check_all_questions_have_ground_truth(video_id: int, project_id: int, question_group_id: int, session: Session) -> bool:
-    try:
-        return GroundTruthService.check_all_questions_have_ground_truth_for_group(video_id, project_id, question_group_id, session)
-    except Exception as e:
-        print(f"Error checking all questions have ground truth: {e}")
-        return False
-
-def check_ground_truth_exists_for_group(video_id: int, project_id: int, question_group_id: int, session: Session) -> bool:
-    try:
-        questions = get_questions_by_group_cached(group_id=question_group_id, session=session)
-        if not questions:
+def check_all_questions_have_ground_truth(video_id: int, project_id: int, question_group_id: int) -> bool:
+    """Check if all questions have ground truth for a video and question group"""
+    with get_db_session() as session:
+        try:
+            return GroundTruthService.check_all_questions_have_ground_truth_for_group(video_id, project_id, question_group_id, session)
+        except Exception as e:
+            print(f"Error checking all questions have ground truth: {e}")
             return False
-        
-        # Check if ANY question in the group has ground truth
-        for question in questions:
-            if GroundTruthService.check_ground_truth_exists_for_question(video_id=video_id, project_id=project_id, question_id=question["id"], session=session):
-                return True
-        return False
-    except Exception as e:
-        print(f"Error checking ground truth exists for group: {e}")
-        return False
+
+
+def check_ground_truth_exists_for_group(video_id: int, project_id: int, question_group_id: int) -> bool:
+    """Check if ground truth exists for a question group"""
+    with get_db_session() as session:
+        try:
+            questions = get_questions_by_group_cached(group_id=question_group_id)
+            if not questions:
+                return False
+            
+            # Check if ANY question in the group has ground truth
+            for question in questions:
+                if GroundTruthService.check_ground_truth_exists_for_question(video_id=video_id, project_id=project_id, question_id=question["id"], session=session):
+                    return True
+            return False
+        except Exception as e:
+            print(f"Error checking ground truth exists for group: {e}")
+            return False

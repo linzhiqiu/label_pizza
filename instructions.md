@@ -444,7 +444,7 @@ Each JSON file is a list of dictionaries. Each dictionary represents one submiss
       "Number of people?": "1",
       "If there are people, describe them.": "The person appears to be a large man with a full beard and closely cropped hair."
     },
-    "is_ground_truth": false
+    "is_grou nd_truth": false
   },
   {
     "question_group_title": "Human",
@@ -908,7 +908,7 @@ question_groups_data = [
                 "text": "Number of people?",
                 "display_text": "Number of people updated?",     # Update the display_text of a question
                 "options": [ # update the order of options
-                    "3 or more"
+                    "3 or more",
                     "2",
                     "1",
                     "0",
@@ -1146,7 +1146,6 @@ project_groups_data = [
     {
         "project_group_name": "Example Project Group",                # Must NOT exist in the database
         "description": "This is a project group for human test",
-        "is_active": True,
         "projects": [             # All these projects MUST exist in the database
             "Human Test 0",
             "Human Test 1"
@@ -1159,9 +1158,9 @@ sync_project_groups(project_groups_data=project_groups_data)
 
 > If you find any videos that not exist in the database, please add them to the database according to Step 1.
 
-6.2 - Update / Archive project groups
+6.2 - Update project groups
 
-To update a project group, provide the `project_group_name` that already exists in the database. You can update the `description` and modify the `projects` list to add or remove projects. To archive a project group, set `is_active` to `False`; to unarchive it, set `is_active` to `True`.
+To update a project group, provide the `project_group_name` that already exists in the database. You can update the `description` and modify the `projects` list to add or remove projects.
 
 ```python
 from label_pizza.db import init_database
@@ -1176,7 +1175,6 @@ project_groups_data = [
   {
       "project_group_name": "Example Project Group",                         # Must exist in the database
       "description": "This is a project group for human test updated",       # Update the description
-      "is_active": True,
       "projects": [            # Adding / deleting existing project names to update the project groups
           "Human Test 0",
           "Human Test 2"

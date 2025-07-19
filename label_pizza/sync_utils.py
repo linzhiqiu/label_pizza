@@ -23,6 +23,7 @@ import concurrent.futures
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import glob
+from copy import deepcopy
 
 # --------------------------------------------------------------------------- #
 # Core operations                                                             #
@@ -202,11 +203,12 @@ def _update_single_video(video_data: Dict) -> Tuple[str, bool, Optional[str]]:
                     if video_data["is_archived"]:
                         VideoService.archive_video(rec.id, sess)
                     else:
-                        rec.is_archived = False
+                        VideoService.unarchive_video(rec.id, sess)
             
             return video_data["video_uid"], True, None
         except Exception as e:
             return video_data["video_uid"], False, str(e)
+
 
 def update_videos(videos_data: List[Dict], max_workers: int = 10) -> None:
     """Update videos that must exist in database with parallel verification.
@@ -305,6 +307,9 @@ def sync_videos(
     if not isinstance(videos_data, list):
         raise TypeError("videos_data must be a list[dict]")
 
+    # Deep copy videos_data to avoid modifying the original list
+    videos_data = deepcopy(videos_data)
+    
     print(f"\n🚀 Starting video sync pipeline with {len(videos_data)} videos...")
     
     # Check for duplicate video_uid values first
@@ -334,8 +339,19 @@ def sync_videos(
     with tqdm(total=len(videos_data), desc="Validating video data", unit="video") as pbar:
         for idx, item in enumerate(videos_data, 1):
             required = {"url", "video_uid", "metadata", "is_active"}
-            if missing := required - set(item.keys()):
-                raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+            item_keys = set(item.keys())
+
+            if item_keys != required:
+                missing = required - item_keys
+                extra = item_keys - required
+                
+                error_parts = []
+                if missing:
+                    error_parts.append(f"missing: {', '.join(missing)}")
+                if extra:
+                    error_parts.append(f"extra: {', '.join(extra)}")
+                
+                raise ValueError(f"Entry #{idx} invalid fields: {', '.join(error_parts)}")
 
             # optional active → archived conversion
             if "is_active" in item:
@@ -588,6 +604,9 @@ def sync_users(
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
 
+    # Deep copy users_data to avoid modifying the original list
+    users_data = deepcopy(users_data)
+
     print(f"🚀 Starting user sync with {len(users_data)} users...")
 
     # Validate, clean, and check duplicates
@@ -597,8 +616,19 @@ def sync_users(
     for idx, user in enumerate(users_data, 1):
         # Check required fields
         required = {"user_id", "email", "password", "user_type", "is_active"}
-        if missing := required - set(user.keys()):
-            raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+        user_keys = set(user.keys())
+
+        if user_keys != required:
+            missing = required - user_keys
+            extra = user_keys - required
+            
+            error_parts = []
+            if missing:
+                error_parts.append(f"missing: {', '.join(missing)}")
+            if extra:
+                error_parts.append(f"extra: {', '.join(extra)}")
+            
+            raise ValueError(f"Entry #{idx} {', '.join(error_parts)}")
         
         # Validate user_id
         user_id = str(user["user_id"]).strip() if user["user_id"] else ""
@@ -1237,104 +1267,98 @@ def sync_question_groups(
         question_groups_data: Pre-loaded list of question group dictionaries
         
     Raises:
-        ValueError: If neither or both parameters provided, or validation fails
+        ValueError: If neither or both parameters provided, validation fails, or duplicates found
         TypeError: If question_groups_data is not a list of dictionaries
         
     Note:
         Exactly one parameter must be provided.
-        Each group dict requires: title, description, questions.
+        Each group dict requires: title, display_title, description, is_reusable, is_auto_submit, verification_function, questions.
+        All title values must be unique within the dataset.
     """
 
-    if question_groups_folder and question_groups_data:
-        raise ValueError("Only one of question_groups_folder or question_groups_data can be provided")
-    
-    # Validate input parameters
     if question_groups_folder is None and question_groups_data is None:
-        raise ValueError("Either question_groups_folder or question_groups_data must be provided")
+        raise ValueError("Provide either question_groups_folder or question_groups_data")
     
-    print(f"\n🚀 Starting question groups sync pipeline...")
-    
-    # 1️⃣ Load & JSON-level validation
-    loaded: List[Tuple[str, Dict]] = []
-    
-    if question_groups_folder is not None:
-        # Load from folder
+    if question_groups_folder and question_groups_data:
+        raise ValueError("Provide either question_groups_folder or question_groups_data, not both")
+
+    # Load JSON if folder provided
+    if question_groups_folder:
         folder = Path(question_groups_folder)
         if not folder.exists() or not folder.is_dir():
             raise ValueError(f"Invalid folder: {question_groups_folder}")
 
         json_paths = list(folder.glob("*.json"))
-
+        question_groups_data = []
+        
         for pth in json_paths:
             with open(pth, "r") as f:
                 data = json.load(f)
             if not isinstance(data, dict):
                 raise ValueError(f"{pth.name}: file must contain a JSON object")
-            
-            # Validate required fields
-            for fld in ("title", "description", "questions"):
-                if fld not in data:
-                    raise ValueError(f"{pth.name}: missing required field '{fld}'")
-            
-            # Set defaults and normalize
-            data.setdefault("display_title", data["title"])
-            
-            if not isinstance(data["questions"], list):
-                raise ValueError(f"{pth.name}: 'questions' must be a list")
-            
-            loaded.append((pth.name, data))
+            question_groups_data.append(data)
+
+    if not isinstance(question_groups_data, list):
+        raise TypeError("question_groups_data must be a list of dictionaries")
     
-    else:
-        # Load from data list
-        if not isinstance(question_groups_data, list):
-            raise TypeError("question_groups_data must be a list of dictionaries")
-        
-        for idx, data in enumerate(question_groups_data, 1):
-            if not isinstance(data, dict):
-                raise ValueError(f"Item #{idx}: must be a dictionary")
-            
-            # Create a copy to avoid modifying original data
-            data_copy = data.copy()
-            
-            # Validate required fields
-            for fld in ("title", "description", "questions"):
-                if fld not in data_copy:
-                    raise ValueError(f"Item #{idx}: missing required field '{fld}'")
-            
-            # Set defaults and normalize
-            data_copy.setdefault("display_title", data_copy["title"])
-            
-            if not isinstance(data_copy["questions"], list):
-                raise ValueError(f"Item #{idx}: 'questions' must be a list")
-            
-            # Use index as filename for data items
-            loaded.append((f"data_item_{idx}", data_copy))
+    # Deep copy question_groups_data to avoid modifying the original list
+    question_groups_data = deepcopy(question_groups_data)
 
-    print(f"✅ JSON validation passed for {len(loaded)} items")
+    print(f"\n🚀 Starting question groups sync pipeline with {len(question_groups_data)} groups...")
 
-    # 2️⃣ Check for duplicate titles
+    # Check for duplicate title values
     print("\n🔍 Checking for duplicate title values...")
     
     titles = []
     title_duplicates = []
     
-    for source_name, data in loaded:
+    for idx, data in enumerate(question_groups_data, 1):
+        # Validate required fields
+        required = {"title", "display_title", "description", "is_reusable", "is_auto_submit", "verification_function", "questions"}
+        data_keys = set(data.keys())
+
+        if data_keys != required:
+            missing = required - data_keys
+            extra = data_keys - required
+            
+            error_parts = []
+            if missing:
+                error_parts.append(f"missing: {', '.join(missing)}")
+            if extra:
+                error_parts.append(f"extra: {', '.join(extra)}")
+            
+            raise ValueError(f"Entry #{idx} {', '.join(error_parts)}")
+        
         title = data["title"]
         if title in titles:
-            title_duplicates.append((title, source_name))
+            title_duplicates.append((title, idx))
         else:
             titles.append(title)
     
     if title_duplicates:
-        duplicate_info = [f"title '{title}' in {source}" for title, source in title_duplicates]
+        duplicate_info = [f"title '{title}' at entry #{idx}" for title, idx in title_duplicates]
         raise ValueError(f"Duplicate title values found: {', '.join(duplicate_info)}")
     
     print(f"✅ No duplicates found - all {len(titles)} title values are unique")
 
-    # 3️⃣ Classify add vs update with one read-only session
+    # Validate and normalize data
+    processed: List[Dict] = []
+    for idx, data in enumerate(question_groups_data, 1):
+        
+        # Set defaults and normalize
+        data.setdefault("display_title", data["title"])
+        
+        if not isinstance(data["questions"], list):
+            raise ValueError(f"Entry #{idx}: 'questions' must be a list")
+        
+        processed.append(data)
+
+    print(f"✅ Validation passed for {len(processed)} groups")
+
+    # Classify add vs update with one read-only session
     to_add, to_update = [], []
     with SessionLocal() as sess:
-        for fn, g in loaded:
+        for g in processed:
             group_exists = False
             try:
                 QuestionGroupService.get_group_by_name(g["title"], sess)
@@ -1347,23 +1371,28 @@ def sync_question_groups(
                 group_exists = False
             
             if group_exists:
-                to_update.append((fn, g))
+                to_update.append(g)
             else:
-                to_add.append((fn, g))
+                to_add.append(g)
 
     print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
 
-    # 4️⃣ Execute operations
-    created, questions_created = [], []
+    # Execute operations
+    created = []
     updated = []
+    questions_created = []
     
     if to_add:
-        c, qc = add_question_groups(to_add)
+        # Convert to the format expected by add_question_groups
+        add_data = [(f"item_{i}", g) for i, g in enumerate(to_add)]
+        c, qc = add_question_groups(add_data)
         created.extend(c)
         questions_created.extend(qc)
     
     if to_update:
-        updated.extend(update_question_groups(to_update))
+        # Convert to the format expected by update_question_groups
+        update_data = [(f"item_{i}", g) for i, g in enumerate(to_update)]
+        updated.extend(update_question_groups(update_data))
 
     print("🎉 Question-group pipeline complete")
     print(f"   • Groups created: {len(created)}")
@@ -1643,6 +1672,9 @@ def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[D
 
     if not isinstance(schemas_data, list):
         raise TypeError("schemas_data must be list[dict]")
+    
+    # Deep copy schemas_data to avoid modifying the original list
+    schemas_data = deepcopy(schemas_data)
 
     print(f"\n🚀 Starting schema sync pipeline with {len(schemas_data)} schemas...")
 
@@ -1672,8 +1704,19 @@ def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[D
     processed: List[Dict] = []
     for idx, s in enumerate(schemas_data, 1):
         required = {"schema_name", "question_group_names", "instructions_url", "has_custom_display", "is_active"}
-        if missing := required - set(s.keys()):
-            raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+        schema_keys = set(s.keys())
+
+        if schema_keys != required:
+            missing = required - schema_keys
+            extra = schema_keys - required
+            
+            error_parts = []
+            if missing:
+                error_parts.append(f"missing: {', '.join(missing)}")
+            if extra:
+                error_parts.append(f"extra: {', '.join(extra)}")
+            
+            raise ValueError(f"Entry #{idx} {', '.join(error_parts)}")
         if not isinstance(s["question_group_names"], list):
             raise ValueError(f"Entry #{idx}: 'question_group_names' must be list")
         if "is_active" in s:
@@ -2073,7 +2116,12 @@ def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, O
             proj = ProjectService.get_project_by_name(project_data["project_name"], sess)
             
             # Handle archive flag
-            desired_archived = project_data["is_archived"]
+            desired_archived = None
+            if "is_archived" in project_data:
+                desired_archived = project_data["is_archived"]
+            
+            # Check if project is currently archived and if we want to unarchive it
+            current_is_archived = proj.is_archived
             
             # Verify archive/unarchive operations
             if desired_archived is not None and desired_archived != proj.is_archived:
@@ -2081,13 +2129,21 @@ def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, O
                     ProjectService.verify_archive_project(proj.id, sess)
                 else:
                     ProjectService.verify_unarchive_project(proj.id, sess)
-            
-            # Verify description updates if provided
-            if "description" in project_data:
-                ProjectService.verify_update_project_description(proj.id, project_data["description"], sess)
+
+            # Only verify other updates if project is not archived OR is being unarchived
+            # If project is currently archived and not being unarchived, skip other validations
+            if not current_is_archived or (desired_archived is False):
+                # Verify description updates if provided
+                if "description" in project_data:
+                    print(f"desired_archived: {desired_archived}")
+                    ProjectService.verify_update_project_description(project_id =proj.id, description = project_data["description"], is_archived = desired_archived, session = sess)
+            elif current_is_archived and desired_archived != False:
+                # Project is archived and not being unarchived, but trying to update other fields
+                if "description" in project_data or "videos" in project_data:
+                    return project_data["project_name"], False, "Cannot update archived project. Set is_active=True to unarchive first."
             
             return project_data["project_name"], True, None
-            
+        
         except ValueError as err:
             if "not found" in str(err).lower():
                 return project_data["project_name"], False, "not found"
@@ -2167,13 +2223,6 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
                         if custom_displays_changed:
                             break
             
-            # Debug logging to see what's happening
-            # print(f"DEBUG {project_name}: needs_update={needs_update}, custom_displays_changed={custom_displays_changed}")
-            # print(f"DEBUG {project_name}: changes={changes}")
-            # if "videos" in project_data:
-            #     schema = SchemaService.get_schema_by_id(proj.schema_id, sess)
-            #     print(f"DEBUG {project_name}: schema.has_custom_display={schema.has_custom_display}")
-            
             # Only proceed with updates if there are actual changes
             if needs_update or custom_displays_changed:
                 # Apply changes
@@ -2184,7 +2233,7 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
                         ProjectService.unarchive_project(proj.id, sess)
                 
                 if "description" in changes:
-                    ProjectService.update_project_description(proj.id, project_data["description"], sess)
+                    ProjectService.update_project_description(proj.id, project_data["description"], desired_archived, sess)
                 
                 # Sync custom displays only if there are changes
                 if custom_displays_changed:
@@ -2313,6 +2362,9 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     if not isinstance(projects_data, list):
         raise TypeError("projects_data must be list[dict]")
     
+    # Deep copy projects_data to avoid modifying the original list
+    projects_data = deepcopy(projects_data)
+    
     print(f"\n🚀 Starting project upload pipeline with {len(projects_data)} projects...")
     
     # Check for duplicate project_name values
@@ -2343,10 +2395,42 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     with tqdm(total=len(projects_data), desc="Validating project data", unit="project") as pbar:
         for idx, cfg in enumerate(projects_data, 1):
             # Validate required fields
-            for key in ("project_name", "schema_name", "is_active", "videos"):
-                if key not in cfg:
-                    raise ValueError(f"Entry #{idx}: missing '{key}'")
-                    
+            required = {"project_name", "description", "schema_name", "is_active", "videos"}
+            config_keys = set(cfg.keys())
+
+            if config_keys != required:
+                missing = required - config_keys
+                extra = config_keys - required
+                
+                error_parts = []
+                if missing:
+                    error_parts.append(f"missing: {', '.join(missing)}")
+                if extra:
+                    error_parts.append(f"extra: {', '.join(extra)}")
+                
+                raise ValueError(f"Entry #{idx} {', '.join(error_parts)}")
+            
+            video_uids = []
+            video_duplicates = []
+            
+            for video_idx, video in enumerate(cfg["videos"]):
+                # Extract video UID based on format (string or dict)
+                if isinstance(video, str):
+                    video_uid = video
+                elif isinstance(video, dict) and "video_uid" in video:
+                    video_uid = video["video_uid"]
+                else:
+                    raise ValueError(f"Entry #{idx}, video #{video_idx + 1}: Invalid video format. Must be string or dict with 'video_uid'")
+                
+                if video_uid in video_uids:
+                    video_duplicates.append(video_uid)
+                else:
+                    video_uids.append(video_uid)
+            
+            if video_duplicates:
+                duplicate_info = [f"video_uid '{uid}'" for uid in video_duplicates]
+                raise ValueError(f"Entry #{idx} (project '{cfg['project_name']}'): Duplicate videos found: {', '.join(duplicate_info)}")
+            
             # Normalize is_active to is_archived
             cfg["is_archived"] = not cfg.pop("is_active")
                 
@@ -2674,6 +2758,9 @@ def sync_project_groups(
         raise TypeError("project_groups_data must be list[dict]")
 
 
+    # Deep copy project_groups_data to avoid modifying the original list
+    project_groups_data = deepcopy(project_groups_data)
+    
     print(f"\n🚀 Starting project groups sync pipeline with {len(project_groups_data)} groups...")
 
     # Check for duplicate project_group_name values
@@ -2703,9 +2790,20 @@ def sync_project_groups(
     processed: List[Dict] = []
     for idx, g in enumerate(project_groups_data, 1):
         # Validate required fields
-        for fld in ("project_group_name", "projects"):
-            if fld not in g:
-                raise ValueError(f"Entry #{idx} missing: {fld}")
+        required = {"project_group_name", "projects", "description"}
+        group_keys = set(g.keys())
+
+        if group_keys != required:
+            missing = required - group_keys
+            extra = group_keys - required
+            
+            error_parts = []
+            if missing:
+                error_parts.append(f"missing: {', '.join(missing)}")
+            if extra:
+                error_parts.append(f"extra: {', '.join(extra)}")
+            
+            raise ValueError(f"Entry #{idx} {', '.join(error_parts)}")
         
         # Set defaults and normalize
         g.setdefault("description", "")
@@ -2772,20 +2870,24 @@ def _process_assignment_validation(assignment_data: Dict) -> Tuple[int, Dict, Op
     """
     with SessionLocal() as sess:
         try:
-            # Validate required fields
-            if 'user_email' in assignment_data and 'user_name' not in assignment_data:
-                try:
-                    user = AuthService.get_user_by_email(assignment_data['user_email'], sess)
-                    assignment_data['user_name'] = user.user_id_str
-                except ValueError:
-                    return assignment_data.get('_index', 0), {}, f"User email '{assignment_data['user_email']}' not found"
-            
-            required = {'user_name', 'project_name', 'role'}
-            if missing := required - set(assignment_data.keys()):
-                return assignment_data.get('_index', 0), {}, f"Missing fields: {', '.join(missing)}"
+            required = {"user_name", "project_name", "role", "user_weight", "is_active"}
+            assignment_keys = set(assignment_data.keys())
+            if assignment_keys != required:
+                missing = required - assignment_keys
+                extra = assignment_keys - required
+                
+                error_parts = []
+                if missing:
+                    error_parts.append(f"missing: {', '.join(missing)}")
+                if extra:
+                    error_parts.append(f"extra: {', '.join(extra)}")
+                
+                return assignment_data.get('_index', 0), {}, f"Field validation failed: {', '.join(error_parts)}"
             
             # Validate role
             valid_roles = {'annotator', 'reviewer', 'admin', 'model'}
+            if assignment_data['role'] == 'admin':
+                raise ValueError("Admin role is not allowed")
             if assignment_data['role'] not in valid_roles:
                 return assignment_data.get('_index', 0), {}, f"Invalid role '{assignment_data['role']}'"
             
@@ -2889,6 +2991,9 @@ def sync_users_to_projects(assignment_path: str = None, assignments_data: list[d
     
     if not isinstance(assignments_data, list):
         raise TypeError("assignments_data must be a list of dictionaries")
+    
+    # Deep copy assignments_data to avoid modifying the original list
+    assignments_data = deepcopy(assignments_data)
 
     if not assignments_data:
         print("ℹ️  No assignments to process")
@@ -3154,6 +3259,9 @@ def sync_annotations(annotations_folder: str = None,
     if not isinstance(annotations_data, list):
         raise TypeError("annotations_data must be a list of dictionaries")
     
+    # Deep copy annotations_data to avoid modifying the original list
+    annotations_data = deepcopy(annotations_data)
+    
     # Check for duplicates
     check_for_duplicates(annotations_data, "annotation")
     
@@ -3163,6 +3271,21 @@ def sync_annotations(annotations_folder: str = None,
     def validate_single_annotation(annotation_with_idx):
         idx, annotation = annotation_with_idx
         try:
+            required = {"question_group_title", "project_name", "user_name", "video_uid", "answers", "is_ground_truth"}
+            annotation_keys = set(annotation.keys())
+
+            if annotation_keys != required:
+                missing = required - annotation_keys
+                extra = annotation_keys - required
+                
+                error_parts = []
+                if missing:
+                    error_parts.append(f"missing: {', '.join(missing)}")
+                if extra:
+                    error_parts.append(f"extra: {', '.join(extra)}")
+                
+                raise ValueError(f"Field validation failed: {', '.join(error_parts)}")
+            
             # Validate ground truth flag
             if annotation.get("is_ground_truth", False):
                 raise ValueError(f"is_ground_truth must be False for annotations")
@@ -3387,6 +3510,9 @@ def sync_ground_truths(ground_truths_folder: str = None,
     if not isinstance(ground_truths_data, list):
         raise TypeError("ground_truths_data must be a list of dictionaries")
     
+    # Deep copy ground_truths_data to avoid modifying the original list
+    ground_truths_data = deepcopy(ground_truths_data)
+    
     # Check for duplicates
     check_for_duplicates(ground_truths_data, "ground truth")
     
@@ -3396,6 +3522,20 @@ def sync_ground_truths(ground_truths_folder: str = None,
     def validate_single_ground_truth(ground_truth_with_idx):
         idx, ground_truth = ground_truth_with_idx
         try:
+            required = {"question_group_title", "project_name", "user_name", "video_uid", "answers", "is_ground_truth"}
+            ground_truth_keys = set(ground_truth.keys())
+
+            if ground_truth_keys != required:
+                missing = required - ground_truth_keys
+                extra = ground_truth_keys - required
+                
+                error_parts = []
+                if missing:
+                    error_parts.append(f"missing: {', '.join(missing)}")
+                if extra:
+                    error_parts.append(f"extra: {', '.join(extra)}")
+                
+                raise ValueError(f"invalid fields: {', '.join(error_parts)}")
             # Validate ground truth flag
             if not ground_truth.get("is_ground_truth", False):
                 raise ValueError(f"is_ground_truth must be True for ground truths")

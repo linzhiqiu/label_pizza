@@ -1587,123 +1587,409 @@ result = change_project_schema_simple(
 6. Resets user completion status: 
    - `UPDATE project_user_roles SET completed_at = NULL WHERE project_id = ?`
 
-#### 4. delete_all_project_data(project_id, confirm_delete=True)
+## ⚠️ Force Delete Functions
 
-Before making destructive changes, you can preview what will be affected:
+### 1. Delete from Table `User`
 
-```
-from label_pizza.force_override import (
-    check_project_data_before_delete
-)
-
-preview = check_project_data_before_delete(project_id=3)
-print(f"Total records to delete: {preview['total_records']}")
-```
-
-Then you could confirm the delete.
+#### `delete_user_by_id`
 
 ```
-from label_pizza.db import init_database
-init_database("DBURL")
+from label_pizza.force_override import delete_user_by_id
 
-from label_pizza.force_override import delete_all_project_data
-
-# Delete project with confirmation prompt
-result = delete_all_project_data(
-    project_id=3,
-    confirm_delete=True  # Will ask for "DELETE" confirmation
-)
-
-# Quick delete without confirmation (use carefully!)
-result = delete_all_project_data(
-    project_id=3,
-    confirm_delete=False
-)
+user_id = 3
+delete_user_by_id(user_id=user_id)
 ```
 
-#### 5. delete_all_schema_data(schema_id, confirm_delete=True)
-
-Before making destructive changes, you can preview what will be affected:
+#### `delete_user_by_user_id_str`
 
 ```
-from label_pizza.force_override import (
-    check_schema_data_before_delete
-)
+from label_pizza.force_override import delete_user_by_user_id_str
 
-preview = check_schema_data_before_delete(schema_id=3)
-print(f"Total records to delete: {preview['total_records']}")
+user_id_str = 'User 1'
+delete_user_by_user_id_str(user_id=user_id_str)
 ```
 
-Then you could confirm the delete.
+### 2. Delete from Table `Video`
+
+#### `delete_video_by_id`
 
 ```
-from label_pizza.db import init_database
-init_database("DBURL")
+from label_pizza.force_override import delete_video_by_id
 
-from label_pizza.hack_utils import delete_all_schema_data
-
-# Delete schema and all projects using it
-result = delete_all_schema_data(
-    schema_id=5,
-    confirm_delete=True
-)
+video_id = 1
+delete_video_by_id(video_id=video_id)
 ```
 
-> **Warning:** This will delete ALL projects using the schema, not just the schema itself.
-
-#### 6. delete_all_question_group_data(question_group_id, confirm_delete=True)
-
-Before making destructive changes, you can preview what will be affected:
+#### `delete_video_by_uid`
 
 ```
-from label_pizza.force_override import (
-    check_question_group_data_before_delete
-)
+from label_pizza.force_override import delete_video_by_uid
 
-preview = check_question_group_data_before_delete(question_group_id=3)
-print(f"Total records to delete: {preview['total_records']}")
+video_uid = 'pizza.mp4'
+delete_video_by_id(video_uid=video_uid)
 ```
 
-Then you could confirm the delete.
+### 3. Delete from Table `VideoTag`
+
+#### `delete_video_tag_by_video_id`
 
 ```
-from label_pizza.db import init_database
-init_database("DBURL")
+from label_pizza.force_override import delete_video_tag_by_video_id
 
-from label_pizza.force_override import delete_all_question_group_data
-
-# Delete question group safely
-result = delete_all_question_group_data(
-    question_group_id=2,
-    confirm_delete=True
-)
+video_id = 1
+delete_video_tag_by_video_id(video_id=video_id)
 ```
 
-#### 7. delete_all_question_data(question_id, confirm_delete=True)
+### 4. Delete from Table `QuestionGroup`
 
-Before making destructive changes, you can preview what will be affected:
-
-```
-from label_pizza.force_override import (
-    check_question_data_before_delete
-)
-
-preview = check_question_data_before_delete(question_id=3)
-print(f"Total records to delete: {preview['total_records']}")
-```
-
-Then you could confirm the delete.
+#### `delete_question_group_by_id`
 
 ```
-from label_pizza.db import init_database
-init_database("DBURL")
+from label_pizza.force_override import delete_question_group_by_id
 
-from label_pizza.force_override import delete_all_question_data
-
-# Delete question and all its answers
-result = delete_all_question_data(
-    question_id=8,
-    confirm_delete=True
-)
+question_group_id = 1
+delete_question_group_by_id(question_group_id=question_group_id)
 ```
 
+#### `delete_question_group_by_title`
+
+```
+from label_pizza.force_override import delete_question_group_by_title
+
+title = 'Pizza'
+delete_question_group_by_title(title=title)
+```
+
+### 5. Delete from table `Question`
+
+#### `delete_question_by_id`
+
+```
+from label_pizza.force_override import delete_question_by_id
+
+question_id = 1
+delete_question_by_id(question_id=question_id)
+```
+
+#### `delete_question_by_text`
+
+```
+from label_pizza.force_override import delete_question_by_text
+
+text = 'Number of pizzas?'
+delete_question_by_text(text=text)
+```
+
+**`delete_question_group_question_by_question_id`**
+
+python
+
+```python
+from label_pizza.force_override import delete_question_group_questions_by_question_id
+
+question_id = 1
+delete_question_group_questions_by_question_id(question_id=question_id)
+```
+
+**`delete_question_group_question_by_group_id`**
+
+python
+
+```python
+from label_pizza.force_override import delete_question_group_questions_by_group_id
+
+question_group_id = 1
+delete_question_group_questions_by_group_id(question_group_id=question_group_id)
+```
+
+**`delete_question_group_question_by_both_ids`**
+
+python
+
+```python
+from label_pizza.force_override import delete_question_group_questions_by_both_ids
+
+question_group_id = 1
+question_id = 5
+delete_question_group_questions_by_both_ids(question_group_id=question_group_id, question_id=question_id)
+```
+
+### 6. Delete from Table `Schema`
+
+#### **`delete_schema_by_id`**
+
+```python
+from label_pizza.force_override import delete_schema_by_id
+
+schema_id = 1
+delete_schema_by_id(schema_id=schema_id)
+```
+
+**`delete_schema_by_name`**
+
+python
+
+```python
+from label_pizza.force_override import delete_schema_by_name
+
+name = 'Default Schema'
+delete_schema_by_name(name=name)
+```
+
+### 7. Delete from Table `SchemaQuestionGroup`
+
+#### **`delete_schema_question_group_by_schema_id`**
+
+```python
+from label_pizza.force_override import delete_schema_question_groups_by_schema_id
+
+schema_id = 1
+delete_schema_question_groups_by_schema_id(schema_id=schema_id)
+```
+
+#### **`delete_schema_question_group_by_question_group_id`**
+
+```python
+from label_pizza.force_override import delete_schema_question_groups_by_question_group_id
+
+question_group_id = 1
+delete_schema_question_groups_by_question_group_id(question_group_id=question_group_id)
+```
+
+#### **`delete_schema_question_group_by_both_ids`**
+
+```python
+from label_pizza.force_override import delete_schema_question_groups_by_both_ids
+
+schema_id = 1
+question_group_id = 5
+delete_schema_question_groups_by_both_ids(schema_id=schema_id, question_group_id=question_group_id)
+```
+
+### 8. Delete from Table `Project`
+
+#### **`delete_project_by_id`**
+
+```python
+from label_pizza.force_override import delete_project_by_id
+
+project_id = 1
+delete_project_by_id(project_id=project_id)
+```
+
+#### **`delete_project_by_name`**
+
+```python
+from label_pizza.force_override import delete_project_by_name
+
+name = 'My Project'
+delete_project_by_name(name=name)
+```
+
+### 9. Delete from Table `ProjectVideo`
+
+#### **`delete_project_video_by_project_id`**
+
+```python
+from label_pizza.force_override import delete_project_video_by_project_id
+
+project_id = 1
+delete_project_video_by_project_id(project_id=project_id)
+```
+
+#### **`delete_project_video_by_video_id`**
+
+```python
+from label_pizza.force_override import delete_project_video_by_video_id
+
+video_id = 1
+delete_project_video_by_video_id(video_id=video_id)
+```
+
+#### **`delete_project_video_by_both_ids`**
+
+```python
+from label_pizza.force_override import delete_project_video_by_both_ids
+
+project_id = 1
+video_id = 5
+delete_project_video_by_both_ids(project_id=project_id, video_id=video_id)
+```
+
+### 10. Delete from Table `ProjectUserRole`
+
+#### **`delete_project_user_role_by_project_id`**
+
+```python
+from label_pizza.force_override import delete_project_user_role_by_project_id
+
+project_id = 1
+delete_project_user_role_by_project_id(project_id=project_id)
+```
+
+#### **`delete_project_user_role_by_user_id`**
+
+```python
+from label_pizza.force_override import delete_project_user_role_by_user_id
+
+user_id = 1
+delete_project_user_role_by_user_id(user_id=user_id)
+```
+
+#### **`delete_project_user_role_by_both_ids`**
+
+```python
+from label_pizza.force_override import delete_project_user_role_by_both_ids
+
+project_id = 1
+user_id = 5
+delete_project_user_role_by_both_ids(project_id=project_id, user_id=user_id)
+```
+
+#### 11. Delete from Table `ProjectGroup`
+
+#### **`delete_project_group_by_id`**
+
+```python
+from label_pizza.force_override import delete_project_group_by_id
+
+project_group_id = 1
+delete_project_group_by_id(project_group_id=project_group_id)
+```
+
+#### **`delete_project_group_by_name`**
+
+```python
+from label_pizza.force_override import delete_project_group_by_name
+
+name = 'Project Group 1'
+delete_project_group_by_name(name=name)
+```
+
+### 12. Delete from Table `ProjectGroupProject`
+
+#### **`delete_project_group_project_by_group_id`**
+
+```python
+from label_pizza.force_override import delete_project_group_project_by_group_id
+
+project_group_id = 1
+delete_project_group_project_by_group_id(project_group_id=project_group_id)
+```
+
+#### **`delete_project_group_project_by_project_id`**
+
+```python
+from label_pizza.force_override import delete_project_group_project_by_project_id
+
+project_id = 1
+delete_project_group_project_by_project_id(project_id=project_id)
+```
+
+#### **`delete_project_group_project_by_both_ids`**
+
+```python
+from label_pizza.force_override import delete_project_group_project_by_both_ids
+
+project_group_id = 1
+project_id = 5
+delete_project_group_project_by_both_ids(project_group_id=project_group_id, project_id=project_id)
+```
+
+### 13. Delete from Table `ProjectVideoQuestionDisplay`
+
+#### **`delete_project_video_question_display_by_project_id`**
+
+```python
+from label_pizza.force_override import delete_project_video_question_display_by_project_id
+
+project_id = 1
+delete_project_video_question_display_by_project_id(project_id=project_id)
+```
+
+#### **`delete_project_video_question_displays_by_video_id`**
+
+```python
+from label_pizza.force_override import delete_project_video_question_displays_by_video_id
+
+video_id = 1
+delete_project_video_question_displays_by_video_id(video_id=video_id)
+```
+
+#### **`delete_project_video_question_displays_by_question_id`**
+
+```python
+from label_pizza.force_override import delete_project_video_question_displays_by_question_id
+
+question_id = 1
+delete_project_video_question_displays_by_question_id(question_id=question_id)
+```
+
+#### **`delete_project_video_question_display_by_ids`**
+
+```python
+from label_pizza.force_override import delete_project_video_question_display_by_ids
+
+project_id = 1
+video_id = 5
+question_id = 10
+delete_project_video_question_display_by_ids(project_id=project_id, video_id=video_id, question_id=question_id)
+```
+
+### 14. Delete from Table `AnnotatorAnswer`
+
+#### **`delete_annotator_answer_by_project_id`**
+
+```python
+from label_pizza.force_override import delete_annotator_answer_by_project_id
+
+project_id = 1
+delete_annotator_answer_by_project_id(project_id=project_id)
+```
+
+#### **`delete_annotator_answers_by_video_id`**
+
+```python
+from label_pizza.force_override import delete_annotator_answers_by_video_id
+
+video_id = 1
+delete_annotator_answers_by_video_id(video_id=video_id)
+```
+
+#### **`delete_annotator_answers_by_user_id`**
+
+```python
+from label_pizza.force_override import delete_annotator_answers_by_user_id
+
+user_id = 1
+delete_annotator_answers_by_user_id(user_id=user_id)
+```
+
+### 15. Delete from Table `ReviewerGroundTruth`
+
+#### **`delete_reviewer_ground_truth_by_project_id`**
+
+```python
+from label_pizza.force_override import delete_reviewer_ground_truth_by_project_id
+
+project_id = 1
+delete_reviewer_ground_truth_by_project_id(project_id=project_id)
+```
+
+#### **`delete_reviewer_ground_truth_by_video_id`**
+
+```python
+from label_pizza.force_override import delete_reviewer_ground_truth_by_video_id
+
+video_id = 1
+delete_reviewer_ground_truth_by_video_id(video_id=video_id)
+```
+
+#### **`delete_reviewer_ground_truth_by_reviewer_id`**
+
+```python
+from label_pizza.force_override import delete_reviewer_ground_truth_by_reviewer_id
+
+reviewer_id = 1
+delete_reviewer_ground_truth_by_reviewer_id(reviewer_id=reviewer_id)
+```

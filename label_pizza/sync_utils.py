@@ -661,23 +661,32 @@ def sync_users(
         for user in users_data:
             user_exists = False
             
-            # Check by user_id
-            try:
-                AuthService.get_user_by_id(user["user_id"], sess)
-                user_exists = True
-            except ValueError as e:
-                if "not found" not in str(e).lower():
-                    raise
-            
-            # Check by email if not found and email exists
-            if not user_exists and user["email"]:
+            # Check if user exists by user_id first
+            if user.get("user_id"):
                 try:
-                    existing = AuthService.get_user_by_email(user["email"], sess)
-                    if existing.user_id_str != user["user_id"]:
-                        raise ValueError(f"Email {user['email']} exists with different user_id")
-                    user_exists = True
-                except ValueError as e:
-                    if "not found" not in str(e).lower():
+                    existing_user = AuthService.get_user_by_id(user["user_id"], sess)
+                    if existing_user:
+                        user_exists = True
+                except (ValueError, Exception) as e:
+                    # If error contains "not found", user doesn't exist
+                    if "not found" in str(e).lower():
+                        user_exists = False
+                    else:
+                        # Re-raise unexpected errors
+                        raise
+            
+            # If not found by user_id, check by email
+            if not user_exists and user.get("email"):
+                try:
+                    existing_user = AuthService.get_user_by_email(user["email"], sess)
+                    if existing_user:
+                        user_exists = True
+                except (ValueError, Exception) as e:
+                    # If error contains "not found", user doesn't exist
+                    if "not found" in str(e).lower():
+                        user_exists = False
+                    else:
+                        # Re-raise unexpected errors
                         raise
             
             (to_update if user_exists else to_add).append(user)

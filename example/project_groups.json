@@ -1,6 +1,6 @@
 [
     {
-        "project_group_name": "Human Project Group",
+        "project_group_name": "Human Test Projects",
         "description": "This is a project group for human test",
         "projects": [
             "Human Test 0",
@@ -8,7 +8,7 @@
         ]
     },
     {
-        "project_group_name": "Pizza Project Group",
+        "project_group_name": "Pizza Test Projects",
         "description": "This is a project group for pizza test",
         "projects": [
             "Pizza Test 0"

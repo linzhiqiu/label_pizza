@@ -828,6 +828,10 @@ class ProjectService:
                 raise ValueError(f"Video with ID {vid} not found")
             if video.is_archived:
                 raise ValueError(f"Video with ID {vid} is archived")
+        
+        # Assert that all videos are unique
+        if len(video_ids) != len(set(video_ids)):
+            raise ValueError("All videos must be unique")
 
     @staticmethod
     def create_project(

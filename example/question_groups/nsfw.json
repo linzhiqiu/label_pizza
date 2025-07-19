@@ -7,22 +7,22 @@
     "verification_function": "",
     "questions": [
         {
-            "text": "Is the video not safe for work?",
             "qtype": "single",
+            "text": "Is the video not safe for work?",
+            "display_text": "Is the video not safe for work?",
             "options": [
-                "Yes",
-                "No"
+                "No",
+                "Yes"
             ],
             "display_values": [
-                "Yes",
-                "No"
+                "No",
+                "Yes"
             ],
             "option_weights": [
                 1.0,
                 99.0
             ],
-            "default_option": "No",
-            "display_text": "Is the video not safe for work?"
+            "default_option": "No"
         }
     ]
 }

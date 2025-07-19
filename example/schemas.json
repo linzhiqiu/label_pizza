@@ -1,7 +1,7 @@
 [
   {
     "schema_name": "Questions about Humans",
-    "instructions_url": "",
+    "instructions_url": "https://en.wikipedia.org/wiki/Human",
     "question_group_names": [
       "Human", "NSFW"
     ],
@@ -10,7 +10,7 @@
   },
   {
     "schema_name": "Questions about Pizzas",
-    "instructions_url": "",
+    "instructions_url": "https://en.wikipedia.org/wiki/Pizza",
     "question_group_names": [
       "Pizza", "NSFW"
     ],

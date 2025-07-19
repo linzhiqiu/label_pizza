@@ -805,7 +805,7 @@ sync_users(users_data=users_data)
 users_data = [
     {
         "user_id": "Model 1",          # new user_id
-        "email": "",                   # model user could not have email
+        "email": None,                 # model user could not have email
         "password": "",                # model user could not have password
         "user_type": "model",
         "is_active": True
@@ -893,7 +893,6 @@ question_groups_data = [
         "is_reusable": True,
         "is_auto_submit": True,
         "verification_function": None,
-        "is_active": True,
         "questions": [
             {
                 "text": "Is the video not safe for work?",
@@ -923,6 +922,7 @@ sync_question_groups(question_groups_data=question_groups_data)
 3.2 - Update a question group and its questions
 
 To update an existing question group, keep the same `title` and include the complete current list of `questions`. You may modify
+
 - `display_title`, `description`, `is_reusable`, `is_auto_submit`, `verification_function`
 - The **order** of questions. 
 - For each question, its `display_text`, `display_values`, and `default_option`. For `single` questions, you may also reorder `options` and adjust their `option_weights`.
@@ -1063,7 +1063,7 @@ projects_data = [
     "is_active": True,
     "videos": [
       "human.mp4",
-      "human.mp4"
+      "pizza.mp4"
     ]
   }
 ]
@@ -1207,8 +1207,7 @@ project_groups_data = [
       "project_group_name": "Human Test Projects",
       "description": "This is an empty project group",  # Update the description
       "projects": [ # Remove all projects from the project group
-      ],
-      "is_active": False # Please remove this line
+      ]
   }
 ]
 
@@ -1247,6 +1246,29 @@ sync_annotations(annotations_data=annotations_data)
 ```
 
 8.2 - Sync ground truths
+
+Before uploading ground truths, we need to update the role of `User 1` in project `Human Test 0`
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_users_to_projects
+assignments_data = [
+  {
+    "user_name": "User 1",            
+    "project_name": "Human Test 0",
+    "role": "reviewer",             # `human` users could only be assigned as `reviewer` or `annotator`
+    "user_weight": 1.0,              
+    "is_active": True
+  }
+]
+sync_users_to_projects(assignments_data=assignments_data)
+
+from label_pizza.sync_utils import sync_ground_truths
+```
+
+Then we could run the following code:
 
 ```python
 from label_pizza.db import init_database
@@ -1354,7 +1376,7 @@ projects_data = [
     "schema_name": "Questions about Pizzas Custom",
     "description": "Test project for custom questions",
     "videos": [
-      "human.mp4"
+      "human.mp4",
       "pizza.mp4"
     ]
   }
@@ -1436,7 +1458,6 @@ After running the configuration, you'll see a summary:
    • Removed: 1
    • Skipped: 3
    • Total processed: 10
-```xxxxxxxxxx 📊 Summary:   • Created: 4   • Updated: 2   • Removed: 1   • Skipped: 3   • Total processed: 10
 ```
 
 

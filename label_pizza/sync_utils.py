@@ -3274,18 +3274,21 @@ def sync_annotations(annotations_folder: str = None,
         idx, annotation = annotation_with_idx
         try:
             required = {"question_group_title", "project_name", "user_name", "video_uid", "answers", "is_ground_truth"}
+            optional = {"confidence_scores"}  # Allowed optional fields
             annotation_keys = set(annotation.keys())
 
-            if annotation_keys != required:
-                missing = required - annotation_keys
-                extra = annotation_keys - required
-                
-                error_parts = []
-                if missing:
-                    error_parts.append(f"missing: {', '.join(missing)}")
-                if extra:
-                    error_parts.append(f"extra: {', '.join(extra)}")
-                
+            # Check for missing required fields
+            missing = required - annotation_keys
+            # Check for extra fields, but exclude allowed optional ones
+            extra = annotation_keys - required - optional
+
+            error_parts = []
+            if missing:
+                error_parts.append(f"missing: {', '.join(missing)}")
+            if extra:
+                error_parts.append(f"extra: {', '.join(extra)}")
+
+            if error_parts:
                 raise ValueError(f"Field validation failed: {', '.join(error_parts)}")
             
             # Validate ground truth flag

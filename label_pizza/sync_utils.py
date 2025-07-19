@@ -293,6 +293,9 @@ def sync_videos(
     if videos_path is None and videos_data is None:
         raise ValueError("Provide either videos_path or videos_data")
 
+    if videos_path and videos_data:
+        raise ValueError("Provide either videos_path or videos_data, not both")
+
     # Load JSON if a path is provided
     if videos_path:
         print(f"📂 Loading videos from {videos_path}")
@@ -303,6 +306,28 @@ def sync_videos(
         raise TypeError("videos_data must be a list[dict]")
 
     print(f"\n🚀 Starting video sync pipeline with {len(videos_data)} videos...")
+    
+    # Check for duplicate video_uid values first
+    print("\n🔍 Checking for duplicate video_uid values...")
+    video_uids = []
+    duplicates = []
+    
+    for idx, item in enumerate(videos_data, 1):
+        # Basic check that video_uid exists before processing
+        if "video_uid" not in item:
+            raise ValueError(f"Entry #{idx} missing required field: video_uid")
+        
+        video_uid = item["video_uid"]
+        if video_uid in video_uids:
+            duplicates.append((video_uid, idx))
+        else:
+            video_uids.append(video_uid)
+    
+    if duplicates:
+        duplicate_info = [f"video_uid '{uid}' at entry #{idx}" for uid, idx in duplicates]
+        raise ValueError(f"Duplicate video_uid values found: {', '.join(duplicate_info)}")
+    
+    print(f"✅ No duplicates found - all {len(video_uids)} video_uid values are unique")
 
     # Validate & enrich each record with progress bar
     processed: List[Dict] = []
@@ -553,12 +578,60 @@ def sync_users(
     if users_path is None and users_data is None:
         raise ValueError("Provide either users_path or users_data")
 
+    if users_path and users_data:
+        raise ValueError("Provide either users_path or users_data, not both")
+
     if users_path:
         with open(users_path, "r") as f:
             users_data = json.load(f)
 
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
+
+    # Check for duplicate user_id and email values
+    print("\n🔍 Checking for duplicate user_id and email values...")
+    
+    user_ids = []
+    emails = []
+    user_id_duplicates = []
+    email_duplicates = []
+    
+    for idx, user in enumerate(users_data, 1):
+        # Basic check that required fields exist before processing duplicates
+        if "user_id" not in user:
+            raise ValueError(f"Entry #{idx} missing required field: user_id")
+        if "email" not in user:
+            raise ValueError(f"Entry #{idx} missing required field: email")
+        
+        # Check user_id duplicates
+        user_id = user["user_id"]
+        if user_id in user_ids:
+            user_id_duplicates.append((user_id, idx))
+        else:
+            user_ids.append(user_id)
+        
+        # Check email duplicates
+        email = user["email"]
+        if email in emails:
+            email_duplicates.append((email, idx))
+        else:
+            emails.append(email)
+    
+    # Report any duplicates found
+    duplicate_errors = []
+    
+    if user_id_duplicates:
+        duplicate_info = [f"user_id '{uid}' at entry #{idx}" for uid, idx in user_id_duplicates]
+        duplicate_errors.append(f"Duplicate user_id values: {', '.join(duplicate_info)}")
+    
+    if email_duplicates:
+        duplicate_info = [f"email '{email}' at entry #{idx}" for email, idx in email_duplicates]
+        duplicate_errors.append(f"Duplicate email values: {', '.join(duplicate_info)}")
+    
+    if duplicate_errors:
+        raise ValueError(f"Duplicate values found - {'; '.join(duplicate_errors)}")
+    
+    print(f"✅ No duplicates found - all {len(user_ids)} user_id and {len(emails)} email values are unique")
 
     # Convert is_active → is_archived and validate required fields
     processed: List[Dict] = []
@@ -1171,6 +1244,8 @@ def sync_question_groups(
     if question_groups_folder is None and question_groups_data is None:
         raise ValueError("Either question_groups_folder or question_groups_data must be provided")
     
+    print(f"\n🚀 Starting question groups sync pipeline...")
+    
     # 1️⃣ Load & JSON-level validation
     loaded: List[Tuple[str, Dict]] = []
     
@@ -1229,7 +1304,26 @@ def sync_question_groups(
 
     print(f"✅ JSON validation passed for {len(loaded)} items")
 
-    # 2️⃣ Classify add vs update with one read-only session
+    # 2️⃣ Check for duplicate titles
+    print("\n🔍 Checking for duplicate title values...")
+    
+    titles = []
+    title_duplicates = []
+    
+    for source_name, data in loaded:
+        title = data["title"]
+        if title in titles:
+            title_duplicates.append((title, source_name))
+        else:
+            titles.append(title)
+    
+    if title_duplicates:
+        duplicate_info = [f"title '{title}' in {source}" for title, source in title_duplicates]
+        raise ValueError(f"Duplicate title values found: {', '.join(duplicate_info)}")
+    
+    print(f"✅ No duplicates found - all {len(titles)} title values are unique")
+
+    # 3️⃣ Classify add vs update with one read-only session
     to_add, to_update = [], []
     with SessionLocal() as sess:
         for fn, g in loaded:
@@ -1251,7 +1345,7 @@ def sync_question_groups(
 
     print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
 
-    # 3️⃣ Execute operations
+    # 4️⃣ Execute operations
     created, questions_created = [], []
     updated = []
     
@@ -1541,6 +1635,31 @@ def sync_schemas(*, schemas_path: str | Path | None = None, schemas_data: List[D
 
     if not isinstance(schemas_data, list):
         raise TypeError("schemas_data must be list[dict]")
+
+    print(f"\n🚀 Starting schema sync pipeline with {len(schemas_data)} schemas...")
+
+    # Check for duplicate schema_name values
+    print("\n🔍 Checking for duplicate schema_name values...")
+    
+    schema_names = []
+    schema_name_duplicates = []
+    
+    for idx, schema in enumerate(schemas_data, 1):
+        # Basic check that schema_name exists before processing duplicates
+        if "schema_name" not in schema:
+            raise ValueError(f"Entry #{idx} missing required field: schema_name")
+        
+        schema_name = schema["schema_name"]
+        if schema_name in schema_names:
+            schema_name_duplicates.append((schema_name, idx))
+        else:
+            schema_names.append(schema_name)
+    
+    if schema_name_duplicates:
+        duplicate_info = [f"schema_name '{name}' at entry #{idx}" for name, idx in schema_name_duplicates]
+        raise ValueError(f"Duplicate schema_name values found: {', '.join(duplicate_info)}")
+    
+    print(f"✅ No duplicates found - all {len(schema_names)} schema_name values are unique")
 
     processed: List[Dict] = []
     for idx, s in enumerate(schemas_data, 1):
@@ -2175,15 +2294,41 @@ def sync_projects(*, projects_path: str | Path | None = None, projects_data: Lis
     """
     if projects_path is None and projects_data is None:
         raise ValueError("Provide either projects_path or projects_data")
-        
+    
+    if projects_path and projects_data:
+        raise ValueError("Provide either projects_path or projects_data, not both")
+    
     if projects_path:
         with open(projects_path, "r") as f:
             projects_data = json.load(f)
             
     if not isinstance(projects_data, list):
         raise TypeError("projects_data must be list[dict]")
-
-    print("\n🚀 Starting project upload pipeline...")
+    
+    print(f"\n🚀 Starting project upload pipeline with {len(projects_data)} projects...")
+    
+    # Check for duplicate project_name values
+    print("\n🔍 Checking for duplicate project_name values...")
+    
+    project_names = []
+    project_name_duplicates = []
+    
+    for idx, project in enumerate(projects_data, 1):
+        # Basic check that project_name exists before processing duplicates
+        if "project_name" not in project:
+            raise ValueError(f"Entry #{idx} missing required field: project_name")
+        
+        project_name = project["project_name"]
+        if project_name in project_names:
+            project_name_duplicates.append((project_name, idx))
+        else:
+            project_names.append(project_name)
+    
+    if project_name_duplicates:
+        duplicate_info = [f"project_name '{name}' at entry #{idx}" for name, idx in project_name_duplicates]
+        raise ValueError(f"Duplicate project_name values found: {', '.join(duplicate_info)}")
+    
+    print(f"✅ No duplicates found - all {len(project_names)} project_name values are unique")
     
     # Validate and normalize project data
     processed: List[Dict] = []
@@ -2509,6 +2654,9 @@ def sync_project_groups(
     if project_groups_path is None and project_groups_data is None:
         raise ValueError("Provide either project_groups_path or project_groups_data")
 
+    if project_groups_path and project_groups_data:
+        raise ValueError("Provide either project_groups_path or project_groups_data, not both")
+
     # Load JSON if path provided
     if project_groups_path:
         with open(project_groups_path, "r") as f:
@@ -2516,6 +2664,32 @@ def sync_project_groups(
 
     if not isinstance(project_groups_data, list):
         raise TypeError("project_groups_data must be list[dict]")
+
+
+    print(f"\n🚀 Starting project groups sync pipeline with {len(project_groups_data)} groups...")
+
+    # Check for duplicate project_group_name values
+    print("\n🔍 Checking for duplicate project_group_name values...")
+    
+    project_group_names = []
+    project_group_name_duplicates = []
+    
+    for idx, group in enumerate(project_groups_data, 1):
+        # Basic check that project_group_name exists before processing duplicates
+        if "project_group_name" not in group:
+            raise ValueError(f"Entry #{idx} missing required field: project_group_name")
+        
+        project_group_name = group["project_group_name"]
+        if project_group_name in project_group_names:
+            project_group_name_duplicates.append((project_group_name, idx))
+        else:
+            project_group_names.append(project_group_name)
+    
+    if project_group_name_duplicates:
+        duplicate_info = [f"project_group_name '{name}' at entry #{idx}" for name, idx in project_group_name_duplicates]
+        raise ValueError(f"Duplicate project_group_name values found: {', '.join(duplicate_info)}")
+    
+    print(f"✅ No duplicates found - all {len(project_group_names)} project_group_name values are unique")
 
     # Validate and normalize project groups data
     processed: List[Dict] = []
@@ -2858,169 +3032,6 @@ def _verify_single_assignment(assignment_data: Dict) -> Tuple[str, Optional[str]
         except Exception as e:
             assignment_name = f"{assignment_data['user_name']} -> {assignment_data['project_name']}"
             return assignment_name, str(e)
-
-
-# def sync_annotations(annotation: dict) -> dict:
-#     """Upload a single annotation item with duplicate checking.
-    
-#     Args:
-#         annotation: Annotation dictionary with video_uid, project_name, user_name, 
-#                    question_group_title, answers, and optional confidence_scores/notes
-        
-#     Returns:
-#         Dictionary with status ("uploaded" or "skipped"), video_uid, user_name, and group
-        
-#     Raises:
-#         TypeError: If annotation is not a dictionary
-#         RuntimeError: If upload fails (includes rollback)
-        
-#     Note:
-#         Assumes annotation has already been validated. Skips if no changes detected.
-#     """
-    
-#     if not isinstance(annotation, dict):
-#         raise TypeError("annotation must be a dictionary")
-    
-#     with SessionLocal() as session:
-#         try:
-#             # Resolve IDs (these should succeed since validation passed)
-#             video_uid = annotation.get("video_uid", "").split("/")[-1]
-#             video = VideoService.get_video_by_uid(video_uid, session)
-#             project = ProjectService.get_project_by_name(annotation["project_name"], session)
-#             user = AuthService.get_user_by_name(annotation["user_name"], session)
-#             group = QuestionGroupService.get_group_by_name(annotation["question_group_title"], session)
-            
-#             # Check if answers already exist
-#             existing = AnnotatorService.get_user_answers_for_question_group(
-#                 video_id=video.id,
-#                 project_id=project.id,
-#                 user_id=user.id,
-#                 question_group_id=group.id,
-#                 session=session
-#             )
-            
-#             # Determine if update needed - check if any answer differs
-#             needs_update = False
-#             for q_text, answer in annotation["answers"].items():
-#                 if q_text not in existing or existing[q_text] != answer:
-#                     needs_update = True
-#                     break
-            
-#             if not needs_update:
-#                 print(f"⏭️  Skipped: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']} (no changes)")
-#                 return {
-#                     "status": "skipped",
-#                     "video_uid": video_uid,
-#                     "user_name": annotation["user_name"],
-#                     "group": annotation["question_group_title"]
-#                 }
-            
-#             # Submit the annotation (no verification needed - already done)
-#             AnnotatorService.submit_answer_to_question_group(
-#                 video_id=video.id,
-#                 project_id=project.id,
-#                 user_id=user.id,
-#                 question_group_id=group.id,
-#                 answers=annotation["answers"],
-#                 session=session,
-#                 confidence_scores=annotation.get("confidence_scores"),
-#                 notes=annotation.get("notes")
-#             )
-            
-#             session.commit()
-#             print(f"🎉 Successfully uploaded annotation: {video_uid} | {annotation['user_name']} | {annotation['question_group_title']}")
-            
-#             return {
-#                 "status": "uploaded",
-#                 "video_uid": video_uid,
-#                 "user_name": annotation["user_name"],
-#                 "group": annotation["question_group_title"]
-#             }
-            
-#         except Exception as e:
-#             session.rollback()
-#             error_msg = f"{annotation.get('video_uid')} | {annotation.get('user_name')} | {annotation.get('question_group_title')}: {e}"
-#             raise RuntimeError(f"Upload failed: {error_msg}")
-
-
-# def sync_ground_truths(ground_truth: dict) -> dict:
-#     """Upload a single ground truth item with duplicate checking.
-    
-#     Args:
-#         ground_truth: Ground truth dictionary with video_uid, project_name, user_name,
-#                      question_group_title, answers, and optional confidence_scores/notes
-        
-#     Returns:
-#         Dictionary with status ("uploaded" or "skipped"), video_uid, and reviewer
-        
-#     Raises:
-#         TypeError: If ground_truth is not a dictionary
-#         RuntimeError: If upload fails (includes rollback)
-        
-#     Note:
-#         Assumes ground truth has already been validated. Skips if no changes detected.
-#     """
-    
-#     if not isinstance(ground_truth, dict):
-#         raise TypeError("ground_truth must be a dictionary")
-    
-#     with SessionLocal() as session:
-#         try:
-#             # Resolve IDs (these should succeed since validation passed)
-#             video_uid = ground_truth.get("video_uid", "").split("/")[-1]
-#             video = VideoService.get_video_by_uid(video_uid, session)
-#             project = ProjectService.get_project_by_name(ground_truth["project_name"], session)
-#             reviewer = AuthService.get_user_by_name(ground_truth["user_name"], session)
-#             group = QuestionGroupService.get_group_by_name(ground_truth["question_group_title"], session)
-            
-#             # Check existing ground truth
-#             existing = GroundTruthService.get_ground_truth_dict_for_question_group(
-#                 video_id=video.id,
-#                 project_id=project.id,
-#                 question_group_id=group.id,
-#                 session=session
-#             )
-            
-#             # Determine if update needed - check if any answer differs
-#             needs_update = False
-#             for q_text, answer in ground_truth["answers"].items():
-#                 if q_text not in existing or existing[q_text] != answer:
-#                     needs_update = True
-#                     break
-            
-#             if not needs_update:
-#                 print(f"⏭️  Skipped: {video_uid} | {ground_truth['user_name']} (no changes)")
-#                 return {
-#                     "status": "skipped",
-#                     "video_uid": video_uid,
-#                     "reviewer": ground_truth["user_name"]
-#                 }
-            
-#             # Submit the ground truth (no verification needed - already done)
-#             GroundTruthService.submit_ground_truth_to_question_group(
-#                 video_id=video.id,
-#                 project_id=project.id,
-#                 reviewer_id=reviewer.id,
-#                 question_group_id=group.id,
-#                 answers=ground_truth["answers"],
-#                 session=session,
-#                 confidence_scores=ground_truth.get("confidence_scores"),
-#                 notes=ground_truth.get("notes")
-#             )
-            
-#             session.commit()
-#             print(f"🎉 Successfully uploaded ground truth: {video_uid} | {ground_truth['user_name']}")
-            
-#             return {
-#                 "status": "uploaded",
-#                 "video_uid": video_uid,
-#                 "reviewer": ground_truth["user_name"]
-#             }
-            
-#         except Exception as e:
-#             session.rollback()
-#             error_msg = f"{ground_truth.get('video_uid')} | reviewer:{ground_truth.get('user_name')}: {e}"
-#             raise RuntimeError(f"Upload failed: {error_msg}")
 
 
 def load_and_flatten_json_files(folder_path: str) -> list[dict]:

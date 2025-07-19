@@ -1571,9 +1571,6 @@ def delete_schema_by_name(name: str, confirm: bool = True) -> bool:
 def delete_schema_question_group_by_schema_id(schema_id: int = None, confirm: bool = True) -> int:
     """Delete all SchemaQuestionGroup records for a specific schema_id"""
     # First show what would be deleted
-    check_result = check_schema_question_group_by_schema_id(schema_id)
-    if not check_result:
-        return 0
     
     with SessionLocal() as session:
         count = session.query(SchemaQuestionGroup).filter(
@@ -1602,10 +1599,6 @@ def delete_schema_question_group_by_schema_id(schema_id: int = None, confirm: bo
 
 def delete_schema_question_group_by_question_group_id(question_group_id: int = None, confirm: bool = True) -> int:
     """Delete all SchemaQuestionGroup records for a specific question_group_id"""
-    # First show what would be deleted
-    check_result = check_schema_question_group_by_question_group_id(question_group_id)
-    if not check_result:
-        return 0
     
     with SessionLocal() as session:
         count = session.query(SchemaQuestionGroup).filter(
@@ -1634,10 +1627,6 @@ def delete_schema_question_group_by_question_group_id(question_group_id: int = N
 
 def delete_schema_question_group_by_both_ids(schema_id: int = None, question_group_id: int = None, confirm: bool = True) -> bool:
     """Delete specific SchemaQuestionGroup record by both IDs"""
-    # First show what would be deleted
-    check_result = check_schema_question_group_by_both_ids(schema_id, question_group_id)
-    if not check_result:
-        return False
     
     with SessionLocal() as session:
         sqg = session.query(SchemaQuestionGroup).filter(

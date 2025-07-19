@@ -2870,12 +2870,14 @@ def _process_assignment_validation(assignment_data: Dict) -> Tuple[int, Dict, Op
     """
     with SessionLocal() as sess:
         try:
-            required = {"user_name", "project_name", "role", "user_weight", "is_active"}
+            required = {"user_name", "project_name", "role", "user_weight", "is_active", "_index"}
             assignment_keys = set(assignment_data.keys())
             if assignment_keys != required:
                 missing = required - assignment_keys
                 extra = assignment_keys - required
-                
+                print("extra", extra)
+                print("missing", missing)
+                print('--------------------------------')
                 error_parts = []
                 if missing:
                     error_parts.append(f"missing: {', '.join(missing)}")

@@ -692,11 +692,39 @@ init_database("DBURL")
 from label_pizza.sync_utils import sync_videos
 videos_data = [
   {
-    "video_uid": "human.mp4", # Must NOT exist in the database
-    "url": "https://your-repo/human.mp4",
+    "video_uid": "human.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human.mp4",
     "is_active": True,
     "metadata": {
       "original_url": "https://www.youtube.com/watch?v=L3wKzyIN1yk",
+      "license": "Standard YouTube License"
+    }
+  },
+  {
+    "video_uid": "pizza.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/pizza.mp4",
+    "is_active": True,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=8J1NzjA9jNg",
+      "description": "A video of a pizza being made.",
+      "license": "Standard YouTube License"
+    }
+  },
+  {
+    "video_uid": "human2.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human2.mp4",
+    "is_active": True,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=2vjPBrBU-TM",
+      "license": "Standard YouTube License"
+    }
+  },
+  {
+    "video_uid": "human3.mp4",
+    "url": "https://huggingface.co/datasets/syCen/example4labelpizza/resolve/main/human3.mp4",
+    "is_active": True,
+    "metadata": {
+      "original_url": "https://www.youtube.com/watch?v=2S24-y0Ij3Y",
       "license": "Standard YouTube License"
     }
   }
@@ -746,6 +774,13 @@ users_data = [
         "email": "user1@example.com", # Must NOT exist in the database
         "password": "user111",
         "user_type": "human",
+        "is_active": True
+    },
+    {
+        "user_id": "Admin 1",          # Must NOT exist in the database
+        "email": "admin1@example.com", # Must NOT exist in the database
+        "password": "admin111",
+        "user_type": "admin",
         "is_active": True
     }
 ]
@@ -926,6 +961,34 @@ question_groups_data = [
                     1.0
                 ],
                 "default_option": "3 or more" # update the default option
+            }
+        ]
+    },
+    {
+        "title": "NSFW",
+        "display_title": "NSFW",
+        "description": "Check whether the video is not safe for work.",
+        "is_reusable": True,
+        "is_auto_submit": True,
+        "verification_function": None,
+        "questions": [
+            {
+                "text": "Is the video not safe for work?",
+                "qtype": "single",
+                "options": [
+                    "Yes",
+                    "No"
+                ],
+                "display_values": [
+                    "Yes",
+                    "No"
+                ],
+                "option_weights": [
+                    1.0,
+                    99.0
+                ],
+                "default_option": "No",
+                "display_text": "Is the video not safe for work?"
             }
         ]
     }
@@ -1299,7 +1362,7 @@ ground_truths_data = [
   {
     "question_group_title": "Human",    # Must exist in the database
     "project_name": "Human Test 0",     # Must exist in the database
-    "user_name": "User 1",              # User must have at least "annotation" privileges
+    "user_name": "Admin 1",              # User must have at least "annotation" privileges
     "video_uid": "human.mp4",           # Video must exist in the project
     "answers": {        # Answers must include all and only the questions defined in the question group
       "Number of people?": "1",

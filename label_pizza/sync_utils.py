@@ -588,110 +588,109 @@ def sync_users(
     if not isinstance(users_data, list):
         raise TypeError("users_data must be a list[dict]")
 
-    # Check for duplicate user_id and email values
-    print("\n🔍 Checking for duplicate user_id and email values...")
-    
-    user_ids = []
-    emails = []
-    user_id_duplicates = []
-    email_duplicates = []
-    
-    for idx, user in enumerate(users_data, 1):
-        # Basic check that required fields exist before processing duplicates
-        if "user_id" not in user:
-            raise ValueError(f"Entry #{idx} missing required field: user_id")
-        if "email" not in user:
-            raise ValueError(f"Entry #{idx} missing required field: email")
-        
-        # Check user_id duplicates
-        user_id = user["user_id"]
-        if user_id in user_ids:
-            user_id_duplicates.append((user_id, idx))
-        else:
-            user_ids.append(user_id)
-        
-        # Check email duplicates
-        email = user["email"]
-        if email in emails:
-            email_duplicates.append((email, idx))
-        else:
-            emails.append(email)
-    
-    # Report any duplicates found
-    duplicate_errors = []
-    
-    if user_id_duplicates:
-        duplicate_info = [f"user_id '{uid}' at entry #{idx}" for uid, idx in user_id_duplicates]
-        duplicate_errors.append(f"Duplicate user_id values: {', '.join(duplicate_info)}")
-    
-    if email_duplicates:
-        duplicate_info = [f"email '{email}' at entry #{idx}" for email, idx in email_duplicates]
-        duplicate_errors.append(f"Duplicate email values: {', '.join(duplicate_info)}")
-    
-    if duplicate_errors:
-        raise ValueError(f"Duplicate values found - {'; '.join(duplicate_errors)}")
-    
-    print(f"✅ No duplicates found - all {len(user_ids)} user_id and {len(emails)} email values are unique")
+    print(f"🚀 Starting user sync with {len(users_data)} users...")
 
-    # Convert is_active → is_archived and validate required fields
-    processed: List[Dict] = []
+    # Validate, clean, and check duplicates
+    user_ids, emails = set(), set()
+    duplicates = []
+    
     for idx, user in enumerate(users_data, 1):
+        # Check required fields
         required = {"user_id", "email", "password", "user_type", "is_active"}
         if missing := required - set(user.keys()):
             raise ValueError(f"Entry #{idx} missing: {', '.join(missing)}")
+        
+        # Validate user_id
+        user_id = str(user["user_id"]).strip() if user["user_id"] else ""
+        if not user_id:
+            raise ValueError(f"Entry #{idx}: user_id cannot be empty")
+        user["user_id"] = user_id
+        
+        # Check user_id duplicates
+        if user_id in user_ids:
+            duplicates.append(f"user_id '{user_id}' at #{idx}")
+        user_ids.add(user_id)
+        
+        # Validate user_type
+        if user["user_type"] not in {"admin", "human", "model"}:
+            raise ValueError(f"Entry #{idx}: invalid user_type: {user['user_type']}")
+        
+        is_model = user["user_type"] == "model"
+        
+        # Process email
+        email = user["email"]
+        if is_model:
+            email = None if email is None or str(email).strip() == "" else str(email).strip().lower()
+        else:
+            if email is None:
+                raise ValueError(f"Entry #{idx}: email cannot be None for {user['user_type']} user")
+            email = str(email).strip().lower()
+            if not email or "@" not in email:
+                raise ValueError(f"Entry #{idx}: invalid email")
+        user["email"] = email
+        
+        # Check email duplicates (only non-None)
+        if email is not None:
+            if email in emails:
+                duplicates.append(f"email '{email}' at #{idx}")
+            emails.add(email)
+        
+        # Process password
+        password = user["password"]
+        if is_model:
+            # Model users: empty string or None gets converted to placeholder
+            password = "model_user_no_password" if password is None or str(password).strip() == "" else str(password).strip()
+        else:
+            if password is None or not str(password).strip():
+                raise ValueError(f"Entry #{idx}: password cannot be empty for {user['user_type']} user")
+            password = str(password).strip()
+        user["password"] = password
+        
+        # Convert is_active → is_archived
         if "is_active" in user:
             user["is_archived"] = not user.pop("is_active")
-        processed.append(user)
-
-    # Separate users into add/update lists with proper error handling
-    to_add, to_update = [], []
     
+    if duplicates:
+        raise ValueError(f"Duplicates found: {'; '.join(duplicates)}")
+    
+    print(f"✅ Validated {len(user_ids)} users, {len(emails)} unique emails")
+
+    # Categorize add vs update
+    to_add, to_update = [], []
     with SessionLocal() as sess:
-        for u in processed:
+        for user in users_data:
             user_exists = False
             
-            # Check if user exists by user_id first
-            if u.get("user_id"):
+            # Check by user_id
+            try:
+                AuthService.get_user_by_id(user["user_id"], sess)
+                user_exists = True
+            except ValueError as e:
+                if "not found" not in str(e).lower():
+                    raise
+            
+            # Check by email if not found and email exists
+            if not user_exists and user["email"]:
                 try:
-                    existing_user = AuthService.get_user_by_id(u["user_id"], sess)
-                    if existing_user:
-                        user_exists = True
-                except (ValueError, Exception) as e:
-                    # If error contains "not found", user doesn't exist
-                    if "not found" in str(e).lower():
-                        user_exists = False
-                    else:
-                        # Re-raise unexpected errors
+                    existing = AuthService.get_user_by_email(user["email"], sess)
+                    if existing.user_id_str != user["user_id"]:
+                        raise ValueError(f"Email {user['email']} exists with different user_id")
+                    user_exists = True
+                except ValueError as e:
+                    if "not found" not in str(e).lower():
                         raise
             
-            # If not found by user_id, check by email
-            if not user_exists and u.get("email"):
-                try:
-                    existing_user = AuthService.get_user_by_email(u["email"], sess)
-                    if existing_user:
-                        user_exists = True
-                except (ValueError, Exception) as e:
-                    # If error contains "not found", user doesn't exist
-                    if "not found" in str(e).lower():
-                        user_exists = False
-                    else:
-                        # Re-raise unexpected errors
-                        raise
-            
-            # Add to appropriate list based on existence
-            if user_exists:
-                to_update.append(u)
-            else:
-                to_add.append(u)
+            (to_update if user_exists else to_add).append(user)
 
-    print(f"📊 {len(to_add)} to add · {len(to_update)} to update")
+    print(f"📊 {len(to_add)} to add, {len(to_update)} to update")
     
+    # Execute
     if to_add:
         add_users(to_add)
     if to_update:
         update_users(to_update)
     
-    print("🎉 User pipeline complete")
+    print("🎉 Complete")
 
 
 # --------------------------------------------------------------------------- #

@@ -962,7 +962,7 @@ class ProjectService:
         session.commit()
     
     @staticmethod
-    def verify_update_project_description(project_id: int, description: str, is_archived: bool, session: Session) -> None:
+    def verify_update_project_description(project_id: int, description: str, session: Session) -> None:
         """Verify that a project exists and is not archived.
         
         Args:
@@ -976,11 +976,9 @@ class ProjectService:
         project = session.get(Project, project_id)
         if not project:
             raise ValueError(f"Project with ID {project_id} not found")
-        if project.is_archived and is_archived:
-            raise ValueError(f"Project with ID {project_id} is archived")
     
     @staticmethod
-    def update_project_description(project_id: int, description: str, is_archived: bool, session: Session) -> None:
+    def update_project_description(project_id: int, description: str, session: Session) -> None:
         """Update the description of a project.
         
         Args:
@@ -991,7 +989,7 @@ class ProjectService:
         Raises:
             ValueError: If project not found or not archived
         """
-        ProjectService.verify_update_project_description(project_id=project_id, description=description, is_archived=is_archived, session=session)
+        ProjectService.verify_update_project_description(project_id=project_id, description=description, session=session)
         
         project = session.get(Project, project_id)
         project.description = description

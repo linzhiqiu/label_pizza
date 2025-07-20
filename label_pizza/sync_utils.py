@@ -650,7 +650,8 @@ def sync_users(
         # Process email
         email = user["email"]
         if is_model:
-            email = None if email is None or str(email).strip() == "" else str(email).strip().lower()
+            if email is not None:
+                raise ValueError(f"Entry #{idx}: email must be None for model user")
         else:
             if email is None:
                 raise ValueError(f"Entry #{idx}: email cannot be None for {user['user_type']} user")
@@ -1972,6 +1973,21 @@ def _process_project_validation(project_data: Dict) -> Tuple[str, bool, Optional
             # Get video IDs
             video_uids = list(_normalize_video_data(project_data["videos"]).keys())
             video_ids = ProjectService.get_video_ids_by_uids(video_uids, sess)
+            # Verify all videos were found
+            if len(video_ids) != len(video_uids):
+                print('--------------------------------')
+                print('video_ids', len(video_ids))
+                print('video_uids', len(video_uids))
+                print('--------------------------------')
+                # Find which ones are missing by checking each one
+                missing_uids = []
+                for uid in video_uids:
+                    video = VideoService.get_video_by_uid(uid, sess)
+                    if not video:
+                        missing_uids.append(uid)
+                
+                if missing_uids:
+                    raise ValueError(f"Videos not found: {', '.join(missing_uids)}")
             description = project_data.get("description", "")
             
             # Verify creation parameters
@@ -2130,13 +2146,48 @@ def _process_project_update_validation(project_data: Dict) -> Tuple[str, bool, O
                 else:
                     ProjectService.verify_unarchive_project(proj.id, sess)
 
+            if "videos" in project_data:
+                # Get current videos in project
+                current_videos = VideoService.get_project_videos(proj.id, sess)
+                current_video_uids = set(v["uid"] for v in current_videos)
+                
+                # Get video UIDs from input
+                input_video_uids = list(_normalize_video_data(project_data["videos"]).keys())
+                input_video_uids_set = set(input_video_uids)
+                
+                # Check if all videos exist in database
+                video_ids = ProjectService.get_video_ids_by_uids(input_video_uids, sess)
+                
+                if len(video_ids) != len(input_video_uids):
+                    # Find which ones are missing
+                    missing_uids = []
+                    for uid in input_video_uids:
+                        video = VideoService.get_video_by_uid(uid, sess)
+                        if not video:
+                            missing_uids.append(uid)
+                    
+                    if missing_uids:
+                        return project_data["project_name"], False, f"Videos not found in database: {', '.join(missing_uids)}"
+                
+                # Check if video list matches current project videos
+                if current_video_uids != input_video_uids_set:
+                    videos_to_remove = current_video_uids - input_video_uids_set
+                    videos_to_add = input_video_uids_set - current_video_uids
+                    
+                    error_parts = []
+                    if videos_to_remove:
+                        error_parts.append(f"would remove: {', '.join(sorted(videos_to_remove))}")
+                    if videos_to_add:
+                        error_parts.append(f"would add: {', '.join(sorted(videos_to_add))}")
+                    
+                    return project_data["project_name"], False, f"Video list mismatch - {'; '.join(error_parts)}. Video updates are not supported."
+
             # Only verify other updates if project is not archived OR is being unarchived
             # If project is currently archived and not being unarchived, skip other validations
             if not current_is_archived or (desired_archived is False):
                 # Verify description updates if provided
                 if "description" in project_data:
-                    print(f"desired_archived: {desired_archived}")
-                    ProjectService.verify_update_project_description(project_id =proj.id, description = project_data["description"], is_archived = desired_archived, session = sess)
+                    ProjectService.verify_update_project_description(project_id =proj.id, description = project_data["description"], session = sess)
             elif current_is_archived and desired_archived != False:
                 # Project is archived and not being unarchived, but trying to update other fields
                 if "description" in project_data or "videos" in project_data:
@@ -2167,8 +2218,6 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
             desired_archived = None
             if "is_active" in project_data:
                 desired_archived = not project_data["is_active"]
-            elif "is_archived" in project_data:
-                desired_archived = project_data["is_archived"]
                 
             if desired_archived is not None and desired_archived != proj.is_archived:
                 needs_update = True
@@ -2233,7 +2282,7 @@ def _update_single_project(project_data: Dict) -> Tuple[str, bool, Optional[str]
                         ProjectService.unarchive_project(proj.id, sess)
                 
                 if "description" in changes:
-                    ProjectService.update_project_description(proj.id, project_data["description"], desired_archived, sess)
+                    ProjectService.update_project_description(proj.id, project_data["description"], sess)
                 
                 # Sync custom displays only if there are changes
                 if custom_displays_changed:

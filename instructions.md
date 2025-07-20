@@ -1062,8 +1062,7 @@ projects_data = [
     "description": "Test project for human questions",
     "is_active": True,
     "videos": [
-      "human.mp4",
-      "pizza.mp4"
+      "human.mp4"
     ]
   }
 ]
@@ -1119,7 +1118,7 @@ assignments_data = [
     "is_active": True
   },
   {
-    "user_name": "User 1",            
+    "user_name": "User 1 New",            
     "project_name": "Human Test 0",
     "role": "annotator",             # `human` users could only be assigned as `reviewer` or `annotator`
     "user_weight": 1.0,              
@@ -1218,6 +1217,26 @@ sync_project_groups(project_groups_data=project_groups_data)
 
 ### `annotations/` and `ground_truths/`
 
+Before upload annotations or ground truths, re-active the role of `User 1 New` in project `Human Test 0`
+
+```python
+from label_pizza.db import init_database
+init_database("DBURL")
+
+from label_pizza.sync_utils import sync_users_to_projects
+assignments_data = [
+  {
+    "user_name": "User 1 New",
+    "project_name": "Human Test 0",
+    "role": "annotator",
+    "user_weight": 2.0,
+    "is_active": True  # set False to remove user from this project
+  }
+]
+
+sync_users_to_projects(assignments_data=assignments_data)
+```
+
 Both directories share the same JSON structure: each file contains answers for a single question group across all projects and videos. Use `annotations/` for annotator answers and `ground_truths/` for reviewer ground truth (there can be only one ground‑truth answer per video‑question‑group pair).
 
 8.1 - Sync annotations
@@ -1232,7 +1251,7 @@ annotations_data = [
   {
     "question_group_title": "Human",    # must exist in the database
     "project_name": "Human Test 0",     # must exist in the database
-    "user_name": "User 1",              # User must have at least "annotation" privileges
+    "user_name": "User 1 New",              # User must have at least "annotation" privileges
     "video_uid": "human.mp4",           # Video must exist in the project
     "answers": {        # Answers must include all and only the questions defined in the question group
       "Number of people?": "1",
@@ -1256,7 +1275,7 @@ init_database("DBURL")
 from label_pizza.sync_utils import sync_users_to_projects
 assignments_data = [
   {
-    "user_name": "User 1",            
+    "user_name": "User 1 New",            
     "project_name": "Human Test 0",
     "role": "reviewer",             # `human` users could only be assigned as `reviewer` or `annotator`
     "user_weight": 1.0,              
@@ -1280,7 +1299,7 @@ ground_truths_data = [
   {
     "question_group_title": "Human",    # must exist in the database
     "project_name": "Human Test 0",     # must exist in the database
-    "user_name": "User 1",              # User must have at least "annotation" privileges
+    "user_name": "User 1 New",              # User must have at least "annotation" privileges
     "video_uid": "human.mp4",           # Video must exist in the project
     "answers": {        # Answers must include all and only the questions defined in the question group
       "Number of people?": "1",

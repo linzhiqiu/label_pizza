@@ -314,6 +314,7 @@ def sync_videos(
     
     # Check for duplicate video_uid values first
     print("\n🔍 Checking for duplicate video_uid values...")
+    urls = []
     video_uids = []
     duplicates = []
     
@@ -321,12 +322,18 @@ def sync_videos(
         # Basic check that video_uid exists before processing
         if "video_uid" not in item:
             raise ValueError(f"Entry #{idx} missing required field: video_uid")
-        
+        if "url" not in item:
+            raise ValueError(f"Entry #{idx} missing required field: url")
         video_uid = item["video_uid"]
+        url = item["url"]
         if video_uid in video_uids:
             duplicates.append((video_uid, idx))
         else:
             video_uids.append(video_uid)
+        if url in urls:
+            duplicates.append((url, idx))
+        else:
+            urls.append(url)
     
     if duplicates:
         duplicate_info = [f"video_uid '{uid}' at entry #{idx}" for uid, idx in duplicates]
@@ -748,7 +755,7 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
         
     Raises:
         TypeError: If groups is not a list of tuples
-        ValueError: If groups already exist or verification fails
+        ValueError: If groups already exist, duplicate questions found, or verification fails
         
     Note:
         For existing questions, only display_text, display_values, option_weights, 
@@ -757,6 +764,35 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
     """
     if not isinstance(groups, list):
         raise TypeError("groups must be list[(filename, dict)]")
+
+    # ── Phase -1: Check for duplicate questions within each group ──────────
+    for filename, group in groups:
+        group_title = group.get("title", "Unknown")
+        questions = group.get("questions", [])
+        
+        seen_questions = set()
+        duplicates = []
+        
+        for idx, question in enumerate(questions):
+            question_text = question.get("text", "").strip()
+            
+            if not question_text:
+                continue  # Skip empty question texts
+                
+            if question_text in seen_questions:
+                duplicates.append({
+                    "index": idx + 1,
+                    "text": question_text,
+                    "filename": filename
+                })
+            else:
+                seen_questions.add(question_text)
+        
+        if duplicates:
+            error_msg = f"Found {len(duplicates)} duplicate questions in group '{group_title}' from {filename}:\n"
+            for dup in duplicates:
+                error_msg += f"  - Question #{dup['index']}: '{dup['text']}'\n"
+            raise ValueError(error_msg.rstrip())
 
     created: List[Dict] = []
     questions_created: List[str] = []
@@ -777,11 +813,13 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
         if dup_titles:
             raise ValueError("Add aborted – already in DB: " + ", ".join(dup_titles))
 
-        # ── Phase 1: prepare each group (create missing questions & track existing) ──────────
-        prepared: List[Tuple[Dict, List[int], List[Dict]]] = []  # (group_data, question_ids, question_updates)
+        # ── Phase 1: prepare each group (categorize questions as new vs existing) ──────────
+        prepared: List[Tuple[Dict, List[int], List[Dict], List[Dict]]] = []  # (group_data, question_ids, question_updates, questions_to_add)
         for _, g in groups:
             q_ids: List[int] = []
             question_updates: List[Dict] = []  # Track questions that need updates
+            questions_to_add: List[Dict] = []  # Track new questions to create
+
             
             for q in g["questions"]:
                 try:
@@ -838,24 +876,43 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                         })
                         
                 except ValueError:
-                    # Question doesn't exist, create it
-                    q_rec = QuestionService.add_question(
-                        text=q["text"],
-                        qtype=q["qtype"],
-                        options=q.get("options"),
-                        default=q.get("default_option"),
-                        display_values=q.get("display_values"),
-                        display_text=q.get("display_text"),
-                        option_weights=q.get("option_weights"),
-                        session=sess,
-                    )
-                    questions_created.append(q["text"])
-                    q_ids.append(q_rec.id)
+                    # Question doesn't exist, mark for creation
+                    questions_to_add.append({
+                        "question_data": q,
+                        "question_text": q["text"]
+                    })
+                    # Temporarily add a placeholder ID that will be replaced after creation
+                    q_ids.append(-1)  # Placeholder
             
-            prepared.append((g, q_ids, question_updates))
+            prepared.append((g, q_ids, question_updates, questions_to_add))
 
-        # ── Phase 2: verify ALL questions first ────────────────────────────
-        for g, q_ids, question_updates in prepared:
+        # ── Phase 2: verify ALL questions first (both new and existing) ────────────────────────────
+        for g, q_ids, question_updates, questions_to_add in prepared:
+            # Verify new questions first
+            for q_to_add in questions_to_add:
+                q_data = q_to_add["question_data"]
+                
+                # Additional validation: For auto-submit groups, don't allow None default values
+                is_auto_submit = g.get("is_auto_submit", False)
+                if is_auto_submit and q_data.get("default_option") is None:
+                    raise ValueError(
+                        f"Cannot set default_option to None for question '{q_data['text']}' "
+                        f"in auto-submit group '{g['title']}'. Auto-submit groups require non-None default values."
+                    )
+                
+                # Verify new question (this will raise ValueError if invalid)
+                QuestionService.verify_add_question(
+                    text=q_data["text"],
+                    qtype=q_data["qtype"],
+                    options=q_data.get("options"),
+                    default=q_data.get("default_option"),
+                    display_values=q_data.get("display_values"),
+                    display_text=q_data.get("display_text"),
+                    option_weights=q_data.get("option_weights"),
+                    session=sess
+                )
+            
+            # Verify existing questions being updated
             for q_update in question_updates:
                 q_data = q_update["question_data"]
                 q_id = q_update["question_id"]
@@ -881,8 +938,33 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                     new_option_weights=q_data.get("option_weights")
                 )
 
-        # ── Phase 3: apply ALL question edits after verification ───────────
-        for g, q_ids, question_updates in prepared:
+        # ── Phase 3: create new questions and apply edits after verification ───────────
+        for g, q_ids, question_updates, questions_to_add in prepared:
+            # Create new questions first
+            placeholder_index = 0
+            for q_to_add in questions_to_add:
+                q_data = q_to_add["question_data"]
+                
+                q_rec = QuestionService.add_question(
+                    text=q_data["text"],
+                    qtype=q_data["qtype"],
+                    options=q_data.get("options"),
+                    default=q_data.get("default_option"),
+                    display_values=q_data.get("display_values"),
+                    display_text=q_data.get("display_text"),
+                    option_weights=q_data.get("option_weights"),
+                    session=sess,
+                )
+                questions_created.append(q_data["text"])
+                
+                # Replace placeholder IDs with actual IDs
+                while placeholder_index < len(q_ids) and q_ids[placeholder_index] != -1:
+                    placeholder_index += 1
+                if placeholder_index < len(q_ids):
+                    q_ids[placeholder_index] = q_rec.id
+                    placeholder_index += 1
+            
+            # Apply question edits
             for q_update in question_updates:
                 q_data = q_update["question_data"]
                 q_id = q_update["question_id"]
@@ -900,7 +982,7 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
                     )
 
         # ── Phase 4: verify ALL groups after questions are updated ──────────
-        for g, q_ids, question_updates in prepared:
+        for g, q_ids, question_updates, questions_to_add in prepared:
             QuestionGroupService.verify_create_group(
                 title=g["title"],
                 display_title=g.get("display_title", g["title"]),
@@ -913,7 +995,7 @@ def add_question_groups(groups: List[Tuple[str, Dict]]) -> Tuple[List[Dict], Lis
             )
 
         # ── Phase 5: create groups after all verifications passed ──────────
-        for g, q_ids, question_updates in prepared:
+        for g, q_ids, question_updates, questions_to_add in prepared:
             # Create the group
             grp = QuestionGroupService.create_group(
                 title=g["title"],
@@ -1799,7 +1881,7 @@ def _normalize_video_data(videos: list[Any]) -> Dict[str, List[Dict]]:
                 elif question["type"] == "description":
                     if q.get("custom_question") is None:
                         q["custom_question"] = question["display_text"]
-                
+
                 # Check whether question options are valid
                 if q.get("custom_option") is not None:
                     for opt, value in q.get("custom_option").items():
@@ -1809,8 +1891,6 @@ def _normalize_video_data(videos: list[Any]) -> Dict[str, List[Dict]]:
                     db_opts = set(question["options"])
                     if opts != db_opts:
                         raise ValueError(f"Question '{q.get('question_text')}' has custom options that do not match the database options")
-                            
-                
                 q_cfgs.append(
                     {
                         "question_text": q.get("question_text"),
@@ -3326,7 +3406,14 @@ def load_and_flatten_json_files(folder_path: str) -> list[dict]:
 
 
 def check_for_duplicates(data: list[dict], data_type: str) -> None:
-    """Check for duplicate entries based on video_uid, user_name, question_group_title, project_name.
+    """Check for duplicate entries with different logic for annotations vs ground truths.
+    
+    For annotations: Check duplicates based on (video_uid, user_name, question_text, project_name)
+    - Same user cannot answer the same question for the same video in the same project twice
+    
+    For ground truths: Check duplicates based on (video_uid, question_text, project_name)
+    - There can only be one ground truth answer per question per video per project
+    - User doesn't matter for ground truth uniqueness
     
     Args:
         data: List of dictionaries to check for duplicates
@@ -3338,31 +3425,59 @@ def check_for_duplicates(data: list[dict], data_type: str) -> None:
     seen = set()
     duplicates = []
     
+    # Determine checking mode based on data_type parameter
+    is_ground_truth_mode = "ground truth" in data_type.lower()
+    
     for idx, item in enumerate(data):
-        # Create a unique key based on the combination of fields
-        key = (
-            item.get("video_uid", "").split("/")[-1],
-            item.get("user_name", ""),
-            item.get("question_group_title", ""),
-            item.get("project_name", "")
-        )
+        video_uid = item.get("video_uid", "").split("/")[-1]
+        user_name = item.get("user_name", "")
+        project_name = item.get("project_name", "")
+        answers = item.get("answers", {})
         
-        if key in seen:
-            duplicates.append({
-                "index": idx,
-                "video_uid": item.get("video_uid"),
-                "user_name": item.get("user_name"),
-                "question_group_title": item.get("question_group_title"),
-                "project_name": item.get("project_name")
-            })
-        else:
-            seen.add(key)
+        # Check each question in the answers dict
+        for question_text, answer_value in answers.items():
+            if is_ground_truth_mode:
+                # For ground truths: only check (video_uid, question_text, project_name)
+                # User doesn't matter - there should be only one ground truth per question per video per project
+                key = (
+                    video_uid,
+                    question_text,
+                    project_name
+                )
+            else:
+                # For regular annotations: check (video_uid, user_name, question_text, project_name)
+                # Same user cannot answer the same question twice
+                key = (
+                    video_uid,
+                    user_name,
+                    question_text,
+                    project_name
+                )
+            
+            if key in seen:
+                duplicate_info = {
+                    "index": idx + 1,  # 1-based indexing for user-friendly error messages
+                    "video_uid": item.get("video_uid"),
+                    "user_name": user_name,
+                    "question_text": question_text,
+                    "project_name": project_name,
+                    "answer": answer_value
+                }
+                duplicates.append(duplicate_info)
+            else:
+                seen.add(key)
     
     if duplicates:
-        error_msg = f"Found {len(duplicates)} duplicate {data_type} entries:\n"
-        for dup in duplicates:
-            error_msg += f"  - Index {dup['index']}: {dup['video_uid']} | {dup['user_name']} | {dup['question_group_title']} | {dup['project_name']}\n"
-        raise ValueError(error_msg)
+        if is_ground_truth_mode:
+            error_msg = f"Found {len(duplicates)} duplicate {data_type} entries (multiple ground truths for same question/video/project):\n"
+            for dup in duplicates:
+                error_msg += f"  - Entry #{dup['index']}: {dup['video_uid']} | '{dup['question_text']}' | {dup['project_name']}\n"
+        else:
+            error_msg = f"Found {len(duplicates)} duplicate {data_type} question entries:\n"
+            for dup in duplicates:
+                error_msg += f"  - Entry #{dup['index']}: {dup['video_uid']} | {dup['user_name']} | '{dup['question_text']}' | {dup['project_name']}\n"
+        
+        raise ValueError(error_msg.rstrip())
 
 
 def sync_annotations(annotations_folder: str = None, 

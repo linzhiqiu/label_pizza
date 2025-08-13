@@ -3419,6 +3419,19 @@ def sync_annotations(annotations_folder: str = None,
             if annotation.get("is_ground_truth", False):
                 raise ValueError(f"is_ground_truth must be False for annotations")
             
+            # Check whether video in the project
+            with label_pizza.db.SessionLocal() as session:
+                video_uid = annotation.get("video_uid", "")
+                project_id = ProjectService.get_project_by_name(annotation["project_name"], session).id
+                whether_in_project = False
+                videos = VideoService.get_project_videos(project_id=project_id, session=session)
+                for item in videos:
+                    if video_uid == item['uid']:
+                        whether_in_project = True
+                        break
+                if not whether_in_project:
+                    raise ValueError(f"Video {video_uid} is not in project {annotation['project_name']}")
+            
             with label_pizza.db.SessionLocal() as session:
                 # Resolve IDs
                 video_uid = annotation.get("video_uid", "").split("/")[-1]
@@ -3474,6 +3487,8 @@ def sync_annotations(annotations_folder: str = None,
     # Check for validation errors - ALL must pass or NONE are submitted
     failed_validations = [r for r in validation_results if not r["success"]]
     if failed_validations:
+        with open('./failed_annotations_validations.json', 'w', encoding='utf-8') as f:
+            json.dump(failed_validations, f, indent=2, ensure_ascii=False)
         print(f"❌ {len(failed_validations)} validation errors found:")
         for failure in failed_validations[:10]:  # Show first 10 errors
             print(f"  {failure['error']}")
@@ -3697,6 +3712,19 @@ def sync_ground_truths(ground_truths_folder: str = None,
             if not ground_truth.get("is_ground_truth", False):
                 raise ValueError(f"is_ground_truth must be True for ground truths")
             
+            # Check whether video in the project
+            with label_pizza.db.SessionLocal() as session:
+                video_uid = ground_truth.get("video_uid", "")
+                project_id = ProjectService.get_project_by_name(ground_truth["project_name"], session).id
+                whether_in_project = False
+                videos = VideoService.get_project_videos(project_id=project_id, session=session)
+                for item in videos:
+                    if video_uid == item['uid']:
+                        whether_in_project = True
+                        break
+                if not whether_in_project:
+                    raise ValueError(f"Video {video_uid} is not in project {ground_truth['project_name']}")
+            
             with label_pizza.db.SessionLocal() as session:
                 # Resolve IDs
                 video_uid = ground_truth.get("video_uid", "").split("/")[-1]
@@ -3784,6 +3812,8 @@ def sync_ground_truths(ground_truths_folder: str = None,
     # Check for validation errors - ALL must pass or NONE are submitted
     failed_validations = [r for r in validation_results if not r["success"]]
     if failed_validations:
+        with open('./failed_gt_validations.json', 'w', encoding='utf-8') as f:
+            json.dump(failed_validations, f, indent=2, ensure_ascii=False)
         print(f"❌ {len(failed_validations)} validation errors found:")
         for failure in failed_validations[:10]:  # Show first 10 errors
             print(f"  {failure['error']}")

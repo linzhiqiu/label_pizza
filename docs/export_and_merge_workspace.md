@@ -6,11 +6,28 @@ This guide explains how to export, compare, and merge Label Pizza workspace data
 
 The workspace management workflow typically follows this pattern:
 
-| Step        | Goal                                    | Quick Example                             | What happens                                                 |
-| ----------- | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
-| **Export**  | Create workspace backup or extract data | `export_workspace(output_folder="./folder1")` | Exports all database content to JSON files in a structured folder |
+| Step        | Goal                                    | Quick Example                                                | What happens                                                 |
+| ----------- | --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Export**  | Create workspace backup or extract data | `export_workspace(output_folder="./folder1")`                | Exports all database content to JSON files in a structured folder |
 | **Compare** | Identify differences between workspaces | `compare_workspace("./folder1", "./folder2", write_to_file=True)` | Generates detailed diff reports showing what changed         |
 | **Merge**   | Combine data from multiple sources      | `merge_workspace("./folder1", "./folder2", "./output", use_first_folder_on_conflict=True)` | Combines two workspaces by choosing which folder's data to keep when the same item exists in both folders |
+
+## API Reference
+
+| File / Folder           | Export                                  | Compare                                                      | Merge                                                        |
+| ----------------------- | --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **users.json**          | `export_users(output_path)`             | `compare_videos(folder1_path, folder2_path, write_to_file)`  | `merge_users(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **videos.json**         | `export_videos(output_path)`            | `compare_users(folder1_path, folder2_path, write_to_file)`   | `merge_videos(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **question_groups/**    | `export_question_groups(output_folder)` | `compare_question_groups(folder1_path, folder2_path, write_to_file)` | `merge_question_groups(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **schemas.json**        | `export_schemas(output_path)`           | `compare_schemas(folder1_path, folder2_path, write_to_file)` | `merge_schemas(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **projects.json**       | `export_projects(output_path)`          | `compare_projects(folder1_path, folder2_path, write_to_file)` | `merge_projects(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **project_groups.json** | `export_project_groups(output_path)`    | `compare_project_groups(folder1_path, folder2_path, write_to_file)` | `merge_project_groups(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **assignments.json**    | `export_assignments(output_path)`       | `compare_assignments(folder1_path, folder2_path, write_to_file)` | `merge_assignments(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **annotations/**        | `export_annotations(output_folder)`     | `compare_annotations(folder1_path, folder2_path, write_to_file)` | `merge_annotations(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **ground_truths/**      | `export_ground_truths(output_folder)`   | `compare_ground_truths(folder1_path, folder2_path, write_to_file)` | `merge_ground_truths(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+| **The whole folder**    | `export_workspace(output_folder)`       | `compare_workspace(folder1_path, folder2_path, write_to_file)` | `merge_workspace(folder1_path, folder2_path, output_folder, use_first_folder_on_conflict)` |
+
+
 
 ### Common use cases
 
@@ -22,7 +39,7 @@ The workspace management workflow typically follows this pattern:
 ## Export Functions
 
 > If you haven't already synced `./example` to the database, backup your existing database or reset your database to empty state first, then run:
->  `python sync_from_folder.py --folder-path ./example`
+> `python sync_from_folder.py --folder-path ./example`
 
 Export functions allow you to extract data from your Label Pizza database and save it as JSON files. These functions create JSON files that can be stored in version control or moved between databases.
 
@@ -205,52 +222,6 @@ from label_pizza.export_utils import export_ground_truths
 export_ground_truths(output_folder="./workspace/ground_truths")
 
 # Output: Creates ground_truths/ folder with reviewer-verified answers
-```
-
-### 3. Export Use Cases
-
-#### Regular Backup
-
-```python
-from label_pizza.db import init_database
-init_database("DBURL")
-
-from datetime import datetime
-from label_pizza.export_utils import export_workspace
-
-# Create timestamped backup
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-backup_folder = f"./backups/backup_{timestamp}"
-
-export_workspace(output_folder=backup_folder)
-print(f"Backup created in {backup_folder}")
-```
-
-#### Migration Preparation
-
-```python
-from label_pizza.db import init_database
-init_database("DBURL")
-
-from label_pizza.export_utils import export_workspace
-
-# Export for migration to new system
-export_workspace(output_folder="./migration_export")
-
-# The exported data can then be imported into a new Label Pizza instance
-```
-
-#### Selective Export for Analysis
-
-```python
-from label_pizza.db import init_database
-init_database("DBURL")
-
-from label_pizza.export_utils import export_annotations, export_ground_truths
-
-# Export data to view in readable JSON format
-export_annotations(output_folder="./analysis_annotations")
-export_ground_truths(output_folder="./analysis_ground_truths")
 ```
 
 ## Compare Functions
@@ -505,36 +476,6 @@ Each diff report contains:
 - **folder2_only**: Items that exist only in the second folder
 - **different**: Items that exist in both but have different content
 - **summary**: Count statistics and differences found
-
-### 4. Compare Use Cases
-
-#### Backup Verification
-
-```python
-# Verify that a backup matches the original workspace
-is_identical = compare_workspace(
-    folder1_path="./workspace", 
-    folder2_path="./backup_20250112",
-    write_to_file=True
-)
-
-if is_identical:
-    print("Backup is identical to original")
-else:
-    print("Backup differs from original - check diff files")
-```
-
-#### Version Comparison
-
-```python
-# Compare different versions of the same workspace
-compare_workspace(
-    folder1_path="./workspace_v1", 
-    folder2_path="./workspace_v2",
-    write_to_file=True
-)
-# Use diff files to understand what changed between versions
-```
 
 ## Merge Functions
 
@@ -828,42 +769,6 @@ merge_report = merge_workspace("./example", "./workspace", "./merged", use_first
 # }
 ```
 
-### 4. Merge Use Cases
-
-#### Merging Development and Production Data
-
-```python
-# Merge development workspace into production, keeping production as ground truth
-merge_report = merge_workspace(
-    folder1_path="./development_workspace",
-    folder2_path="./production_workspace", 
-    output_folder="./combined_workspace",
-    use_first_folder_on_conflict=False  # Use folder2 (production) data for conflicts
-)
-
-print(f"Merged workspaces with {merge_report['summary']['total_conflicts_resolved']} conflicts")
-```
-
-#### Combining Annotation Data from Multiple Teams
-
-```python
-# Merge annotations from two annotation teams
-annotations_report = merge_annotations(
-    folder1_path="./team_a_workspace",
-    folder2_path="./team_b_workspace",
-    output_folder="./combined_annotations", 
-    use_first_folder_on_conflict=True  # Prefer team A's data for conflicts
-)
-
-# Merge ground truths from reviewers
-gt_report = merge_ground_truths(
-    folder1_path="./team_a_workspace", 
-    folder2_path="./team_b_workspace",
-    output_folder="./combined_ground_truths",
-    use_first_folder_on_conflict=False  # Prefer team B's ground truth data
-)
-```
-
 ## Complete Workspace Management Workflow
 
 Here's a complete example showing the export → compare → merge workflow:
@@ -877,8 +782,8 @@ from label_pizza.export_utils import export_workspace
 init_database("DBURL")
 
 # Export current database state
-export_workspace(output_folder="./workspace_export")
-print("Current workspace exported to ./workspace_export")
+export_workspace(output_folder="./workspace")
+print("Current workspace exported to ./workspace")
 ```
 
 ### Step 2: Compare with existing workspace
@@ -888,8 +793,8 @@ from label_pizza.compare_utils import compare_workspace
 
 # Compare existing workspace with exported data
 is_identical = compare_workspace(
-    folder1_path="./workspace",
-    folder2_path="./workspace_export",
+    folder1_path="./example",
+    folder2_path="./workspace",
     write_to_file=True
 )
 
@@ -907,10 +812,10 @@ from label_pizza.merge_utils import merge_workspace
 
 # Merge workspaces, using exported data as ground truth for conflicts
 merge_report = merge_workspace(
-    folder1_path="./workspace",
-    folder2_path="./workspace_export",
+    folder1_path="./example_custom_display",
+    folder2_path="./workspace",
     output_folder="./merged_workspace", 
-    use_first_folder_on_conflict=False  # Use folder2 (exported) data for conflicts
+    use_first_folder_on_conflict=True  # Use folder1 (exported) data for conflicts
 )
 
 print(f"Merge completed with {merge_report['summary']['total_conflicts_resolved']} conflicts resolved")
